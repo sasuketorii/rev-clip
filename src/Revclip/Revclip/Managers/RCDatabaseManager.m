@@ -170,6 +170,29 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     return migrated;
 }
 
+- (BOOL)performTransaction:(BOOL (^)(FMDatabase *db, BOOL *rollback))block {
+    if (block == nil || ![self ensureDatabaseReadyForOperation]) {
+        return NO;
+    }
+
+    __block BOOL succeeded = YES;
+    [self.databaseQueue inTransaction:^(FMDatabase * _Nonnull db, BOOL * _Nonnull rollback) {
+        if (![self enableForeignKeysForDatabase:db]) {
+            succeeded = NO;
+            *rollback = YES;
+            return;
+        }
+
+        BOOL operationSucceeded = block(db, rollback);
+        if (!operationSucceeded || *rollback) {
+            succeeded = NO;
+            *rollback = YES;
+        }
+    }];
+
+    return succeeded;
+}
+
 #pragma mark - Public: clip_items
 
 - (BOOL)insertClipItem:(NSDictionary *)clipDict {
@@ -399,6 +422,17 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     return inserted;
 }
 
+- (BOOL)updateSnippetFolder:(NSDictionary *)folderDict {
+    NSString *identifier = [self stringValueInDictionary:folderDict keys:@[@"identifier"] defaultValue:nil];
+    if (identifier.length == 0) {
+        return NO;
+    }
+
+    NSMutableDictionary *mutableDict = [folderDict mutableCopy];
+    [mutableDict removeObjectForKey:@"identifier"];
+    return [self updateSnippetFolder:identifier withDict:[mutableDict copy]];
+}
+
 - (BOOL)updateSnippetFolder:(NSString *)identifier withDict:(NSDictionary *)dict {
     if (identifier.length == 0 || ![self ensureDatabaseReadyForOperation]) {
         return NO;
@@ -467,6 +501,26 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     return deleted;
 }
 
+- (BOOL)deleteAllSnippetFolders {
+    if (![self ensureDatabaseReadyForOperation]) {
+        return NO;
+    }
+
+    __block BOOL deleted = NO;
+    [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        if (![self enableForeignKeysForDatabase:db]) {
+            return;
+        }
+
+        deleted = [db executeUpdate:@"DELETE FROM snippet_folders"];
+        if (!deleted) {
+            [self logDatabaseError:db context:@"Failed to delete all snippet_folders rows"];
+        }
+    }];
+
+    return deleted;
+}
+
 - (NSArray *)fetchAllSnippetFolders {
     if (![self ensureDatabaseReadyForOperation]) {
         return @[];
@@ -491,6 +545,31 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     }];
 
     return [rows copy];
+}
+
+- (BOOL)snippetFolderExistsWithIdentifier:(NSString *)identifier {
+    if (identifier.length == 0 || ![self ensureDatabaseReadyForOperation]) {
+        return NO;
+    }
+
+    __block BOOL exists = NO;
+    [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        if (![self enableForeignKeysForDatabase:db]) {
+            return;
+        }
+
+        FMResultSet *resultSet = [db executeQuery:@"SELECT 1 FROM snippet_folders WHERE identifier = ? LIMIT 1"
+                             withArgumentsInArray:@[identifier]];
+        if (!resultSet) {
+            [self logDatabaseError:db context:@"Failed to check snippet_folders identifier"];
+            return;
+        }
+
+        exists = [resultSet next];
+        [resultSet close];
+    }];
+
+    return exists;
 }
 
 #pragma mark - Public: snippets
@@ -526,6 +605,30 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     }];
 
     return inserted;
+}
+
+- (BOOL)insertSnippet:(NSDictionary *)snippetDict inFolder:(NSString *)folderIdentifier {
+    if (folderIdentifier.length == 0) {
+        return NO;
+    }
+
+    NSMutableDictionary *mutableDict = [snippetDict mutableCopy];
+    if (mutableDict == nil) {
+        mutableDict = [NSMutableDictionary dictionary];
+    }
+    mutableDict[@"folder_id"] = folderIdentifier;
+    return [self insertSnippet:[mutableDict copy]];
+}
+
+- (BOOL)updateSnippet:(NSDictionary *)snippetDict {
+    NSString *identifier = [self stringValueInDictionary:snippetDict keys:@[@"identifier"] defaultValue:nil];
+    if (identifier.length == 0) {
+        return NO;
+    }
+
+    NSMutableDictionary *mutableDict = [snippetDict mutableCopy];
+    [mutableDict removeObjectForKey:@"identifier"];
+    return [self updateSnippet:identifier withDict:[mutableDict copy]];
 }
 
 - (BOOL)updateSnippet:(NSString *)identifier withDict:(NSDictionary *)dict {
@@ -633,6 +736,31 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     }];
 
     return [rows copy];
+}
+
+- (BOOL)snippetExistsWithIdentifier:(NSString *)identifier {
+    if (identifier.length == 0 || ![self ensureDatabaseReadyForOperation]) {
+        return NO;
+    }
+
+    __block BOOL exists = NO;
+    [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        if (![self enableForeignKeysForDatabase:db]) {
+            return;
+        }
+
+        FMResultSet *resultSet = [db executeQuery:@"SELECT 1 FROM snippets WHERE identifier = ? LIMIT 1"
+                             withArgumentsInArray:@[identifier]];
+        if (!resultSet) {
+            [self logDatabaseError:db context:@"Failed to check snippets identifier"];
+            return;
+        }
+
+        exists = [resultSet next];
+        [resultSet close];
+    }];
+
+    return exists;
 }
 
 #pragma mark - Private: Database setup

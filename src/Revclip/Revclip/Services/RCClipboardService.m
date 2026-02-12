@@ -8,6 +8,7 @@
 #import "RCClipboardService.h"
 
 #import "RCConstants.h"
+#import "RCExcludeAppService.h"
 #import "RCDatabaseManager.h"
 #import "RCClipData.h"
 #import "RCClipItem.h"
@@ -119,6 +120,10 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
 }
 
 - (void)captureCurrentClipboard {
+    if ([[RCExcludeAppService shared] shouldExcludeCurrentApp]) {
+        return;
+    }
+
     dispatch_async(self.monitoringQueue, ^{
         [self captureCurrentClipboardOnMonitoringQueue];
     });
@@ -322,8 +327,7 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
 }
 
 - (BOOL)shouldSkipCurrentApplication {
-    // Future extension point: exclude-application filtering.
-    return NO;
+    return [[RCExcludeAppService shared] shouldExcludeCurrentApp];
 }
 
 #pragma mark - Private: File / Thumbnail

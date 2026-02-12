@@ -13,6 +13,7 @@ targets:
     platform: macOS
     dependencies:
       - sdk: ApplicationServices.framework
+      - sdk: Carbon.framework
     sources:
       - path: Revclip
         excludes:

@@ -12,6 +12,7 @@
 #import "RCClipItem.h"
 #import "RCConstants.h"
 #import "RCDatabaseManager.h"
+#import "RCHotKeyService.h"
 #import "RCPasteService.h"
 #import "NSColor+HexString.h"
 #import "NSImage+Color.h"
@@ -22,7 +23,7 @@ static NSString * const kRCStatusBarIconAssetName = @"StatusBarIcon";
 static NSString * const kRCNoHistoryTitle = @"No History";
 static NSString * const kRCNoSnippetsTitle = @"No Snippets";
 static NSString * const kRCEmptySnippetFolderTitle = @"(Empty)";
-static NSInteger const kRCMaximumNumberedMenuItems = 10;
+static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
 @interface RCMenuManager ()
 
@@ -55,6 +56,26 @@ static NSInteger const kRCMaximumNumberedMenuItems = 10;
         [notificationCenter addObserver:self
                                selector:@selector(handleUserDefaultsDidChange:)
                                    name:NSUserDefaultsDidChangeNotification
+                                 object:nil];
+        [notificationCenter addObserver:self
+                               selector:@selector(handleHotKeyMainTriggered:)
+                                   name:RCHotKeyMainTriggeredNotification
+                                 object:nil];
+        [notificationCenter addObserver:self
+                               selector:@selector(handleHotKeyHistoryTriggered:)
+                                   name:RCHotKeyHistoryTriggeredNotification
+                                 object:nil];
+        [notificationCenter addObserver:self
+                               selector:@selector(handleHotKeySnippetTriggered:)
+                                   name:RCHotKeySnippetTriggeredNotification
+                                 object:nil];
+        [notificationCenter addObserver:self
+                               selector:@selector(handleHotKeyClearHistoryTriggered:)
+                                   name:RCHotKeyClearHistoryTriggeredNotification
+                                 object:nil];
+        [notificationCenter addObserver:self
+                               selector:@selector(handleHotKeySnippetFolderTriggered:)
+                                   name:RCHotKeySnippetFolderTriggeredNotification
                                  object:nil];
     }
     return self;
@@ -90,6 +111,38 @@ static NSInteger const kRCMaximumNumberedMenuItems = 10;
 - (void)handleUserDefaultsDidChange:(NSNotification *)notification {
     (void)notification;
     [self setupStatusItem];
+}
+
+- (void)handleHotKeyMainTriggered:(NSNotification *)notification {
+    (void)notification;
+    [self popUpStatusMenuFromHotKey];
+}
+
+- (void)handleHotKeyHistoryTriggered:(NSNotification *)notification {
+    (void)notification;
+    [self popUpHistoryMenuFromHotKey];
+}
+
+- (void)handleHotKeySnippetTriggered:(NSNotification *)notification {
+    (void)notification;
+    [self popUpSnippetMenuFromHotKey];
+}
+
+- (void)handleHotKeyClearHistoryTriggered:(NSNotification *)notification {
+    (void)notification;
+    [self performOnMainThread:^{
+        [self clearHistoryMenuItemSelected:nil];
+    }];
+}
+
+- (void)handleHotKeySnippetFolderTriggered:(NSNotification *)notification {
+    id rawIdentifier = notification.userInfo[RCHotKeyFolderIdentifierUserInfoKey];
+    NSString *identifier = [rawIdentifier isKindOfClass:[NSString class]] ? (NSString *)rawIdentifier : @"";
+    if (identifier.length == 0) {
+        return;
+    }
+
+    [self popUpSnippetFolderMenuFromHotKeyWithIdentifier:identifier];
 }
 
 #pragma mark - Status Item
@@ -139,6 +192,103 @@ static NSInteger const kRCMaximumNumberedMenuItems = 10;
 
     image.template = YES;
     return image;
+}
+
+- (void)popUpStatusMenuFromHotKey {
+    [self performOnMainThread:^{
+        [self applyStatusItemPreference];
+        if (self.statusItem == nil || self.statusItem.button == nil) {
+            return;
+        }
+
+        [self rebuildMenuInternal];
+        [self.statusItem.button performClick:nil];
+    }];
+}
+
+- (void)popUpHistoryMenuFromHotKey {
+    [self performOnMainThread:^{
+        [self applyStatusItemPreference];
+        if (self.statusItem == nil || self.statusItem.button == nil) {
+            return;
+        }
+
+        NSMenu *menu = [[NSMenu alloc] initWithTitle:@"History"];
+        [self appendClipHistorySectionToMenu:menu];
+        [menu addItem:[NSMenuItem separatorItem]];
+        [self appendApplicationSectionToMenu:menu];
+        [self popUpTransientMenu:menu];
+    }];
+}
+
+- (void)popUpSnippetMenuFromHotKey {
+    [self performOnMainThread:^{
+        [self applyStatusItemPreference];
+        if (self.statusItem == nil || self.statusItem.button == nil) {
+            return;
+        }
+
+        NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Snippets"];
+        [self appendSnippetSectionToMenu:menu];
+        [menu addItem:[NSMenuItem separatorItem]];
+        [self appendApplicationSectionToMenu:menu];
+        [self popUpTransientMenu:menu];
+    }];
+}
+
+- (void)popUpSnippetFolderMenuFromHotKeyWithIdentifier:(NSString *)folderIdentifier {
+    if (folderIdentifier.length == 0) {
+        return;
+    }
+
+    [self performOnMainThread:^{
+        [self applyStatusItemPreference];
+        if (self.statusItem == nil || self.statusItem.button == nil) {
+            return;
+        }
+
+        NSDictionary *targetFolder = nil;
+        for (NSDictionary *folder in [[RCDatabaseManager shared] fetchAllSnippetFolders]) {
+            NSString *identifier = [self stringValueFromDictionary:folder key:@"identifier" defaultValue:@""];
+            if (![identifier isEqualToString:folderIdentifier]) {
+                continue;
+            }
+
+            BOOL enabled = [self boolValueFromDictionary:folder key:@"enabled" defaultValue:YES];
+            if (!enabled) {
+                return;
+            }
+
+            targetFolder = folder;
+            break;
+        }
+
+        if (targetFolder == nil) {
+            return;
+        }
+
+        NSString *title = [self stringValueFromDictionary:targetFolder key:@"title" defaultValue:@""];
+        if (title.length == 0) {
+            title = @"Untitled Folder";
+        }
+
+        NSMenu *menu = [[NSMenu alloc] initWithTitle:title];
+        [self appendSnippetsForFolderIdentifier:folderIdentifier toMenu:menu];
+        [menu addItem:[NSMenuItem separatorItem]];
+        [self appendApplicationSectionToMenu:menu];
+        [self popUpTransientMenu:menu];
+    }];
+}
+
+- (void)popUpTransientMenu:(NSMenu *)menu {
+    if (menu == nil || self.statusItem == nil || self.statusItem.button == nil) {
+        return;
+    }
+
+    NSMenu *originalMenu = self.statusItem.menu ?: self.statusMenu;
+    self.statusItem.menu = menu;
+    [self.statusItem.button performClick:nil];
+    self.statusItem.menu = originalMenu;
 }
 
 #pragma mark - Menu Build
@@ -248,41 +398,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 10;
         folderItem.submenu = folderMenu;
         [menu addItem:folderItem];
         hasAtLeastOneFolder = YES;
-
-        NSArray<NSDictionary *> *snippets = [[RCDatabaseManager shared] fetchSnippetsForFolder:identifier];
-        BOOL hasSnippet = NO;
-        for (NSDictionary *snippet in snippets) {
-            BOOL snippetEnabled = [self boolValueFromDictionary:snippet key:@"enabled" defaultValue:YES];
-            if (!snippetEnabled) {
-                continue;
-            }
-
-            NSString *snippetTitle = [self stringValueFromDictionary:snippet key:@"title" defaultValue:@""];
-            NSString *snippetContent = [self stringValueFromDictionary:snippet key:@"content" defaultValue:@""];
-
-            if (snippetTitle.length == 0 && snippetContent.length > 0) {
-                snippetTitle = [self truncatedString:snippetContent maxLength:24];
-            }
-            if (snippetTitle.length == 0) {
-                snippetTitle = @"Untitled Snippet";
-            }
-
-            NSMenuItem *snippetItem = [[NSMenuItem alloc] initWithTitle:snippetTitle
-                                                                  action:@selector(selectSnippetMenuItem:)
-                                                           keyEquivalent:@""];
-            snippetItem.target = self;
-            snippetItem.representedObject = snippetContent ?: @"";
-            [folderMenu addItem:snippetItem];
-            hasSnippet = YES;
-        }
-
-        if (!hasSnippet) {
-            NSMenuItem *emptyItem = [[NSMenuItem alloc] initWithTitle:kRCEmptySnippetFolderTitle
-                                                               action:nil
-                                                        keyEquivalent:@""];
-            emptyItem.enabled = NO;
-            [folderMenu addItem:emptyItem];
-        }
+        [self appendSnippetsForFolderIdentifier:identifier toMenu:folderMenu];
     }
 
     if (!hasAtLeastOneFolder) {
@@ -294,6 +410,47 @@ static NSInteger const kRCMaximumNumberedMenuItems = 10;
     }
 }
 
+- (void)appendSnippetsForFolderIdentifier:(NSString *)folderIdentifier toMenu:(NSMenu *)menu {
+    if (folderIdentifier.length == 0 || menu == nil) {
+        return;
+    }
+
+    NSArray<NSDictionary *> *snippets = [[RCDatabaseManager shared] fetchSnippetsForFolder:folderIdentifier];
+    BOOL hasSnippet = NO;
+    for (NSDictionary *snippet in snippets) {
+        BOOL snippetEnabled = [self boolValueFromDictionary:snippet key:@"enabled" defaultValue:YES];
+        if (!snippetEnabled) {
+            continue;
+        }
+
+        NSString *snippetTitle = [self stringValueFromDictionary:snippet key:@"title" defaultValue:@""];
+        NSString *snippetContent = [self stringValueFromDictionary:snippet key:@"content" defaultValue:@""];
+
+        if (snippetTitle.length == 0 && snippetContent.length > 0) {
+            snippetTitle = [self truncatedString:snippetContent maxLength:24];
+        }
+        if (snippetTitle.length == 0) {
+            snippetTitle = @"Untitled Snippet";
+        }
+
+        NSMenuItem *snippetItem = [[NSMenuItem alloc] initWithTitle:snippetTitle
+                                                              action:@selector(selectSnippetMenuItem:)
+                                                       keyEquivalent:@""];
+        snippetItem.target = self;
+        snippetItem.representedObject = snippetContent ?: @"";
+        [menu addItem:snippetItem];
+        hasSnippet = YES;
+    }
+
+    if (!hasSnippet) {
+        NSMenuItem *emptyItem = [[NSMenuItem alloc] initWithTitle:kRCEmptySnippetFolderTitle
+                                                           action:nil
+                                                    keyEquivalent:@""];
+        emptyItem.enabled = NO;
+        [menu addItem:emptyItem];
+    }
+}
+
 - (void)appendApplicationSectionToMenu:(NSMenu *)menu {
     NSMenuItem *preferencesItem = [[NSMenuItem alloc] initWithTitle:@"Preferences..."
                                                               action:@selector(openPreferences:)
@@ -301,6 +458,12 @@ static NSInteger const kRCMaximumNumberedMenuItems = 10;
     preferencesItem.keyEquivalentModifierMask = NSEventModifierFlagCommand;
     preferencesItem.target = self;
     [menu addItem:preferencesItem];
+
+    NSMenuItem *editSnippetsItem = [[NSMenuItem alloc] initWithTitle:@"Edit Snippets..."
+                                                               action:@selector(openSnippetEditor:)
+                                                        keyEquivalent:@""];
+    editSnippetsItem.target = self;
+    [menu addItem:editSnippetsItem];
 
     NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:@"Quit Revclip"
                                                        action:@selector(terminate:)
@@ -321,18 +484,72 @@ static NSInteger const kRCMaximumNumberedMenuItems = 10;
     item.target = self;
     item.representedObject = clipItem.dataHash ?: @"";
 
-    RCClipData *clipData = [RCClipData clipDataFromPath:clipItem.dataPath];
-    if ([self boolPreferenceForKey:kRCShowToolTipOnMenuItemKey defaultValue:YES]) {
-        NSString *toolTip = [self tooltipForClipItem:clipItem clipData:clipData];
-        if (toolTip.length > 0) {
-            NSInteger maxLength = [self integerPreferenceForKey:kRCMaxLengthOfToolTipKey defaultValue:200];
-            item.toolTip = [self truncatedString:toolTip maxLength:MAX(1, maxLength)];
+    BOOL needsTooltip = [self boolPreferenceForKey:kRCShowToolTipOnMenuItemKey defaultValue:YES];
+    BOOL showImagePreview = [self boolPreferenceForKey:kRCShowImageInTheMenuKey defaultValue:YES];
+    BOOL showColorPreview = [self boolPreferenceForKey:kRCPrefShowColorPreviewInTheMenu defaultValue:YES];
+    BOOL showMenuIcon = [self boolPreferenceForKey:kRCPrefShowIconInTheMenuKey defaultValue:YES];
+
+    BOOL tooltipSatisfied = NO;
+    if (needsTooltip && clipItem.title.length > 0) {
+        NSInteger maxLength = [self integerPreferenceForKey:kRCMaxLengthOfToolTipKey defaultValue:200];
+        item.toolTip = [self truncatedString:clipItem.title maxLength:MAX(1, maxLength)];
+        tooltipSatisfied = YES;
+    }
+
+    BOOL imageSatisfied = NO;
+    if (!clipItem.isColorCode) {
+        if (showImagePreview && clipItem.thumbnailPath.length > 0) {
+            NSImage *thumbnailImage = [[NSImage alloc] initWithContentsOfFile:clipItem.thumbnailPath];
+            if (thumbnailImage != nil) {
+                CGFloat thumbnailWidth = (CGFloat)MAX(1, [self integerPreferenceForKey:kRCThumbnailWidthKey defaultValue:100]);
+                CGFloat thumbnailHeight = (CGFloat)MAX(1, [self integerPreferenceForKey:kRCThumbnailHeightKey defaultValue:32]);
+                NSSize thumbnailSize = NSMakeSize(thumbnailWidth, thumbnailHeight);
+                NSImage *resized = [thumbnailImage resizedImageToFitSize:thumbnailSize];
+                if (resized == nil) {
+                    resized = [thumbnailImage resizedImageToSize:thumbnailSize];
+                }
+                if (resized != nil) {
+                    resized.template = NO;
+                    item.image = resized;
+                    imageSatisfied = YES;
+                }
+            }
+        }
+
+        if (!imageSatisfied && showMenuIcon) {
+            NSImage *iconImage = [self typeIconForClipItem:clipItem];
+            if (iconImage != nil) {
+                item.image = iconImage;
+                imageSatisfied = YES;
+            }
+        }
+    } else if (!showColorPreview && showMenuIcon) {
+        NSImage *iconImage = [self typeIconForClipItem:clipItem];
+        if (iconImage != nil) {
+            item.image = iconImage;
+            imageSatisfied = YES;
         }
     }
 
-    NSImage *image = [self imageForClipItem:clipItem clipData:clipData];
-    if (image != nil) {
-        item.image = image;
+    BOOL needsClipDataForTooltip = needsTooltip && !tooltipSatisfied;
+    BOOL needsClipDataForImage = showColorPreview && clipItem.isColorCode && !imageSatisfied;
+    if (needsClipDataForTooltip || needsClipDataForImage) {
+        RCClipData *clipData = [RCClipData clipDataFromPath:clipItem.dataPath];
+
+        if (needsClipDataForTooltip) {
+            NSString *toolTip = [self tooltipForClipItem:clipItem clipData:clipData];
+            if (toolTip.length > 0) {
+                NSInteger maxLength = [self integerPreferenceForKey:kRCMaxLengthOfToolTipKey defaultValue:200];
+                item.toolTip = [self truncatedString:toolTip maxLength:MAX(1, maxLength)];
+            }
+        }
+
+        if (needsClipDataForImage) {
+            NSImage *image = [self imageForClipItem:clipItem clipData:clipData];
+            if (image != nil) {
+                item.image = image;
+            }
+        }
     }
 
     if ([self boolPreferenceForKey:kRCAddNumericKeyEquivalentsKey defaultValue:NO]) {
@@ -404,33 +621,34 @@ static NSInteger const kRCMaximumNumberedMenuItems = 10;
 }
 
 - (nullable NSImage *)imageForClipItem:(RCClipItem *)clipItem clipData:(RCClipData *)clipData {
-    NSInteger preferredIconSize = [self integerPreferenceForKey:kRCPrefMenuIconSizeKey defaultValue:16];
-    CGFloat iconSide = (CGFloat)MAX(8, preferredIconSize);
-    NSSize iconSize = NSMakeSize(iconSide, iconSide);
-
     BOOL showColorPreview = [self boolPreferenceForKey:kRCPrefShowColorPreviewInTheMenu defaultValue:YES];
     if (showColorPreview && clipItem.isColorCode) {
         NSString *colorString = clipData.stringValue.length > 0 ? clipData.stringValue : clipItem.title;
         NSColor *color = [NSColor colorWithHexString:colorString];
         if (color != nil) {
-            return [NSImage imageWithColor:color size:iconSize cornerRadius:3.0];
+            NSSize colorPreviewSize = NSMakeSize(16.0, 16.0);
+            return [NSImage imageWithColor:color size:colorPreviewSize cornerRadius:3.0];
         }
     }
 
     BOOL showImagePreview = [self boolPreferenceForKey:kRCShowImageInTheMenuKey defaultValue:YES];
     if (showImagePreview) {
+        CGFloat thumbnailWidth = (CGFloat)MAX(1, [self integerPreferenceForKey:kRCThumbnailWidthKey defaultValue:100]);
+        CGFloat thumbnailHeight = (CGFloat)MAX(1, [self integerPreferenceForKey:kRCThumbnailHeightKey defaultValue:32]);
+        NSSize thumbnailSize = NSMakeSize(thumbnailWidth, thumbnailHeight);
+
         NSImage *thumbnailImage = nil;
-        if (clipItem.thumbnailPath.length > 0) {
-            thumbnailImage = [[NSImage alloc] initWithContentsOfFile:clipItem.thumbnailPath];
-        }
-        if (thumbnailImage == nil && clipData.TIFFData.length > 0) {
+        if (clipData.TIFFData.length > 0) {
             thumbnailImage = [[NSImage alloc] initWithData:clipData.TIFFData];
+        }
+        if (thumbnailImage == nil && clipItem.thumbnailPath.length > 0) {
+            thumbnailImage = [[NSImage alloc] initWithContentsOfFile:clipItem.thumbnailPath];
         }
 
         if (thumbnailImage != nil) {
-            NSImage *resized = [thumbnailImage resizedImageToFitSize:iconSize];
+            NSImage *resized = [thumbnailImage resizedImageToFitSize:thumbnailSize];
             if (resized == nil) {
-                resized = [thumbnailImage resizedImageToSize:iconSize];
+                resized = [thumbnailImage resizedImageToSize:thumbnailSize];
             }
             if (resized != nil) {
                 resized.template = NO;
@@ -443,6 +661,14 @@ static NSInteger const kRCMaximumNumberedMenuItems = 10;
     if (!showMenuIcon) {
         return nil;
     }
+
+    return [self typeIconForClipItem:clipItem];
+}
+
+- (nullable NSImage *)typeIconForClipItem:(RCClipItem *)clipItem {
+    NSInteger preferredIconSize = [self integerPreferenceForKey:kRCPrefMenuIconSizeKey defaultValue:16];
+    CGFloat iconSide = (CGFloat)MAX(8, preferredIconSize);
+    NSSize iconSize = NSMakeSize(iconSide, iconSide);
 
     NSImage *typeImage = [self primaryTypeIconForType:clipItem.primaryType];
     NSImage *resizedImage = [typeImage resizedImageToFitSize:iconSize];
@@ -490,17 +716,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 10;
         return @"";
     }
 
-    BOOL startWithZero = [self boolPreferenceForKey:kRCPrefMenuItemsTitleStartWithZeroKey defaultValue:NO];
-    NSInteger displayedNumber = startWithZero ? (NSInteger)globalIndex : ((NSInteger)globalIndex + 1);
-
-    if (!startWithZero && displayedNumber == 10) {
-        return @"0";
-    }
-    if (displayedNumber >= 0 && displayedNumber <= 9) {
-        return [NSString stringWithFormat:@"%ld", (long)displayedNumber];
-    }
-
-    return @"";
+    return [NSString stringWithFormat:@"%lu", (unsigned long)(globalIndex + 1)];
 }
 
 #pragma mark - Actions
@@ -604,6 +820,16 @@ static NSInteger const kRCMaximumNumberedMenuItems = 10;
         if ([NSApp sendAction:selector to:nil from:self]) {
             return;
         }
+    }
+
+    NSBeep();
+}
+
+- (void)openSnippetEditor:(NSMenuItem *)sender {
+    (void)sender;
+
+    if ([NSApp sendAction:@selector(showSnippetEditor:) to:nil from:self]) {
+        return;
     }
 
     NSBeep();

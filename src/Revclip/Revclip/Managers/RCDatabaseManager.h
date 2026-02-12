@@ -9,6 +9,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class FMDatabase;
+
 @interface RCDatabaseManager : NSObject
 
 + (instancetype)shared;
@@ -20,6 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)setupDatabase;
 - (NSInteger)currentSchemaVersion;
 - (BOOL)migrateIfNeeded;
+- (BOOL)performTransaction:(BOOL (^)(FMDatabase *db, BOOL *rollback))block;
 
 // clip_items CRUD
 - (BOOL)insertClipItem:(NSDictionary *)clipDict;
@@ -32,15 +35,21 @@ NS_ASSUME_NONNULL_BEGIN
 
 // snippet_folders CRUD
 - (BOOL)insertSnippetFolder:(NSDictionary *)folderDict;
+- (BOOL)updateSnippetFolder:(NSDictionary *)folderDict;
 - (BOOL)updateSnippetFolder:(NSString *)identifier withDict:(NSDictionary *)dict;
 - (BOOL)deleteSnippetFolder:(NSString *)identifier;
+- (BOOL)deleteAllSnippetFolders;
 - (NSArray *)fetchAllSnippetFolders;
+- (BOOL)snippetFolderExistsWithIdentifier:(NSString *)identifier;
 
 // snippets CRUD
 - (BOOL)insertSnippet:(NSDictionary *)snippetDict;
+- (BOOL)insertSnippet:(NSDictionary *)snippetDict inFolder:(NSString *)folderIdentifier;
+- (BOOL)updateSnippet:(NSDictionary *)snippetDict;
 - (BOOL)updateSnippet:(NSString *)identifier withDict:(NSDictionary *)dict;
 - (BOOL)deleteSnippet:(NSString *)identifier;
 - (NSArray *)fetchSnippetsForFolder:(NSString *)folderIdentifier;
+- (BOOL)snippetExistsWithIdentifier:(NSString *)identifier;
 - (BOOL)deleteAllClipItems;
 
 @end

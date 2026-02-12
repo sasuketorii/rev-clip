@@ -7,29 +7,55 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		01CA2D76351356069304AE5F /* RCSnippetEditorWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 67F229554771B7C3894849D9 /* RCSnippetEditorWindow.xib */; };
 		0413CABC884642E55E67E458 /* NSColor+HexString.m in Sources */ = {isa = PBXBuildFile; fileRef = 419E6FDE78A12DBEDEB50ADE /* NSColor+HexString.m */; };
 		096A63ACEA9F3F73321A2DE0 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = DB8BAD5A274C842C536879E9 /* MainMenu.xib */; };
 		0DE09F8319092EE011C35D7A /* RCConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = B1C3B45842799555F8E43710 /* RCConstants.m */; };
 		121DB35D43F06FB9973EC710 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2BBFB32B6E958167DCDC53B5 /* Assets.xcassets */; };
 		12304DD4C5CC84CB163F2CE1 /* NSImage+Resize.m in Sources */ = {isa = PBXBuildFile; fileRef = 66F9D7E6E9FDCA68904FC3C0 /* NSImage+Resize.m */; };
+		1633F5567767BFD732C4450E /* RCTypePreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1C4D10874E40AE545BFF3CF9 /* RCTypePreferencesView.xib */; };
 		1AC9A14FCEC115D8290761AE /* FMDatabase.m in Sources */ = {isa = PBXBuildFile; fileRef = 30D12ED89CAF3004483AE41F /* FMDatabase.m */; };
+		1C1CE782F2C46690E8C1E164 /* RCHotKeyRecorderView.m in Sources */ = {isa = PBXBuildFile; fileRef = 57D68EA420E8485CC1A9B96D /* RCHotKeyRecorderView.m */; };
+		207DEC918BAD4A6268212037 /* RCShortcutsPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 98BDA0B33DFBAF64A0A79A22 /* RCShortcutsPreferencesViewController.m */; };
+		228018374713C0C7C7F8AA56 /* RCMenuPreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 310C64F21BD5E50CE25A7484 /* RCMenuPreferencesView.xib */; };
+		310AA557CE2AD6EB9339A2E9 /* RCExcludePreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 99259E01619E218FBAF12209 /* RCExcludePreferencesViewController.m */; };
+		31D7EA5F5A314A0A8C5D7503 /* RCBetaPreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 55917DFDB23A0A6C8141CB54 /* RCBetaPreferencesView.xib */; };
 		3C1D7E56F1A76791221AE313 /* RCPrivacyService.m in Sources */ = {isa = PBXBuildFile; fileRef = A8C4545CE9A6A3C5F4FFFF5D /* RCPrivacyService.m */; };
 		3CA63D159E34482A2D546BA7 /* NSImage+Color.m in Sources */ = {isa = PBXBuildFile; fileRef = B29CDB9ED92BE68E6F79E0FA /* NSImage+Color.m */; };
+		401B6B8F5294FA17DE1EE632 /* RCDesignableButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 6CFF5FE4C6DE4594A8B429C4 /* RCDesignableButton.m */; };
 		437594F7ED790AFD85939884 /* FMDatabaseAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = F40A75A70BD3A0FD99FC70B7 /* FMDatabaseAdditions.m */; };
+		4471370EF8B2507F6C1837CD /* RCShortcutsPreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = D55765A002971C5D1880E229 /* RCShortcutsPreferencesView.xib */; };
 		4D6643B1EE02630C459B966A /* RCEnvironment.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B70C481EA99C1AD3694C2BB /* RCEnvironment.m */; };
+		52ACE05CACB0AFB9F3694204 /* RCGeneralPreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2A9310A1E237473A4079CFAD /* RCGeneralPreferencesView.xib */; };
 		58BC6988E092E709FAD3309E /* RCClipItem.m in Sources */ = {isa = PBXBuildFile; fileRef = E1BA9A07CAFE5B6BFA726745 /* RCClipItem.m */; };
+		598D006BAE4936FE7975484C /* RCMenuPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A512A8880BC94150B039A512 /* RCMenuPreferencesViewController.m */; };
+		5A061E9A9CC351B33E612F70 /* RCPreferencesWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = CAA3B4452108D6FECA54E5CE /* RCPreferencesWindow.xib */; };
 		5D8CAAAA0301D80FFA91EA3B /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 76819849DA4DF7820A0014B0 /* main.m */; };
 		5FECC4C7E0CAC083D3C52989 /* RCClipData.m in Sources */ = {isa = PBXBuildFile; fileRef = F522328A6E99D3B93FDEC733 /* RCClipData.m */; };
 		648640A77EDB8248928C4215 /* RCMenuManager.m in Sources */ = {isa = PBXBuildFile; fileRef = BE96081D22746BC3F4B46259 /* RCMenuManager.m */; };
 		6B8C76C45C0E6470216D314E /* FMDatabasePool.m in Sources */ = {isa = PBXBuildFile; fileRef = 6BCAF1F42C6F9816F4E29600 /* FMDatabasePool.m */; };
 		6D9E007BE4E964CF714B42E5 /* FMResultSet.m in Sources */ = {isa = PBXBuildFile; fileRef = D52AAFAA8BD4B439E283CC9A /* FMResultSet.m */; };
+		7127A1C3A8473C42A2E21DEC /* RCGeneralPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 24F3BF24A239AA69518650DA /* RCGeneralPreferencesViewController.m */; };
+		73F52D0777F2D41F7EC9C968 /* RCTypePreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D6EDED05F8101B408F9A7FF7 /* RCTypePreferencesViewController.m */; };
+		789A5809BC4E90C4CE58DDAB /* RCSnippetImportExportService.m in Sources */ = {isa = PBXBuildFile; fileRef = 25A85028708E20A4E991CDE7 /* RCSnippetImportExportService.m */; };
+		8307D3A9298D344F9E7F6381 /* RCDataCleanService.m in Sources */ = {isa = PBXBuildFile; fileRef = B23CE7EC747FB949A1ACBB2A /* RCDataCleanService.m */; };
 		8DAD0CF85421AEE62758228C /* RCDatabaseManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 48E70D0F63A020DF7D3F69E5 /* RCDatabaseManager.m */; };
+		95C33A6B03FAC2B3791FD748 /* RCSnippetEditorWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = C92CA72F81D386616D76799D /* RCSnippetEditorWindowController.m */; };
 		96872467BD39274309BCEF08 /* FMDatabaseQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = E5E213DDD089D28BCCD62D26 /* FMDatabaseQueue.m */; };
+		A2DBE7F41064D8A60120BFBE /* RCUpdatesPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = CC4EBDFFCC696AF33994E140 /* RCUpdatesPreferencesViewController.m */; };
 		AA10C257F7E5CDA1FABF961E /* ApplicationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 11CD652EC59173C40B1673BF /* ApplicationServices.framework */; };
+		AD39936ACDF30BE050BC45DF /* RCPreferencesWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = BFE988F97D74639A605F692C /* RCPreferencesWindowController.m */; };
 		AEF16C198E262B7FED186C49 /* RCPasteService.m in Sources */ = {isa = PBXBuildFile; fileRef = 16E69D3F56BF40CE5AA3F9E9 /* RCPasteService.m */; };
+		BB3F3E8C15A08A2ADED4A4F6 /* RCExcludePreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = F6ADD6859E9239E28CE95D92 /* RCExcludePreferencesView.xib */; };
 		C4F8E649B3E67A777009125A /* RCAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BDAC5C7B818F45DD9E0C9EA /* RCAppDelegate.m */; };
 		CA6BC549CAFFB981EA4D939A /* RCAccessibilityService.m in Sources */ = {isa = PBXBuildFile; fileRef = A4379C8BD7DFE2AA71F729A5 /* RCAccessibilityService.m */; };
+		D4D5001C0ECBA162D2DF23B1 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ADA1C708FEE8CC377FAB5E86 /* Carbon.framework */; };
+		D69FE0B43F37C7268DF990FC /* RCBetaPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = DEBB1B9F37BE193C53F19669 /* RCBetaPreferencesViewController.m */; };
+		E8241CFD4F2F23661129E39E /* RCDesignableView.m in Sources */ = {isa = PBXBuildFile; fileRef = 2FF85CB84E59C53F3A92F4EA /* RCDesignableView.m */; };
 		F149185FACD5F3855ABE9B2B /* RCUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = C70788A46CCA535A1FB719BB /* RCUtilities.m */; };
+		F155D25D956E31B88743B279 /* RCExcludeAppService.m in Sources */ = {isa = PBXBuildFile; fileRef = 60CA064AC4C4126C454E19FE /* RCExcludeAppService.m */; };
+		F7C2112472B50567D10E1561 /* RCHotKeyService.m in Sources */ = {isa = PBXBuildFile; fileRef = A0B8EAEDC93FF66179F29C00 /* RCHotKeyService.m */; };
+		FCDA416188A7C6670AA91208 /* RCUpdatesPreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = C409E2EBEE52DE7BE8E5580E /* RCUpdatesPreferencesView.xib */; };
 		FDF81CC741F5865B3EF160CD /* RCClipboardService.m in Sources */ = {isa = PBXBuildFile; fileRef = 237A6C799771D7B90ACEDE57 /* RCClipboardService.m */; };
 /* End PBXBuildFile section */
 
@@ -44,56 +70,98 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		00C94718B196F1BCCB8F9454 /* RCDataCleanService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCDataCleanService.h; sourceTree = "<group>"; };
 		11CD652EC59173C40B1673BF /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = System/Library/Frameworks/ApplicationServices.framework; sourceTree = SDKROOT; };
 		13C2851F528D2D7564540EEC /* FMDatabasePool.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDatabasePool.h; sourceTree = "<group>"; };
 		16E69D3F56BF40CE5AA3F9E9 /* RCPasteService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCPasteService.m; sourceTree = "<group>"; };
+		1C4D10874E40AE545BFF3CF9 /* RCTypePreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCTypePreferencesView.xib; sourceTree = "<group>"; };
+		1F02261C7B12751D1E7B0EE4 /* RCBetaPreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCBetaPreferencesViewController.h; sourceTree = "<group>"; };
 		237A6C799771D7B90ACEDE57 /* RCClipboardService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCClipboardService.m; sourceTree = "<group>"; };
 		23BCF5000D494C483DABC121 /* RCPasteService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCPasteService.h; sourceTree = "<group>"; };
+		24F3BF24A239AA69518650DA /* RCGeneralPreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCGeneralPreferencesViewController.m; sourceTree = "<group>"; };
+		25A85028708E20A4E991CDE7 /* RCSnippetImportExportService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCSnippetImportExportService.m; sourceTree = "<group>"; };
+		2A9310A1E237473A4079CFAD /* RCGeneralPreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCGeneralPreferencesView.xib; sourceTree = "<group>"; };
 		2BBFB32B6E958167DCDC53B5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2CEB140D411D73D3EBADEE3A /* RCEnvironment.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCEnvironment.h; sourceTree = "<group>"; };
+		2FF85CB84E59C53F3A92F4EA /* RCDesignableView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCDesignableView.m; sourceTree = "<group>"; };
 		30D12ED89CAF3004483AE41F /* FMDatabase.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FMDatabase.m; sourceTree = "<group>"; };
+		310C64F21BD5E50CE25A7484 /* RCMenuPreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCMenuPreferencesView.xib; sourceTree = "<group>"; };
 		3B70C481EA99C1AD3694C2BB /* RCEnvironment.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCEnvironment.m; sourceTree = "<group>"; };
+		3BADEF87387998B46B2116FC /* RCTypePreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCTypePreferencesViewController.h; sourceTree = "<group>"; };
 		419E6FDE78A12DBEDEB50ADE /* NSColor+HexString.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSColor+HexString.m"; sourceTree = "<group>"; };
 		48E70D0F63A020DF7D3F69E5 /* RCDatabaseManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCDatabaseManager.m; sourceTree = "<group>"; };
+		4CCF04B4A5FC11C335C33C3B /* RCMenuPreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCMenuPreferencesViewController.h; sourceTree = "<group>"; };
+		55917DFDB23A0A6C8141CB54 /* RCBetaPreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCBetaPreferencesView.xib; sourceTree = "<group>"; };
+		57D68EA420E8485CC1A9B96D /* RCHotKeyRecorderView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCHotKeyRecorderView.m; sourceTree = "<group>"; };
 		597933506FF1B204A53A2261 /* NSColor+HexString.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSColor+HexString.h"; sourceTree = "<group>"; };
+		59B9B287FEC408D046E89436 /* RCExcludePreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCExcludePreferencesViewController.h; sourceTree = "<group>"; };
+		60CA064AC4C4126C454E19FE /* RCExcludeAppService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCExcludeAppService.m; sourceTree = "<group>"; };
 		66F9D7E6E9FDCA68904FC3C0 /* NSImage+Resize.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSImage+Resize.m"; sourceTree = "<group>"; };
+		67F229554771B7C3894849D9 /* RCSnippetEditorWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCSnippetEditorWindow.xib; sourceTree = "<group>"; };
 		6BCAF1F42C6F9816F4E29600 /* FMDatabasePool.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FMDatabasePool.m; sourceTree = "<group>"; };
+		6CFF5FE4C6DE4594A8B429C4 /* RCDesignableButton.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCDesignableButton.m; sourceTree = "<group>"; };
+		7149A37E47F14D2E10DCBFF6 /* RCSnippetImportExportService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCSnippetImportExportService.h; sourceTree = "<group>"; };
 		7418A9005D73E625B71FF2FD /* RCPrivacyService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCPrivacyService.h; sourceTree = "<group>"; };
 		76819849DA4DF7820A0014B0 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		770A971FF0A5066F5F8037F8 /* FMDatabaseAdditions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDatabaseAdditions.h; sourceTree = "<group>"; };
 		79543F402298636EA76A93F9 /* FMDatabaseQueue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDatabaseQueue.h; sourceTree = "<group>"; };
+		7B4EB153C6F388548300CCA7 /* RCHotKeyService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCHotKeyService.h; sourceTree = "<group>"; };
+		7DACFA4F445C38F0B288D2F6 /* RCDesignableView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCDesignableView.h; sourceTree = "<group>"; };
 		818829683B375E4BF451A901 /* RCConstants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCConstants.h; sourceTree = "<group>"; };
 		8468E4CF844656C7B4874C49 /* Revclip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Revclip.entitlements; sourceTree = "<group>"; };
 		88090B44D91F92A73F0B181B /* RCMenuManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCMenuManager.h; sourceTree = "<group>"; };
 		8BDAC5C7B818F45DD9E0C9EA /* RCAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCAppDelegate.m; sourceTree = "<group>"; };
 		922AAD7D2185F782E5E6681E /* FMDatabase.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDatabase.h; sourceTree = "<group>"; };
 		942BD279118A67B8F22F17F0 /* RCClipData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCClipData.h; sourceTree = "<group>"; };
+		98BDA0B33DFBAF64A0A79A22 /* RCShortcutsPreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCShortcutsPreferencesViewController.m; sourceTree = "<group>"; };
+		99259E01619E218FBAF12209 /* RCExcludePreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCExcludePreferencesViewController.m; sourceTree = "<group>"; };
 		99F449B37637B34B5D03CEA5 /* RCAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCAppDelegate.h; sourceTree = "<group>"; };
 		9AA8F3B889A98B9FA403FB47 /* RevclipTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RevclipTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AF3C1CF74B2FCAB603D5032 /* Revclip-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Revclip-Prefix.pch"; sourceTree = "<group>"; };
 		9CCBF63E8D0CDBA66D5EC1E3 /* Revclip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Revclip.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A0B8EAEDC93FF66179F29C00 /* RCHotKeyService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCHotKeyService.m; sourceTree = "<group>"; };
 		A4379C8BD7DFE2AA71F729A5 /* RCAccessibilityService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCAccessibilityService.m; sourceTree = "<group>"; };
+		A512A8880BC94150B039A512 /* RCMenuPreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCMenuPreferencesViewController.m; sourceTree = "<group>"; };
+		A51C38921A881AF6BA7B8B81 /* RCExcludeAppService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCExcludeAppService.h; sourceTree = "<group>"; };
+		A5ED30ECFC1138C93BF579C4 /* RCGeneralPreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCGeneralPreferencesViewController.h; sourceTree = "<group>"; };
 		A8C4545CE9A6A3C5F4FFFF5D /* RCPrivacyService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCPrivacyService.m; sourceTree = "<group>"; };
+		AA43782BB85138F20B43BD1B /* RCSnippetEditorWindowController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCSnippetEditorWindowController.h; sourceTree = "<group>"; };
 		AD920BD9B85442A7B49B1AE6 /* FMDB.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDB.h; sourceTree = "<group>"; };
+		ADA1C708FEE8CC377FAB5E86 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 		AE14C3404981E7F2C2542753 /* RCDatabaseManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCDatabaseManager.h; sourceTree = "<group>"; };
 		B1C3B45842799555F8E43710 /* RCConstants.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCConstants.m; sourceTree = "<group>"; };
+		B23CE7EC747FB949A1ACBB2A /* RCDataCleanService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCDataCleanService.m; sourceTree = "<group>"; };
 		B29CDB9ED92BE68E6F79E0FA /* NSImage+Color.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSImage+Color.m"; sourceTree = "<group>"; };
 		B350739C24ABE9343A518168 /* NSImage+Resize.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSImage+Resize.h"; sourceTree = "<group>"; };
 		B930BB54FFC797073EE2AF40 /* RCClipItem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCClipItem.h; sourceTree = "<group>"; };
+		BE8FAE68ACCD7AA1716E6087 /* RCUpdatesPreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCUpdatesPreferencesViewController.h; sourceTree = "<group>"; };
 		BE96081D22746BC3F4B46259 /* RCMenuManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCMenuManager.m; sourceTree = "<group>"; };
+		BFE988F97D74639A605F692C /* RCPreferencesWindowController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCPreferencesWindowController.m; sourceTree = "<group>"; };
+		C409E2EBEE52DE7BE8E5580E /* RCUpdatesPreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCUpdatesPreferencesView.xib; sourceTree = "<group>"; };
 		C70788A46CCA535A1FB719BB /* RCUtilities.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCUtilities.m; sourceTree = "<group>"; };
+		C92CA72F81D386616D76799D /* RCSnippetEditorWindowController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCSnippetEditorWindowController.m; sourceTree = "<group>"; };
+		CAA3B4452108D6FECA54E5CE /* RCPreferencesWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCPreferencesWindow.xib; sourceTree = "<group>"; };
+		CC4EBDFFCC696AF33994E140 /* RCUpdatesPreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCUpdatesPreferencesViewController.m; sourceTree = "<group>"; };
 		CE1F106C49CAA66B7B2C5DCC /* NSImage+Color.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSImage+Color.h"; sourceTree = "<group>"; };
 		CFA625A09438BEAABB144A66 /* RCUtilities.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCUtilities.h; sourceTree = "<group>"; };
 		D52AAFAA8BD4B439E283CC9A /* FMResultSet.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FMResultSet.m; sourceTree = "<group>"; };
+		D55765A002971C5D1880E229 /* RCShortcutsPreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCShortcutsPreferencesView.xib; sourceTree = "<group>"; };
+		D6EDED05F8101B408F9A7FF7 /* RCTypePreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCTypePreferencesViewController.m; sourceTree = "<group>"; };
 		DB8BAD5A274C842C536879E9 /* MainMenu.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
 		DBA47344906468A18DC4D0A1 /* RCClipboardService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCClipboardService.h; sourceTree = "<group>"; };
 		DD5949EC0E7139083E620703 /* RCAccessibilityService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCAccessibilityService.h; sourceTree = "<group>"; };
+		DEBB1B9F37BE193C53F19669 /* RCBetaPreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCBetaPreferencesViewController.m; sourceTree = "<group>"; };
 		E1BA9A07CAFE5B6BFA726745 /* RCClipItem.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCClipItem.m; sourceTree = "<group>"; };
 		E2DAFFD42D285FFFD28C3357 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		E40B3731E97001D69423BD53 /* RCDesignableButton.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCDesignableButton.h; sourceTree = "<group>"; };
 		E5E213DDD089D28BCCD62D26 /* FMDatabaseQueue.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FMDatabaseQueue.m; sourceTree = "<group>"; };
+		E86D07135D07BEE72323BA1F /* RCPreferencesWindowController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCPreferencesWindowController.h; sourceTree = "<group>"; };
 		E88E454FEE3A6DDE2832879F /* FMResultSet.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMResultSet.h; sourceTree = "<group>"; };
+		EADD04311920231509102BE2 /* RCHotKeyRecorderView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCHotKeyRecorderView.h; sourceTree = "<group>"; };
 		F40A75A70BD3A0FD99FC70B7 /* FMDatabaseAdditions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FMDatabaseAdditions.m; sourceTree = "<group>"; };
+		F514271FDDAF58CE1717BE27 /* RCShortcutsPreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCShortcutsPreferencesViewController.h; sourceTree = "<group>"; };
 		F522328A6E99D3B93FDEC733 /* RCClipData.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCClipData.m; sourceTree = "<group>"; };
+		F6ADD6859E9239E28CE95D92 /* RCExcludePreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCExcludePreferencesView.xib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,12 +170,23 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA10C257F7E5CDA1FABF961E /* ApplicationServices.framework in Frameworks */,
+				D4D5001C0ECBA162D2DF23B1 /* Carbon.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		18C8DC028E9758418F242ABD /* SnippetEditor */ = {
+			isa = PBXGroup;
+			children = (
+				67F229554771B7C3894849D9 /* RCSnippetEditorWindow.xib */,
+				AA43782BB85138F20B43BD1B /* RCSnippetEditorWindowController.h */,
+				C92CA72F81D386616D76799D /* RCSnippetEditorWindowController.m */,
+			);
+			path = SnippetEditor;
+			sourceTree = "<group>";
+		};
 		1E0FBE7E407FC94D8CB5676D /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -203,9 +282,22 @@
 			path = FMDB;
 			sourceTree = "<group>";
 		};
+		8B3A2505590DA19ABD8EBC59 /* HotKeyRecorder */ = {
+			isa = PBXGroup;
+			children = (
+				EADD04311920231509102BE2 /* RCHotKeyRecorderView.h */,
+				57D68EA420E8485CC1A9B96D /* RCHotKeyRecorderView.m */,
+			);
+			path = HotKeyRecorder;
+			sourceTree = "<group>";
+		};
 		91102481937ECFC808EB006F /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				8B3A2505590DA19ABD8EBC59 /* HotKeyRecorder */,
+				C7102FAA58BBB549AF02C9C4 /* Preferences */,
+				18C8DC028E9758418F242ABD /* SnippetEditor */,
+				EAC9FE273084FB10C2BBC58A /* Views */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -228,12 +320,51 @@
 				A4379C8BD7DFE2AA71F729A5 /* RCAccessibilityService.m */,
 				DBA47344906468A18DC4D0A1 /* RCClipboardService.h */,
 				237A6C799771D7B90ACEDE57 /* RCClipboardService.m */,
+				00C94718B196F1BCCB8F9454 /* RCDataCleanService.h */,
+				B23CE7EC747FB949A1ACBB2A /* RCDataCleanService.m */,
+				A51C38921A881AF6BA7B8B81 /* RCExcludeAppService.h */,
+				60CA064AC4C4126C454E19FE /* RCExcludeAppService.m */,
+				7B4EB153C6F388548300CCA7 /* RCHotKeyService.h */,
+				A0B8EAEDC93FF66179F29C00 /* RCHotKeyService.m */,
 				23BCF5000D494C483DABC121 /* RCPasteService.h */,
 				16E69D3F56BF40CE5AA3F9E9 /* RCPasteService.m */,
 				7418A9005D73E625B71FF2FD /* RCPrivacyService.h */,
 				A8C4545CE9A6A3C5F4FFFF5D /* RCPrivacyService.m */,
+				7149A37E47F14D2E10DCBFF6 /* RCSnippetImportExportService.h */,
+				25A85028708E20A4E991CDE7 /* RCSnippetImportExportService.m */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		C7102FAA58BBB549AF02C9C4 /* Preferences */ = {
+			isa = PBXGroup;
+			children = (
+				55917DFDB23A0A6C8141CB54 /* RCBetaPreferencesView.xib */,
+				1F02261C7B12751D1E7B0EE4 /* RCBetaPreferencesViewController.h */,
+				DEBB1B9F37BE193C53F19669 /* RCBetaPreferencesViewController.m */,
+				F6ADD6859E9239E28CE95D92 /* RCExcludePreferencesView.xib */,
+				59B9B287FEC408D046E89436 /* RCExcludePreferencesViewController.h */,
+				99259E01619E218FBAF12209 /* RCExcludePreferencesViewController.m */,
+				2A9310A1E237473A4079CFAD /* RCGeneralPreferencesView.xib */,
+				A5ED30ECFC1138C93BF579C4 /* RCGeneralPreferencesViewController.h */,
+				24F3BF24A239AA69518650DA /* RCGeneralPreferencesViewController.m */,
+				310C64F21BD5E50CE25A7484 /* RCMenuPreferencesView.xib */,
+				4CCF04B4A5FC11C335C33C3B /* RCMenuPreferencesViewController.h */,
+				A512A8880BC94150B039A512 /* RCMenuPreferencesViewController.m */,
+				CAA3B4452108D6FECA54E5CE /* RCPreferencesWindow.xib */,
+				E86D07135D07BEE72323BA1F /* RCPreferencesWindowController.h */,
+				BFE988F97D74639A605F692C /* RCPreferencesWindowController.m */,
+				D55765A002971C5D1880E229 /* RCShortcutsPreferencesView.xib */,
+				F514271FDDAF58CE1717BE27 /* RCShortcutsPreferencesViewController.h */,
+				98BDA0B33DFBAF64A0A79A22 /* RCShortcutsPreferencesViewController.m */,
+				1C4D10874E40AE545BFF3CF9 /* RCTypePreferencesView.xib */,
+				3BADEF87387998B46B2116FC /* RCTypePreferencesViewController.h */,
+				D6EDED05F8101B408F9A7FF7 /* RCTypePreferencesViewController.m */,
+				C409E2EBEE52DE7BE8E5580E /* RCUpdatesPreferencesView.xib */,
+				BE8FAE68ACCD7AA1716E6087 /* RCUpdatesPreferencesViewController.h */,
+				CC4EBDFFCC696AF33994E140 /* RCUpdatesPreferencesViewController.m */,
+			);
+			path = Preferences;
 			sourceTree = "<group>";
 		};
 		CCA2D308134D582162FDAD06 /* RevclipTests */ = {
@@ -260,10 +391,22 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		EAC9FE273084FB10C2BBC58A /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				E40B3731E97001D69423BD53 /* RCDesignableButton.h */,
+				6CFF5FE4C6DE4594A8B429C4 /* RCDesignableButton.m */,
+				7DACFA4F445C38F0B288D2F6 /* RCDesignableView.h */,
+				2FF85CB84E59C53F3A92F4EA /* RCDesignableView.m */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		F54F3D11907C88926B67F714 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				11CD652EC59173C40B1673BF /* ApplicationServices.framework */,
+				ADA1C708FEE8CC377FAB5E86 /* Carbon.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -344,6 +487,15 @@
 			files = (
 				121DB35D43F06FB9973EC710 /* Assets.xcassets in Resources */,
 				096A63ACEA9F3F73321A2DE0 /* MainMenu.xib in Resources */,
+				31D7EA5F5A314A0A8C5D7503 /* RCBetaPreferencesView.xib in Resources */,
+				BB3F3E8C15A08A2ADED4A4F6 /* RCExcludePreferencesView.xib in Resources */,
+				52ACE05CACB0AFB9F3694204 /* RCGeneralPreferencesView.xib in Resources */,
+				228018374713C0C7C7F8AA56 /* RCMenuPreferencesView.xib in Resources */,
+				5A061E9A9CC351B33E612F70 /* RCPreferencesWindow.xib in Resources */,
+				4471370EF8B2507F6C1837CD /* RCShortcutsPreferencesView.xib in Resources */,
+				01CA2D76351356069304AE5F /* RCSnippetEditorWindow.xib in Resources */,
+				1633F5567767BFD732C4450E /* RCTypePreferencesView.xib in Resources */,
+				FCDA416188A7C6670AA91208 /* RCUpdatesPreferencesView.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -371,15 +523,31 @@
 				12304DD4C5CC84CB163F2CE1 /* NSImage+Resize.m in Sources */,
 				CA6BC549CAFFB981EA4D939A /* RCAccessibilityService.m in Sources */,
 				C4F8E649B3E67A777009125A /* RCAppDelegate.m in Sources */,
+				D69FE0B43F37C7268DF990FC /* RCBetaPreferencesViewController.m in Sources */,
 				5FECC4C7E0CAC083D3C52989 /* RCClipData.m in Sources */,
 				58BC6988E092E709FAD3309E /* RCClipItem.m in Sources */,
 				FDF81CC741F5865B3EF160CD /* RCClipboardService.m in Sources */,
 				0DE09F8319092EE011C35D7A /* RCConstants.m in Sources */,
+				8307D3A9298D344F9E7F6381 /* RCDataCleanService.m in Sources */,
 				8DAD0CF85421AEE62758228C /* RCDatabaseManager.m in Sources */,
+				401B6B8F5294FA17DE1EE632 /* RCDesignableButton.m in Sources */,
+				E8241CFD4F2F23661129E39E /* RCDesignableView.m in Sources */,
 				4D6643B1EE02630C459B966A /* RCEnvironment.m in Sources */,
+				F155D25D956E31B88743B279 /* RCExcludeAppService.m in Sources */,
+				310AA557CE2AD6EB9339A2E9 /* RCExcludePreferencesViewController.m in Sources */,
+				7127A1C3A8473C42A2E21DEC /* RCGeneralPreferencesViewController.m in Sources */,
+				1C1CE782F2C46690E8C1E164 /* RCHotKeyRecorderView.m in Sources */,
+				F7C2112472B50567D10E1561 /* RCHotKeyService.m in Sources */,
 				648640A77EDB8248928C4215 /* RCMenuManager.m in Sources */,
+				598D006BAE4936FE7975484C /* RCMenuPreferencesViewController.m in Sources */,
 				AEF16C198E262B7FED186C49 /* RCPasteService.m in Sources */,
+				AD39936ACDF30BE050BC45DF /* RCPreferencesWindowController.m in Sources */,
 				3C1D7E56F1A76791221AE313 /* RCPrivacyService.m in Sources */,
+				207DEC918BAD4A6268212037 /* RCShortcutsPreferencesViewController.m in Sources */,
+				95C33A6B03FAC2B3791FD748 /* RCSnippetEditorWindowController.m in Sources */,
+				789A5809BC4E90C4CE58DDAB /* RCSnippetImportExportService.m in Sources */,
+				73F52D0777F2D41F7EC9C968 /* RCTypePreferencesViewController.m in Sources */,
+				A2DBE7F41064D8A60120BFBE /* RCUpdatesPreferencesViewController.m in Sources */,
 				F149185FACD5F3855ABE9B2B /* RCUtilities.m in Sources */,
 				5D8CAAAA0301D80FFA91EA3B /* main.m in Sources */,
 			);
