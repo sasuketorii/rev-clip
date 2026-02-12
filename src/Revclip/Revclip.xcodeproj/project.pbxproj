@@ -1,0 +1,637 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0413CABC884642E55E67E458 /* NSColor+HexString.m in Sources */ = {isa = PBXBuildFile; fileRef = 419E6FDE78A12DBEDEB50ADE /* NSColor+HexString.m */; };
+		096A63ACEA9F3F73321A2DE0 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = DB8BAD5A274C842C536879E9 /* MainMenu.xib */; };
+		0DE09F8319092EE011C35D7A /* RCConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = B1C3B45842799555F8E43710 /* RCConstants.m */; };
+		121DB35D43F06FB9973EC710 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2BBFB32B6E958167DCDC53B5 /* Assets.xcassets */; };
+		12304DD4C5CC84CB163F2CE1 /* NSImage+Resize.m in Sources */ = {isa = PBXBuildFile; fileRef = 66F9D7E6E9FDCA68904FC3C0 /* NSImage+Resize.m */; };
+		1AC9A14FCEC115D8290761AE /* FMDatabase.m in Sources */ = {isa = PBXBuildFile; fileRef = 30D12ED89CAF3004483AE41F /* FMDatabase.m */; };
+		3C1D7E56F1A76791221AE313 /* RCPrivacyService.m in Sources */ = {isa = PBXBuildFile; fileRef = A8C4545CE9A6A3C5F4FFFF5D /* RCPrivacyService.m */; };
+		3CA63D159E34482A2D546BA7 /* NSImage+Color.m in Sources */ = {isa = PBXBuildFile; fileRef = B29CDB9ED92BE68E6F79E0FA /* NSImage+Color.m */; };
+		437594F7ED790AFD85939884 /* FMDatabaseAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = F40A75A70BD3A0FD99FC70B7 /* FMDatabaseAdditions.m */; };
+		4D6643B1EE02630C459B966A /* RCEnvironment.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B70C481EA99C1AD3694C2BB /* RCEnvironment.m */; };
+		58BC6988E092E709FAD3309E /* RCClipItem.m in Sources */ = {isa = PBXBuildFile; fileRef = E1BA9A07CAFE5B6BFA726745 /* RCClipItem.m */; };
+		5D8CAAAA0301D80FFA91EA3B /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 76819849DA4DF7820A0014B0 /* main.m */; };
+		5FECC4C7E0CAC083D3C52989 /* RCClipData.m in Sources */ = {isa = PBXBuildFile; fileRef = F522328A6E99D3B93FDEC733 /* RCClipData.m */; };
+		648640A77EDB8248928C4215 /* RCMenuManager.m in Sources */ = {isa = PBXBuildFile; fileRef = BE96081D22746BC3F4B46259 /* RCMenuManager.m */; };
+		6B8C76C45C0E6470216D314E /* FMDatabasePool.m in Sources */ = {isa = PBXBuildFile; fileRef = 6BCAF1F42C6F9816F4E29600 /* FMDatabasePool.m */; };
+		6D9E007BE4E964CF714B42E5 /* FMResultSet.m in Sources */ = {isa = PBXBuildFile; fileRef = D52AAFAA8BD4B439E283CC9A /* FMResultSet.m */; };
+		8DAD0CF85421AEE62758228C /* RCDatabaseManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 48E70D0F63A020DF7D3F69E5 /* RCDatabaseManager.m */; };
+		96872467BD39274309BCEF08 /* FMDatabaseQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = E5E213DDD089D28BCCD62D26 /* FMDatabaseQueue.m */; };
+		AA10C257F7E5CDA1FABF961E /* ApplicationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 11CD652EC59173C40B1673BF /* ApplicationServices.framework */; };
+		AEF16C198E262B7FED186C49 /* RCPasteService.m in Sources */ = {isa = PBXBuildFile; fileRef = 16E69D3F56BF40CE5AA3F9E9 /* RCPasteService.m */; };
+		C4F8E649B3E67A777009125A /* RCAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BDAC5C7B818F45DD9E0C9EA /* RCAppDelegate.m */; };
+		CA6BC549CAFFB981EA4D939A /* RCAccessibilityService.m in Sources */ = {isa = PBXBuildFile; fileRef = A4379C8BD7DFE2AA71F729A5 /* RCAccessibilityService.m */; };
+		F149185FACD5F3855ABE9B2B /* RCUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = C70788A46CCA535A1FB719BB /* RCUtilities.m */; };
+		FDF81CC741F5865B3EF160CD /* RCClipboardService.m in Sources */ = {isa = PBXBuildFile; fileRef = 237A6C799771D7B90ACEDE57 /* RCClipboardService.m */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1B10A30F8F4EDB6A4B4DF09C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7A69CCC953CE8B4C9E5C7BA3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8A99858121B80F414A6856D8;
+			remoteInfo = Revclip;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		11CD652EC59173C40B1673BF /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = System/Library/Frameworks/ApplicationServices.framework; sourceTree = SDKROOT; };
+		13C2851F528D2D7564540EEC /* FMDatabasePool.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDatabasePool.h; sourceTree = "<group>"; };
+		16E69D3F56BF40CE5AA3F9E9 /* RCPasteService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCPasteService.m; sourceTree = "<group>"; };
+		237A6C799771D7B90ACEDE57 /* RCClipboardService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCClipboardService.m; sourceTree = "<group>"; };
+		23BCF5000D494C483DABC121 /* RCPasteService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCPasteService.h; sourceTree = "<group>"; };
+		2BBFB32B6E958167DCDC53B5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2CEB140D411D73D3EBADEE3A /* RCEnvironment.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCEnvironment.h; sourceTree = "<group>"; };
+		30D12ED89CAF3004483AE41F /* FMDatabase.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FMDatabase.m; sourceTree = "<group>"; };
+		3B70C481EA99C1AD3694C2BB /* RCEnvironment.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCEnvironment.m; sourceTree = "<group>"; };
+		419E6FDE78A12DBEDEB50ADE /* NSColor+HexString.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSColor+HexString.m"; sourceTree = "<group>"; };
+		48E70D0F63A020DF7D3F69E5 /* RCDatabaseManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCDatabaseManager.m; sourceTree = "<group>"; };
+		597933506FF1B204A53A2261 /* NSColor+HexString.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSColor+HexString.h"; sourceTree = "<group>"; };
+		66F9D7E6E9FDCA68904FC3C0 /* NSImage+Resize.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSImage+Resize.m"; sourceTree = "<group>"; };
+		6BCAF1F42C6F9816F4E29600 /* FMDatabasePool.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FMDatabasePool.m; sourceTree = "<group>"; };
+		7418A9005D73E625B71FF2FD /* RCPrivacyService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCPrivacyService.h; sourceTree = "<group>"; };
+		76819849DA4DF7820A0014B0 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		770A971FF0A5066F5F8037F8 /* FMDatabaseAdditions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDatabaseAdditions.h; sourceTree = "<group>"; };
+		79543F402298636EA76A93F9 /* FMDatabaseQueue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDatabaseQueue.h; sourceTree = "<group>"; };
+		818829683B375E4BF451A901 /* RCConstants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCConstants.h; sourceTree = "<group>"; };
+		8468E4CF844656C7B4874C49 /* Revclip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Revclip.entitlements; sourceTree = "<group>"; };
+		88090B44D91F92A73F0B181B /* RCMenuManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCMenuManager.h; sourceTree = "<group>"; };
+		8BDAC5C7B818F45DD9E0C9EA /* RCAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCAppDelegate.m; sourceTree = "<group>"; };
+		922AAD7D2185F782E5E6681E /* FMDatabase.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDatabase.h; sourceTree = "<group>"; };
+		942BD279118A67B8F22F17F0 /* RCClipData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCClipData.h; sourceTree = "<group>"; };
+		99F449B37637B34B5D03CEA5 /* RCAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCAppDelegate.h; sourceTree = "<group>"; };
+		9AA8F3B889A98B9FA403FB47 /* RevclipTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RevclipTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9AF3C1CF74B2FCAB603D5032 /* Revclip-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Revclip-Prefix.pch"; sourceTree = "<group>"; };
+		9CCBF63E8D0CDBA66D5EC1E3 /* Revclip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Revclip.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A4379C8BD7DFE2AA71F729A5 /* RCAccessibilityService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCAccessibilityService.m; sourceTree = "<group>"; };
+		A8C4545CE9A6A3C5F4FFFF5D /* RCPrivacyService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCPrivacyService.m; sourceTree = "<group>"; };
+		AD920BD9B85442A7B49B1AE6 /* FMDB.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDB.h; sourceTree = "<group>"; };
+		AE14C3404981E7F2C2542753 /* RCDatabaseManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCDatabaseManager.h; sourceTree = "<group>"; };
+		B1C3B45842799555F8E43710 /* RCConstants.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCConstants.m; sourceTree = "<group>"; };
+		B29CDB9ED92BE68E6F79E0FA /* NSImage+Color.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSImage+Color.m"; sourceTree = "<group>"; };
+		B350739C24ABE9343A518168 /* NSImage+Resize.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSImage+Resize.h"; sourceTree = "<group>"; };
+		B930BB54FFC797073EE2AF40 /* RCClipItem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCClipItem.h; sourceTree = "<group>"; };
+		BE96081D22746BC3F4B46259 /* RCMenuManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCMenuManager.m; sourceTree = "<group>"; };
+		C70788A46CCA535A1FB719BB /* RCUtilities.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCUtilities.m; sourceTree = "<group>"; };
+		CE1F106C49CAA66B7B2C5DCC /* NSImage+Color.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSImage+Color.h"; sourceTree = "<group>"; };
+		CFA625A09438BEAABB144A66 /* RCUtilities.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCUtilities.h; sourceTree = "<group>"; };
+		D52AAFAA8BD4B439E283CC9A /* FMResultSet.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FMResultSet.m; sourceTree = "<group>"; };
+		DB8BAD5A274C842C536879E9 /* MainMenu.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
+		DBA47344906468A18DC4D0A1 /* RCClipboardService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCClipboardService.h; sourceTree = "<group>"; };
+		DD5949EC0E7139083E620703 /* RCAccessibilityService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCAccessibilityService.h; sourceTree = "<group>"; };
+		E1BA9A07CAFE5B6BFA726745 /* RCClipItem.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCClipItem.m; sourceTree = "<group>"; };
+		E2DAFFD42D285FFFD28C3357 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		E5E213DDD089D28BCCD62D26 /* FMDatabaseQueue.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FMDatabaseQueue.m; sourceTree = "<group>"; };
+		E88E454FEE3A6DDE2832879F /* FMResultSet.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMResultSet.h; sourceTree = "<group>"; };
+		F40A75A70BD3A0FD99FC70B7 /* FMDatabaseAdditions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FMDatabaseAdditions.m; sourceTree = "<group>"; };
+		F522328A6E99D3B93FDEC733 /* RCClipData.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCClipData.m; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		6938E87B832E2765E59C743B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA10C257F7E5CDA1FABF961E /* ApplicationServices.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1E0FBE7E407FC94D8CB5676D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9CCBF63E8D0CDBA66D5EC1E3 /* Revclip.app */,
+				9AA8F3B889A98B9FA403FB47 /* RevclipTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		21B754F14C03F5AD9DB09CE3 = {
+			isa = PBXGroup;
+			children = (
+				5CCD837D70C07CCCD94921C6 /* Revclip */,
+				CCA2D308134D582162FDAD06 /* RevclipTests */,
+				F54F3D11907C88926B67F714 /* Frameworks */,
+				1E0FBE7E407FC94D8CB5676D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		22DC8AD606D4B1912FCD29AB /* App */ = {
+			isa = PBXGroup;
+			children = (
+				99F449B37637B34B5D03CEA5 /* RCAppDelegate.h */,
+				8BDAC5C7B818F45DD9E0C9EA /* RCAppDelegate.m */,
+				818829683B375E4BF451A901 /* RCConstants.h */,
+				B1C3B45842799555F8E43710 /* RCConstants.m */,
+				2CEB140D411D73D3EBADEE3A /* RCEnvironment.h */,
+				3B70C481EA99C1AD3694C2BB /* RCEnvironment.m */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		31B4F24F1CE959FE83A53305 /* Managers */ = {
+			isa = PBXGroup;
+			children = (
+				AE14C3404981E7F2C2542753 /* RCDatabaseManager.h */,
+				48E70D0F63A020DF7D3F69E5 /* RCDatabaseManager.m */,
+				88090B44D91F92A73F0B181B /* RCMenuManager.h */,
+				BE96081D22746BC3F4B46259 /* RCMenuManager.m */,
+			);
+			path = Managers;
+			sourceTree = "<group>";
+		};
+		5CCD837D70C07CCCD94921C6 /* Revclip */ = {
+			isa = PBXGroup;
+			children = (
+				E2DAFFD42D285FFFD28C3357 /* Info.plist */,
+				76819849DA4DF7820A0014B0 /* main.m */,
+				9AF3C1CF74B2FCAB603D5032 /* Revclip-Prefix.pch */,
+				8468E4CF844656C7B4874C49 /* Revclip.entitlements */,
+				22DC8AD606D4B1912FCD29AB /* App */,
+				31B4F24F1CE959FE83A53305 /* Managers */,
+				91809C510237A7CFCD4A7042 /* Models */,
+				EA2F48734CD0A1F0A6A4AA5C /* Resources */,
+				A586CAC27F37220727983DBC /* Services */,
+				91102481937ECFC808EB006F /* UI */,
+				684E5C2D243F20C40C6D5241 /* Utilities */,
+				E539AC70C7C05F2D0C0625D4 /* Vendor */,
+			);
+			path = Revclip;
+			sourceTree = "<group>";
+		};
+		684E5C2D243F20C40C6D5241 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				597933506FF1B204A53A2261 /* NSColor+HexString.h */,
+				419E6FDE78A12DBEDEB50ADE /* NSColor+HexString.m */,
+				CE1F106C49CAA66B7B2C5DCC /* NSImage+Color.h */,
+				B29CDB9ED92BE68E6F79E0FA /* NSImage+Color.m */,
+				B350739C24ABE9343A518168 /* NSImage+Resize.h */,
+				66F9D7E6E9FDCA68904FC3C0 /* NSImage+Resize.m */,
+				CFA625A09438BEAABB144A66 /* RCUtilities.h */,
+				C70788A46CCA535A1FB719BB /* RCUtilities.m */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		771B50DA767E70040D302003 /* FMDB */ = {
+			isa = PBXGroup;
+			children = (
+				922AAD7D2185F782E5E6681E /* FMDatabase.h */,
+				30D12ED89CAF3004483AE41F /* FMDatabase.m */,
+				770A971FF0A5066F5F8037F8 /* FMDatabaseAdditions.h */,
+				F40A75A70BD3A0FD99FC70B7 /* FMDatabaseAdditions.m */,
+				13C2851F528D2D7564540EEC /* FMDatabasePool.h */,
+				6BCAF1F42C6F9816F4E29600 /* FMDatabasePool.m */,
+				79543F402298636EA76A93F9 /* FMDatabaseQueue.h */,
+				E5E213DDD089D28BCCD62D26 /* FMDatabaseQueue.m */,
+				AD920BD9B85442A7B49B1AE6 /* FMDB.h */,
+				E88E454FEE3A6DDE2832879F /* FMResultSet.h */,
+				D52AAFAA8BD4B439E283CC9A /* FMResultSet.m */,
+			);
+			path = FMDB;
+			sourceTree = "<group>";
+		};
+		91102481937ECFC808EB006F /* UI */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		91809C510237A7CFCD4A7042 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				942BD279118A67B8F22F17F0 /* RCClipData.h */,
+				F522328A6E99D3B93FDEC733 /* RCClipData.m */,
+				B930BB54FFC797073EE2AF40 /* RCClipItem.h */,
+				E1BA9A07CAFE5B6BFA726745 /* RCClipItem.m */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A586CAC27F37220727983DBC /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				DD5949EC0E7139083E620703 /* RCAccessibilityService.h */,
+				A4379C8BD7DFE2AA71F729A5 /* RCAccessibilityService.m */,
+				DBA47344906468A18DC4D0A1 /* RCClipboardService.h */,
+				237A6C799771D7B90ACEDE57 /* RCClipboardService.m */,
+				23BCF5000D494C483DABC121 /* RCPasteService.h */,
+				16E69D3F56BF40CE5AA3F9E9 /* RCPasteService.m */,
+				7418A9005D73E625B71FF2FD /* RCPrivacyService.h */,
+				A8C4545CE9A6A3C5F4FFFF5D /* RCPrivacyService.m */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		CCA2D308134D582162FDAD06 /* RevclipTests */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = RevclipTests;
+			sourceTree = "<group>";
+		};
+		E539AC70C7C05F2D0C0625D4 /* Vendor */ = {
+			isa = PBXGroup;
+			children = (
+				771B50DA767E70040D302003 /* FMDB */,
+			);
+			path = Vendor;
+			sourceTree = "<group>";
+		};
+		EA2F48734CD0A1F0A6A4AA5C /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				2BBFB32B6E958167DCDC53B5 /* Assets.xcassets */,
+				DB8BAD5A274C842C536879E9 /* MainMenu.xib */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		F54F3D11907C88926B67F714 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				11CD652EC59173C40B1673BF /* ApplicationServices.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8A99858121B80F414A6856D8 /* Revclip */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6C5BDE5FEC8AD4922347C3CA /* Build configuration list for PBXNativeTarget "Revclip" */;
+			buildPhases = (
+				7FC6FFAD19F47E653D1D9F98 /* Sources */,
+				E2D947BD37911826E69C7A79 /* Resources */,
+				6938E87B832E2765E59C743B /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Revclip;
+			packageProductDependencies = (
+			);
+			productName = Revclip;
+			productReference = 9CCBF63E8D0CDBA66D5EC1E3 /* Revclip.app */;
+			productType = "com.apple.product-type.application";
+		};
+		9F7B6A98C6994EBB3C8AD6D0 /* RevclipTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3FC990AC0FB8B8A62684CFA4 /* Build configuration list for PBXNativeTarget "RevclipTests" */;
+			buildPhases = (
+				58C59843446460999B28C483 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DF42F0F2BFF50D1183C1E304 /* PBXTargetDependency */,
+			);
+			name = RevclipTests;
+			packageProductDependencies = (
+			);
+			productName = RevclipTests;
+			productReference = 9AA8F3B889A98B9FA403FB47 /* RevclipTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		7A69CCC953CE8B4C9E5C7BA3 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+			};
+			buildConfigurationList = CC217DE98A2C150F1625EB55 /* Build configuration list for PBXProject "Revclip" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 21B754F14C03F5AD9DB09CE3;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8A99858121B80F414A6856D8 /* Revclip */,
+				9F7B6A98C6994EBB3C8AD6D0 /* RevclipTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E2D947BD37911826E69C7A79 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				121DB35D43F06FB9973EC710 /* Assets.xcassets in Resources */,
+				096A63ACEA9F3F73321A2DE0 /* MainMenu.xib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		58C59843446460999B28C483 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7FC6FFAD19F47E653D1D9F98 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1AC9A14FCEC115D8290761AE /* FMDatabase.m in Sources */,
+				437594F7ED790AFD85939884 /* FMDatabaseAdditions.m in Sources */,
+				6B8C76C45C0E6470216D314E /* FMDatabasePool.m in Sources */,
+				96872467BD39274309BCEF08 /* FMDatabaseQueue.m in Sources */,
+				6D9E007BE4E964CF714B42E5 /* FMResultSet.m in Sources */,
+				0413CABC884642E55E67E458 /* NSColor+HexString.m in Sources */,
+				3CA63D159E34482A2D546BA7 /* NSImage+Color.m in Sources */,
+				12304DD4C5CC84CB163F2CE1 /* NSImage+Resize.m in Sources */,
+				CA6BC549CAFFB981EA4D939A /* RCAccessibilityService.m in Sources */,
+				C4F8E649B3E67A777009125A /* RCAppDelegate.m in Sources */,
+				5FECC4C7E0CAC083D3C52989 /* RCClipData.m in Sources */,
+				58BC6988E092E709FAD3309E /* RCClipItem.m in Sources */,
+				FDF81CC741F5865B3EF160CD /* RCClipboardService.m in Sources */,
+				0DE09F8319092EE011C35D7A /* RCConstants.m in Sources */,
+				8DAD0CF85421AEE62758228C /* RCDatabaseManager.m in Sources */,
+				4D6643B1EE02630C459B966A /* RCEnvironment.m in Sources */,
+				648640A77EDB8248928C4215 /* RCMenuManager.m in Sources */,
+				AEF16C198E262B7FED186C49 /* RCPasteService.m in Sources */,
+				3C1D7E56F1A76791221AE313 /* RCPrivacyService.m in Sources */,
+				F149185FACD5F3855ABE9B2B /* RCUtilities.m in Sources */,
+				5D8CAAAA0301D80FFA91EA3B /* main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DF42F0F2BFF50D1183C1E304 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8A99858121B80F414A6856D8 /* Revclip */;
+			targetProxy = 1B10A30F8F4EDB6A4B4DF09C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		3D97F0617419E2FCFF24FBBB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.revclip.RevclipTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Revclip.app/Contents/MacOS/Revclip";
+			};
+			name = Debug;
+		};
+		3F398473CF9BC3FF42B4533A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "arm64 x86_64";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_ENTITLEMENTS = Revclip/Revclip.entitlements;
+				CODE_SIGN_IDENTITY = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/Revclip/Vendor";
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Revclip/Revclip-Prefix.pch";
+				INFOPLIST_FILE = Revclip/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lsqlite3",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.revclip.Revclip;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		8A6D978C464DE34AAF227674 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		ABEE69F89562DBEFA4DAE878 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		E0BDBA3511BE73F3F1622277 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.revclip.RevclipTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Revclip.app/Contents/MacOS/Revclip";
+			};
+			name = Release;
+		};
+		E7DCBB4A964377276CCA0002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "arm64 x86_64";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_ENTITLEMENTS = Revclip/Revclip.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/Revclip/Vendor";
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Revclip/Revclip-Prefix.pch";
+				INFOPLIST_FILE = Revclip/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lsqlite3",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.revclip.Revclip;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3FC990AC0FB8B8A62684CFA4 /* Build configuration list for PBXNativeTarget "RevclipTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3D97F0617419E2FCFF24FBBB /* Debug */,
+				E0BDBA3511BE73F3F1622277 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6C5BDE5FEC8AD4922347C3CA /* Build configuration list for PBXNativeTarget "Revclip" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3F398473CF9BC3FF42B4533A /* Debug */,
+				E7DCBB4A964377276CCA0002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CC217DE98A2C150F1625EB55 /* Build configuration list for PBXProject "Revclip" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8A6D978C464DE34AAF227674 /* Debug */,
+				ABEE69F89562DBEFA4DAE878 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 7A69CCC953CE8B4C9E5C7BA3 /* Project object */;
+}

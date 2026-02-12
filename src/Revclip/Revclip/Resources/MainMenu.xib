@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2024-2026 Revclip. All rights reserved. -->
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="24116" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="24116"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="NSApplication">
+            <connections>
+                <outlet property="delegate" destination="RCd-YX-z1K" id="dTg-Qn-b34"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <customObject id="RCd-YX-z1K" userLabel="AppDelegate" customClass="RCAppDelegate"/>
+        <menu title="MainMenu" systemMenu="main" id="M9f-Bh-3ry">
+            <items>
+                <menuItem title="Revclip" id="t4q-Ln-F0x">
+                    <menu key="submenu" title="Revclip" systemMenu="apple" id="m2M-7M-q1P">
+                        <items>
+                            <menuItem title="About Revclip" id="A9y-Ap-qzN">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="orderFrontStandardAboutPanel:" target="-1" id="c8c-T2-tQ5"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="rQm-JX-4Pb">
+                                <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                            </menuItem>
+                            <menuItem title="Quit Revclip" keyEquivalent="q" id="KcD-Zd-z5u">
+                                <connections>
+                                    <action selector="terminate:" target="-1" id="ajg-pW-Cg8"/>
+                                </connections>
+                            </menuItem>
+                        </items>
+                    </menu>
+                </menuItem>
+            </items>
+        </menu>
+    </objects>
+</document>
