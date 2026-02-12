@@ -1,0 +1,79 @@
+name: Build and Sign (macOS/iOS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      enable_ios_signing:
+        description: "Run iOS signing job (default: false)"
+        required: false
+        default: "false"
+  push:
+    branches: [ main ]
+    tags: [ "v*" ]
+  release:
+    types: [ published ]
+
+env:
+  ENABLE_IOS_SIGNING: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_ios_signing || vars.ENABLE_IOS_SIGNING || 'false' }}
+
+jobs:
+  macos-sign:
+    if: github.event_name != 'pull_request'
+    runs-on: macos-14
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        if: hashFiles('package.json') != ''
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        if: hashFiles('package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        if: hashFiles('src-tauri/tauri.conf.json') != '' || hashFiles('tauri.conf.json') != ''
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+          components: clippy,rustfmt
+
+      - name: Install Tauri CLI (if needed)
+        if: hashFiles('src-tauri/tauri.conf.json') != '' || hashFiles('tauri.conf.json') != ''
+        run: cargo install tauri-cli --locked --force
+
+      - name: Run signing + notarization
+        env:
+          APPLE_CERT_BASE64: ${{ secrets.APPLE_CERT_BASE64 }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+          APPLE_NOTARY_PRIVATE_KEY: ${{ secrets.APPLE_NOTARY_PRIVATE_KEY }}
+        run: ./scripts/sign-and-build.sh --platform macos
+
+      - name: Upload macOS app bundle
+        if: success() && hashFiles('target/release/bundle/macos/**/*.app') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-app
+          path: target/release/bundle/macos/**/*.app
+
+  ios-sign:
+    if: env.ENABLE_IOS_SIGNING == 'true'
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: iOS signing stub
+        run: ./scripts/sign-and-build.sh --platform ios --skip-build --skip-notarize

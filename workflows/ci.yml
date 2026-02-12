@@ -1,0 +1,106 @@
+name: Universal CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  # ------------------------------------------------------------------
+  # 1. Frontend (Node.js / Next.js / React)
+  # ------------------------------------------------------------------
+  frontend-check:
+    runs-on: ubuntu-latest
+    # package.json がある場合のみ実行
+    if: hashFiles('package.json') != ''
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile
+          else
+            pnpm install
+          fi
+
+      - name: Lint
+        # lintスクリプトがあれば実行
+        run: if pnpm run | grep -q "lint"; then pnpm run lint; fi
+
+      - name: Test
+        # testスクリプトがあれば実行
+        run: if pnpm run | grep -q "test"; then pnpm run test; fi
+
+      - name: Build
+        # buildスクリプトがあれば実行
+        run: if pnpm run | grep -q "build"; then pnpm run build; fi
+
+  # ------------------------------------------------------------------
+  # 2. Backend (Python - Modern/uv)
+  # ------------------------------------------------------------------
+  python-check:
+    runs-on: ubuntu-latest
+    # pyproject.toml がある場合のみ実行
+    if: hashFiles('pyproject.toml') != ''
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Test
+        run: uv run pytest
+
+  # ------------------------------------------------------------------
+  # 3. Backend (Rust)
+  # ------------------------------------------------------------------
+  rust-check:
+    runs-on: ubuntu-latest
+    # Cargo.toml がある場合のみ実行
+    if: hashFiles('Cargo.toml') != ''
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check Format
+        run: cargo fmt -- --check
+
+      - name: Lint (Clippy)
+        run: cargo clippy -- -D warnings
+
+      - name: Test
+        run: cargo test
