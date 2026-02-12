@@ -1,0 +1,47 @@
+"History" = "History";
+"Snippets" = "Snippets";
+"Edit Snippets..." = "Edit Snippets...";
+"Preferences..." = "Preferences...";
+"Quit Revclip" = "Quit Revclip";
+"Clear All" = "Clear All";
+"Clear All History" = "Clear All History";
+"Are you sure you want to clear all clipboard history?" = "Are you sure you want to clear all clipboard history?";
+"Cancel" = "Cancel";
+
+"General" = "General";
+"Menu" = "Menu";
+"Type" = "Type";
+"Excluded Apps" = "Excluded Apps";
+"Shortcuts" = "Shortcuts";
+"Updates" = "Updates";
+"Beta" = "Beta";
+
+"Launch Revclip on login" = "Launch Revclip on login";
+"Max clipboard history size" = "Max clipboard history size";
+"Max menu items to display" = "Max menu items to display";
+
+"Main" = "Main";
+"Click to record shortcut" = "Click to record shortcut";
+
+"Snippet Editor" = "Snippet Editor";
+"Add Folder" = "Add Folder";
+"Add Snippet" = "Add Snippet";
+"Title:" = "Title:";
+"Content:" = "Content:";
+"Shortcut:" = "Shortcut:";
+"Save" = "Save";
+"Untitled Folder" = "Untitled Folder";
+"Untitled Snippet" = "Untitled Snippet";
+
+"Import Snippets..." = "Import Snippets...";
+"Export Snippets..." = "Export Snippets...";
+"Merge" = "Merge";
+"Replace" = "Replace";
+
+"Excluded Applications" = "Excluded Applications";
+"Add Current App" = "Add Current App";
+"Cannot add current application" = "Cannot add current application";
+
+"Check for Updates" = "Check for Updates";
+"Automatically check for updates" = "Automatically check for updates";
+"Version" = "Version";

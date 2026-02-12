@@ -1,0 +1,18 @@
+/* Class = "NSMenu"; title = "MainMenu"; ObjectID = "M9f-Bh-3ry"; */
+"M9f-Bh-3ry.title" = "MainMenu";
+/* Class = "NSMenuItem"; title = "Revclip"; ObjectID = "t4q-Ln-F0x"; */
+"t4q-Ln-F0x.title" = "Revclip";
+/* Class = "NSMenu"; title = "Revclip"; ObjectID = "m2M-7M-q1P"; */
+"m2M-7M-q1P.title" = "Revclip";
+/* Class = "NSMenuItem"; title = "About Revclip"; ObjectID = "A9y-Ap-qzN"; */
+"A9y-Ap-qzN.title" = "Revclipについて";
+/* Class = "NSMenuItem"; title = "Quit Revclip"; ObjectID = "KcD-Zd-z5u"; */
+"KcD-Zd-z5u.title" = "Revclipを終了";
+/* Class = "NSMenuItem"; title = "File"; ObjectID = "xJ0-zN-3xU"; */
+"xJ0-zN-3xU.title" = "ファイル";
+/* Class = "NSMenu"; title = "File"; ObjectID = "V6Q-BM-uQn"; */
+"V6Q-BM-uQn.title" = "ファイル";
+/* Class = "NSMenuItem"; title = "Import Snippets..."; ObjectID = "HVK-3U-jg9"; */
+"HVK-3U-jg9.title" = "スニペットをインポート...";
+/* Class = "NSMenuItem"; title = "Export Snippets..."; ObjectID = "zM9-aW-Jhj"; */
+"zM9-aW-Jhj.title" = "スニペットをエクスポート...";

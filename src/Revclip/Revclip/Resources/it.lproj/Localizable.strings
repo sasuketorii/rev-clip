@@ -1,0 +1,47 @@
+"History" = "Cronologia";
+"Snippets" = "Snippet";
+"Edit Snippets..." = "Modifica snippet...";
+"Preferences..." = "Preferenze...";
+"Quit Revclip" = "Esci da Revclip";
+"Clear All" = "Cancella tutto";
+"Clear All History" = "Cancella tutta la cronologia";
+"Are you sure you want to clear all clipboard history?" = "Sei sicuro di voler cancellare tutta la cronologia degli appunti?";
+"Cancel" = "Annulla";
+
+"General" = "Generale";
+"Menu" = "Menu";
+"Type" = "Tipo";
+"Excluded Apps" = "App escluse";
+"Shortcuts" = "Scorciatoie";
+"Updates" = "Aggiornamenti";
+"Beta" = "Beta";
+
+"Launch Revclip on login" = "Avvia Revclip al login";
+"Max clipboard history size" = "Dimensione massima della cronologia degli appunti";
+"Max menu items to display" = "Numero massimo di voci da mostrare nel menu";
+
+"Main" = "Principale";
+"Click to record shortcut" = "Fai clic per registrare la scorciatoia";
+
+"Snippet Editor" = "Editor snippet";
+"Add Folder" = "Aggiungi cartella";
+"Add Snippet" = "Aggiungi snippet";
+"Title:" = "Titolo:";
+"Content:" = "Contenuto:";
+"Shortcut:" = "Scorciatoia:";
+"Save" = "Salva";
+"Untitled Folder" = "Cartella senza nome";
+"Untitled Snippet" = "Snippet senza nome";
+
+"Import Snippets..." = "Importa snippet...";
+"Export Snippets..." = "Esporta snippet...";
+"Merge" = "Unisci";
+"Replace" = "Sostituisci";
+
+"Excluded Applications" = "Applicazioni escluse";
+"Add Current App" = "Aggiungi app corrente";
+"Cannot add current application" = "Impossibile aggiungere l'applicazione corrente";
+
+"Check for Updates" = "Controlla aggiornamenti";
+"Automatically check for updates" = "Controlla automaticamente gli aggiornamenti";
+"Version" = "Versione";

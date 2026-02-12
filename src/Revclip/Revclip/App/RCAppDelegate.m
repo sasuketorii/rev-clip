@@ -15,11 +15,15 @@
 #import "RCEnvironment.h"
 #import "RCDatabaseManager.h"
 #import "RCHotKeyService.h"
+#import "RCLoginItemService.h"
 #import "RCMenuManager.h"
+#import "RCMoveToApplicationsService.h"
 #import "RCPreferencesWindowController.h"
 #import "RCPasteService.h"
+#import "RCScreenshotMonitorService.h"
 #import "RCSnippetEditorWindowController.h"
 #import "RCSnippetImportExportService.h"
+#import "RCUpdateService.h"
 #import "RCUtilities.h"
 
 @interface RCAppDelegate ()
@@ -32,11 +36,17 @@
 @implementation RCAppDelegate
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
+    // 0. Move to Applications check (before any setup)
+    [[RCMoveToApplicationsService shared] checkAndMoveIfNeeded];
+
+    // 1. Register defaults
     [RCUtilities registerDefaultSettings];
 
+    // 2. Database setup
     RCDatabaseManager *databaseManager = [RCDatabaseManager shared];
     [databaseManager setupDatabase];
 
+    // 3. Core services
     RCClipboardService *clipboardService = [RCClipboardService shared];
     RCMenuManager *menuManager = [RCMenuManager shared];
     RCPasteService *pasteService = [RCPasteService shared];
@@ -44,6 +54,7 @@
     RCAccessibilityService *accessibilityService = [RCAccessibilityService shared];
     RCDataCleanService *dataCleanService = [RCDataCleanService shared];
 
+    // 4. Environment
     RCEnvironment *environment = [RCEnvironment shared];
     environment.databaseManager = databaseManager;
     environment.clipboardService = clipboardService;
@@ -53,18 +64,28 @@
     environment.accessibilityService = accessibilityService;
     environment.dataCleanService = dataCleanService;
 
+    // 5. UI & Services setup
     [menuManager setupStatusItem];
     [hotKeyService loadAndRegisterHotKeysFromDefaults];
     [dataCleanService startCleanupTimer];
     [clipboardService startMonitoring];
     [clipboardService captureCurrentClipboard];
 
+    // 6. Accessibility
     [[RCAccessibilityService shared] checkAndRequestAccessibilityWithAlert];
+
+    // 7. Sparkle updater
+    [[RCUpdateService shared] setupUpdater];
+
+    // 8. Screenshot monitoring (Beta)
+    [[RCScreenshotMonitorService shared] startMonitoring];
+
     NSLog(@"[Revclip] Application did finish launching.");
 }
 
 - (void)applicationWillTerminate:(NSNotification *)notification {
     (void)notification;
+    [[RCScreenshotMonitorService shared] stopMonitoring];
     [[RCDataCleanService shared] stopCleanupTimer];
     [[RCClipboardService shared] stopMonitoring];
     [[RCHotKeyService shared] unregisterAllHotKeys];

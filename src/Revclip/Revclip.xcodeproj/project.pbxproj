@@ -18,14 +18,17 @@
 		1C1CE782F2C46690E8C1E164 /* RCHotKeyRecorderView.m in Sources */ = {isa = PBXBuildFile; fileRef = 57D68EA420E8485CC1A9B96D /* RCHotKeyRecorderView.m */; };
 		207DEC918BAD4A6268212037 /* RCShortcutsPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 98BDA0B33DFBAF64A0A79A22 /* RCShortcutsPreferencesViewController.m */; };
 		228018374713C0C7C7F8AA56 /* RCMenuPreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 310C64F21BD5E50CE25A7484 /* RCMenuPreferencesView.xib */; };
+		3058E43F5CD309A2FECA870D /* RCLoginItemService.m in Sources */ = {isa = PBXBuildFile; fileRef = 71B8827D5CBB523F2BF40EAC /* RCLoginItemService.m */; };
 		310AA557CE2AD6EB9339A2E9 /* RCExcludePreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 99259E01619E218FBAF12209 /* RCExcludePreferencesViewController.m */; };
 		31D7EA5F5A314A0A8C5D7503 /* RCBetaPreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 55917DFDB23A0A6C8141CB54 /* RCBetaPreferencesView.xib */; };
+		32BFE2A3BE437181DE9AA571 /* RCMoveToApplicationsService.m in Sources */ = {isa = PBXBuildFile; fileRef = DCA8EDDCB9D425D0662EC410 /* RCMoveToApplicationsService.m */; };
 		3C1D7E56F1A76791221AE313 /* RCPrivacyService.m in Sources */ = {isa = PBXBuildFile; fileRef = A8C4545CE9A6A3C5F4FFFF5D /* RCPrivacyService.m */; };
 		3CA63D159E34482A2D546BA7 /* NSImage+Color.m in Sources */ = {isa = PBXBuildFile; fileRef = B29CDB9ED92BE68E6F79E0FA /* NSImage+Color.m */; };
 		401B6B8F5294FA17DE1EE632 /* RCDesignableButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 6CFF5FE4C6DE4594A8B429C4 /* RCDesignableButton.m */; };
 		437594F7ED790AFD85939884 /* FMDatabaseAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = F40A75A70BD3A0FD99FC70B7 /* FMDatabaseAdditions.m */; };
 		4471370EF8B2507F6C1837CD /* RCShortcutsPreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = D55765A002971C5D1880E229 /* RCShortcutsPreferencesView.xib */; };
 		4D6643B1EE02630C459B966A /* RCEnvironment.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B70C481EA99C1AD3694C2BB /* RCEnvironment.m */; };
+		4E01F5798540DC7382280293 /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29EFACD3596BD52D03777F8F /* Sparkle.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		52ACE05CACB0AFB9F3694204 /* RCGeneralPreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2A9310A1E237473A4079CFAD /* RCGeneralPreferencesView.xib */; };
 		58BC6988E092E709FAD3309E /* RCClipItem.m in Sources */ = {isa = PBXBuildFile; fileRef = E1BA9A07CAFE5B6BFA726745 /* RCClipItem.m */; };
 		598D006BAE4936FE7975484C /* RCMenuPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A512A8880BC94150B039A512 /* RCMenuPreferencesViewController.m */; };
@@ -47,11 +50,17 @@
 		AD39936ACDF30BE050BC45DF /* RCPreferencesWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = BFE988F97D74639A605F692C /* RCPreferencesWindowController.m */; };
 		AEF16C198E262B7FED186C49 /* RCPasteService.m in Sources */ = {isa = PBXBuildFile; fileRef = 16E69D3F56BF40CE5AA3F9E9 /* RCPasteService.m */; };
 		BB3F3E8C15A08A2ADED4A4F6 /* RCExcludePreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = F6ADD6859E9239E28CE95D92 /* RCExcludePreferencesView.xib */; };
+		BE6297DCDD64F13C625A9CBE /* RCUpdateService.m in Sources */ = {isa = PBXBuildFile; fileRef = 1D12E1C58C8D646981BC5B04 /* RCUpdateService.m */; };
+		C0C9F9EA99509C688918834E /* Sparkle.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 29EFACD3596BD52D03777F8F /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C41B5460AFB7B44C63958D22 /* RCScreenshotMonitorService.m in Sources */ = {isa = PBXBuildFile; fileRef = F0745D75F427D64A46C4FA80 /* RCScreenshotMonitorService.m */; };
 		C4F8E649B3E67A777009125A /* RCAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BDAC5C7B818F45DD9E0C9EA /* RCAppDelegate.m */; };
 		CA6BC549CAFFB981EA4D939A /* RCAccessibilityService.m in Sources */ = {isa = PBXBuildFile; fileRef = A4379C8BD7DFE2AA71F729A5 /* RCAccessibilityService.m */; };
 		D4D5001C0ECBA162D2DF23B1 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ADA1C708FEE8CC377FAB5E86 /* Carbon.framework */; };
 		D69FE0B43F37C7268DF990FC /* RCBetaPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = DEBB1B9F37BE193C53F19669 /* RCBetaPreferencesViewController.m */; };
+		DF994E78E091B6B389A4F943 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 843317A92DFDD7F85EFC3C7E /* Localizable.strings */; };
+		E1ADCFEFCC1AC01E99D3F82B /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 65D1C7D8529C2527AE10BF95 /* InfoPlist.strings */; };
 		E8241CFD4F2F23661129E39E /* RCDesignableView.m in Sources */ = {isa = PBXBuildFile; fileRef = 2FF85CB84E59C53F3A92F4EA /* RCDesignableView.m */; };
+		E8DBAA3A505E0F4F0E6D878F /* MainMenu.strings in Resources */ = {isa = PBXBuildFile; fileRef = 383DF05375912711A4B301E0 /* MainMenu.strings */; };
 		F149185FACD5F3855ABE9B2B /* RCUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = C70788A46CCA535A1FB719BB /* RCUtilities.m */; };
 		F155D25D956E31B88743B279 /* RCExcludeAppService.m in Sources */ = {isa = PBXBuildFile; fileRef = 60CA064AC4C4126C454E19FE /* RCExcludeAppService.m */; };
 		F7C2112472B50567D10E1561 /* RCHotKeyService.m in Sources */ = {isa = PBXBuildFile; fileRef = A0B8EAEDC93FF66179F29C00 /* RCHotKeyService.m */; };
@@ -69,19 +78,39 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		A2E7794F0766EF9582BE2708 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C0C9F9EA99509C688918834E /* Sparkle.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		002EBE1A9967D6ADE09C25E1 /* RCUpdateService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCUpdateService.h; sourceTree = "<group>"; };
 		00C94718B196F1BCCB8F9454 /* RCDataCleanService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCDataCleanService.h; sourceTree = "<group>"; };
+		0409C392360E95647F42F188 /* RCLoginItemService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCLoginItemService.h; sourceTree = "<group>"; };
 		11CD652EC59173C40B1673BF /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = System/Library/Frameworks/ApplicationServices.framework; sourceTree = SDKROOT; };
+		1225D5E96D116823D7342959 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/MainMenu.strings; sourceTree = "<group>"; };
 		13C2851F528D2D7564540EEC /* FMDatabasePool.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDatabasePool.h; sourceTree = "<group>"; };
 		16E69D3F56BF40CE5AA3F9E9 /* RCPasteService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCPasteService.m; sourceTree = "<group>"; };
 		1C4D10874E40AE545BFF3CF9 /* RCTypePreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCTypePreferencesView.xib; sourceTree = "<group>"; };
+		1D12E1C58C8D646981BC5B04 /* RCUpdateService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCUpdateService.m; sourceTree = "<group>"; };
 		1F02261C7B12751D1E7B0EE4 /* RCBetaPreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCBetaPreferencesViewController.h; sourceTree = "<group>"; };
 		237A6C799771D7B90ACEDE57 /* RCClipboardService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCClipboardService.m; sourceTree = "<group>"; };
 		23BCF5000D494C483DABC121 /* RCPasteService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCPasteService.h; sourceTree = "<group>"; };
 		24F3BF24A239AA69518650DA /* RCGeneralPreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCGeneralPreferencesViewController.m; sourceTree = "<group>"; };
 		25A85028708E20A4E991CDE7 /* RCSnippetImportExportService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCSnippetImportExportService.m; sourceTree = "<group>"; };
+		29EFACD3596BD52D03777F8F /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = Revclip/Vendor/Sparkle/Sparkle.framework; sourceTree = "<group>"; };
 		2A9310A1E237473A4079CFAD /* RCGeneralPreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCGeneralPreferencesView.xib; sourceTree = "<group>"; };
 		2BBFB32B6E958167DCDC53B5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2C053DC4BFC7300AFA0B0F49 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		2CEB140D411D73D3EBADEE3A /* RCEnvironment.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCEnvironment.h; sourceTree = "<group>"; };
 		2FF85CB84E59C53F3A92F4EA /* RCDesignableView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCDesignableView.m; sourceTree = "<group>"; };
 		30D12ED89CAF3004483AE41F /* FMDatabase.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FMDatabase.m; sourceTree = "<group>"; };
@@ -92,15 +121,21 @@
 		48E70D0F63A020DF7D3F69E5 /* RCDatabaseManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCDatabaseManager.m; sourceTree = "<group>"; };
 		4CCF04B4A5FC11C335C33C3B /* RCMenuPreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCMenuPreferencesViewController.h; sourceTree = "<group>"; };
 		55917DFDB23A0A6C8141CB54 /* RCBetaPreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCBetaPreferencesView.xib; sourceTree = "<group>"; };
+		56CB1B6D7CD0DD3C91806485 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/MainMenu.strings; sourceTree = "<group>"; };
 		57D68EA420E8485CC1A9B96D /* RCHotKeyRecorderView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCHotKeyRecorderView.m; sourceTree = "<group>"; };
+		595A5D65D8CB58BE7EF4B771 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		597933506FF1B204A53A2261 /* NSColor+HexString.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSColor+HexString.h"; sourceTree = "<group>"; };
 		59B9B287FEC408D046E89436 /* RCExcludePreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCExcludePreferencesViewController.h; sourceTree = "<group>"; };
 		60CA064AC4C4126C454E19FE /* RCExcludeAppService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCExcludeAppService.m; sourceTree = "<group>"; };
+		64B2E53164EAF22EBBC75932 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/MainMenu.strings"; sourceTree = "<group>"; };
+		6604915A4E026583579016C5 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		66F9D7E6E9FDCA68904FC3C0 /* NSImage+Resize.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSImage+Resize.m"; sourceTree = "<group>"; };
 		67F229554771B7C3894849D9 /* RCSnippetEditorWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCSnippetEditorWindow.xib; sourceTree = "<group>"; };
+		6937C5A51566D4270B0C4AD9 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		6BCAF1F42C6F9816F4E29600 /* FMDatabasePool.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FMDatabasePool.m; sourceTree = "<group>"; };
 		6CFF5FE4C6DE4594A8B429C4 /* RCDesignableButton.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCDesignableButton.m; sourceTree = "<group>"; };
 		7149A37E47F14D2E10DCBFF6 /* RCSnippetImportExportService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCSnippetImportExportService.h; sourceTree = "<group>"; };
+		71B8827D5CBB523F2BF40EAC /* RCLoginItemService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCLoginItemService.m; sourceTree = "<group>"; };
 		7418A9005D73E625B71FF2FD /* RCPrivacyService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCPrivacyService.h; sourceTree = "<group>"; };
 		76819849DA4DF7820A0014B0 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		770A971FF0A5066F5F8037F8 /* FMDatabaseAdditions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDatabaseAdditions.h; sourceTree = "<group>"; };
@@ -109,17 +144,23 @@
 		7DACFA4F445C38F0B288D2F6 /* RCDesignableView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCDesignableView.h; sourceTree = "<group>"; };
 		818829683B375E4BF451A901 /* RCConstants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCConstants.h; sourceTree = "<group>"; };
 		8468E4CF844656C7B4874C49 /* Revclip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Revclip.entitlements; sourceTree = "<group>"; };
+		84DFE7D9B83FAC3E02E2DF18 /* RCMoveToApplicationsService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCMoveToApplicationsService.h; sourceTree = "<group>"; };
+		8664124CFFEF6AB194C4FFBE /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/MainMenu.strings; sourceTree = "<group>"; };
 		88090B44D91F92A73F0B181B /* RCMenuManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCMenuManager.h; sourceTree = "<group>"; };
 		8BDAC5C7B818F45DD9E0C9EA /* RCAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCAppDelegate.m; sourceTree = "<group>"; };
 		922AAD7D2185F782E5E6681E /* FMDatabase.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDatabase.h; sourceTree = "<group>"; };
 		942BD279118A67B8F22F17F0 /* RCClipData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCClipData.h; sourceTree = "<group>"; };
+		98062A3BBC982EB7520E9C0D /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		98BDA0B33DFBAF64A0A79A22 /* RCShortcutsPreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCShortcutsPreferencesViewController.m; sourceTree = "<group>"; };
 		99259E01619E218FBAF12209 /* RCExcludePreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCExcludePreferencesViewController.m; sourceTree = "<group>"; };
+		99B436DB3CB341EF2E9B325F /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/MainMenu.strings; sourceTree = "<group>"; };
 		99F449B37637B34B5D03CEA5 /* RCAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCAppDelegate.h; sourceTree = "<group>"; };
 		9AA8F3B889A98B9FA403FB47 /* RevclipTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RevclipTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AF3C1CF74B2FCAB603D5032 /* Revclip-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Revclip-Prefix.pch"; sourceTree = "<group>"; };
+		9B85D4335AE8789A3D059BDA /* RCScreenshotMonitorService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCScreenshotMonitorService.h; sourceTree = "<group>"; };
 		9CCBF63E8D0CDBA66D5EC1E3 /* Revclip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Revclip.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A0B8EAEDC93FF66179F29C00 /* RCHotKeyService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCHotKeyService.m; sourceTree = "<group>"; };
+		A1109425E1EFE4FFC6EDFF40 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A4379C8BD7DFE2AA71F729A5 /* RCAccessibilityService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCAccessibilityService.m; sourceTree = "<group>"; };
 		A512A8880BC94150B039A512 /* RCMenuPreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCMenuPreferencesViewController.m; sourceTree = "<group>"; };
 		A51C38921A881AF6BA7B8B81 /* RCExcludeAppService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCExcludeAppService.h; sourceTree = "<group>"; };
@@ -129,6 +170,7 @@
 		AD920BD9B85442A7B49B1AE6 /* FMDB.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDB.h; sourceTree = "<group>"; };
 		ADA1C708FEE8CC377FAB5E86 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 		AE14C3404981E7F2C2542753 /* RCDatabaseManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCDatabaseManager.h; sourceTree = "<group>"; };
+		B0F86E13F32F9C5655D02B8A /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/Localizable.strings; sourceTree = "<group>"; };
 		B1C3B45842799555F8E43710 /* RCConstants.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCConstants.m; sourceTree = "<group>"; };
 		B23CE7EC747FB949A1ACBB2A /* RCDataCleanService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCDataCleanService.m; sourceTree = "<group>"; };
 		B29CDB9ED92BE68E6F79E0FA /* NSImage+Color.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSImage+Color.m"; sourceTree = "<group>"; };
@@ -139,6 +181,7 @@
 		BFE988F97D74639A605F692C /* RCPreferencesWindowController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCPreferencesWindowController.m; sourceTree = "<group>"; };
 		C409E2EBEE52DE7BE8E5580E /* RCUpdatesPreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCUpdatesPreferencesView.xib; sourceTree = "<group>"; };
 		C70788A46CCA535A1FB719BB /* RCUtilities.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCUtilities.m; sourceTree = "<group>"; };
+		C7A36578D5D641553A8B0618 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
 		C92CA72F81D386616D76799D /* RCSnippetEditorWindowController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCSnippetEditorWindowController.m; sourceTree = "<group>"; };
 		CAA3B4452108D6FECA54E5CE /* RCPreferencesWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCPreferencesWindow.xib; sourceTree = "<group>"; };
 		CC4EBDFFCC696AF33994E140 /* RCUpdatesPreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCUpdatesPreferencesViewController.m; sourceTree = "<group>"; };
@@ -149,6 +192,8 @@
 		D6EDED05F8101B408F9A7FF7 /* RCTypePreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCTypePreferencesViewController.m; sourceTree = "<group>"; };
 		DB8BAD5A274C842C536879E9 /* MainMenu.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
 		DBA47344906468A18DC4D0A1 /* RCClipboardService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCClipboardService.h; sourceTree = "<group>"; };
+		DC270A5A79DA5F780243DB4C /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		DCA8EDDCB9D425D0662EC410 /* RCMoveToApplicationsService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCMoveToApplicationsService.m; sourceTree = "<group>"; };
 		DD5949EC0E7139083E620703 /* RCAccessibilityService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCAccessibilityService.h; sourceTree = "<group>"; };
 		DEBB1B9F37BE193C53F19669 /* RCBetaPreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCBetaPreferencesViewController.m; sourceTree = "<group>"; };
 		E1BA9A07CAFE5B6BFA726745 /* RCClipItem.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCClipItem.m; sourceTree = "<group>"; };
@@ -158,6 +203,8 @@
 		E86D07135D07BEE72323BA1F /* RCPreferencesWindowController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCPreferencesWindowController.h; sourceTree = "<group>"; };
 		E88E454FEE3A6DDE2832879F /* FMResultSet.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMResultSet.h; sourceTree = "<group>"; };
 		EADD04311920231509102BE2 /* RCHotKeyRecorderView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCHotKeyRecorderView.h; sourceTree = "<group>"; };
+		EECACF1E71F6D93A7B2F0A60 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		F0745D75F427D64A46C4FA80 /* RCScreenshotMonitorService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCScreenshotMonitorService.m; sourceTree = "<group>"; };
 		F40A75A70BD3A0FD99FC70B7 /* FMDatabaseAdditions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FMDatabaseAdditions.m; sourceTree = "<group>"; };
 		F514271FDDAF58CE1717BE27 /* RCShortcutsPreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCShortcutsPreferencesViewController.h; sourceTree = "<group>"; };
 		F522328A6E99D3B93FDEC733 /* RCClipData.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCClipData.m; sourceTree = "<group>"; };
@@ -171,6 +218,7 @@
 			files = (
 				AA10C257F7E5CDA1FABF961E /* ApplicationServices.framework in Frameworks */,
 				D4D5001C0ECBA162D2DF23B1 /* Carbon.framework in Frameworks */,
+				4E01F5798540DC7382280293 /* Sparkle.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -326,12 +374,20 @@
 				60CA064AC4C4126C454E19FE /* RCExcludeAppService.m */,
 				7B4EB153C6F388548300CCA7 /* RCHotKeyService.h */,
 				A0B8EAEDC93FF66179F29C00 /* RCHotKeyService.m */,
+				0409C392360E95647F42F188 /* RCLoginItemService.h */,
+				71B8827D5CBB523F2BF40EAC /* RCLoginItemService.m */,
+				84DFE7D9B83FAC3E02E2DF18 /* RCMoveToApplicationsService.h */,
+				DCA8EDDCB9D425D0662EC410 /* RCMoveToApplicationsService.m */,
 				23BCF5000D494C483DABC121 /* RCPasteService.h */,
 				16E69D3F56BF40CE5AA3F9E9 /* RCPasteService.m */,
 				7418A9005D73E625B71FF2FD /* RCPrivacyService.h */,
 				A8C4545CE9A6A3C5F4FFFF5D /* RCPrivacyService.m */,
+				9B85D4335AE8789A3D059BDA /* RCScreenshotMonitorService.h */,
+				F0745D75F427D64A46C4FA80 /* RCScreenshotMonitorService.m */,
 				7149A37E47F14D2E10DCBFF6 /* RCSnippetImportExportService.h */,
 				25A85028708E20A4E991CDE7 /* RCSnippetImportExportService.m */,
+				002EBE1A9967D6ADE09C25E1 /* RCUpdateService.h */,
+				1D12E1C58C8D646981BC5B04 /* RCUpdateService.m */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -386,6 +442,9 @@
 			isa = PBXGroup;
 			children = (
 				2BBFB32B6E958167DCDC53B5 /* Assets.xcassets */,
+				65D1C7D8529C2527AE10BF95 /* InfoPlist.strings */,
+				843317A92DFDD7F85EFC3C7E /* Localizable.strings */,
+				383DF05375912711A4B301E0 /* MainMenu.strings */,
 				DB8BAD5A274C842C536879E9 /* MainMenu.xib */,
 			);
 			path = Resources;
@@ -407,6 +466,7 @@
 			children = (
 				11CD652EC59173C40B1673BF /* ApplicationServices.framework */,
 				ADA1C708FEE8CC377FAB5E86 /* Carbon.framework */,
+				29EFACD3596BD52D03777F8F /* Sparkle.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -421,6 +481,7 @@
 				7FC6FFAD19F47E653D1D9F98 /* Sources */,
 				E2D947BD37911826E69C7A79 /* Resources */,
 				6938E87B832E2765E59C743B /* Frameworks */,
+				A2E7794F0766EF9582BE2708 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -466,7 +527,11 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
+				de,
 				en,
+				it,
+				ja,
+				"zh-Hans",
 			);
 			mainGroup = 21B754F14C03F5AD9DB09CE3;
 			minimizedProjectReferenceProxies = 1;
@@ -486,6 +551,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				121DB35D43F06FB9973EC710 /* Assets.xcassets in Resources */,
+				E1ADCFEFCC1AC01E99D3F82B /* InfoPlist.strings in Resources */,
+				DF994E78E091B6B389A4F943 /* Localizable.strings in Resources */,
+				E8DBAA3A505E0F4F0E6D878F /* MainMenu.strings in Resources */,
 				096A63ACEA9F3F73321A2DE0 /* MainMenu.xib in Resources */,
 				31D7EA5F5A314A0A8C5D7503 /* RCBetaPreferencesView.xib in Resources */,
 				BB3F3E8C15A08A2ADED4A4F6 /* RCExcludePreferencesView.xib in Resources */,
@@ -538,15 +606,19 @@
 				7127A1C3A8473C42A2E21DEC /* RCGeneralPreferencesViewController.m in Sources */,
 				1C1CE782F2C46690E8C1E164 /* RCHotKeyRecorderView.m in Sources */,
 				F7C2112472B50567D10E1561 /* RCHotKeyService.m in Sources */,
+				3058E43F5CD309A2FECA870D /* RCLoginItemService.m in Sources */,
 				648640A77EDB8248928C4215 /* RCMenuManager.m in Sources */,
 				598D006BAE4936FE7975484C /* RCMenuPreferencesViewController.m in Sources */,
+				32BFE2A3BE437181DE9AA571 /* RCMoveToApplicationsService.m in Sources */,
 				AEF16C198E262B7FED186C49 /* RCPasteService.m in Sources */,
 				AD39936ACDF30BE050BC45DF /* RCPreferencesWindowController.m in Sources */,
 				3C1D7E56F1A76791221AE313 /* RCPrivacyService.m in Sources */,
+				C41B5460AFB7B44C63958D22 /* RCScreenshotMonitorService.m in Sources */,
 				207DEC918BAD4A6268212037 /* RCShortcutsPreferencesViewController.m in Sources */,
 				95C33A6B03FAC2B3791FD748 /* RCSnippetEditorWindowController.m in Sources */,
 				789A5809BC4E90C4CE58DDAB /* RCSnippetImportExportService.m in Sources */,
 				73F52D0777F2D41F7EC9C968 /* RCTypePreferencesViewController.m in Sources */,
+				BE6297DCDD64F13C625A9CBE /* RCUpdateService.m in Sources */,
 				A2DBE7F41064D8A60120BFBE /* RCUpdatesPreferencesViewController.m in Sources */,
 				F149185FACD5F3855ABE9B2B /* RCUtilities.m in Sources */,
 				5D8CAAAA0301D80FFA91EA3B /* main.m in Sources */,
@@ -562,6 +634,45 @@
 			targetProxy = 1B10A30F8F4EDB6A4B4DF09C /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		383DF05375912711A4B301E0 /* MainMenu.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				8664124CFFEF6AB194C4FFBE /* de */,
+				1225D5E96D116823D7342959 /* en */,
+				99B436DB3CB341EF2E9B325F /* it */,
+				56CB1B6D7CD0DD3C91806485 /* ja */,
+				64B2E53164EAF22EBBC75932 /* zh-Hans */,
+			);
+			name = MainMenu.strings;
+			sourceTree = "<group>";
+		};
+		65D1C7D8529C2527AE10BF95 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				6937C5A51566D4270B0C4AD9 /* de */,
+				98062A3BBC982EB7520E9C0D /* en */,
+				EECACF1E71F6D93A7B2F0A60 /* it */,
+				DC270A5A79DA5F780243DB4C /* ja */,
+				2C053DC4BFC7300AFA0B0F49 /* zh-Hans */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		843317A92DFDD7F85EFC3C7E /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A1109425E1EFE4FFC6EDFF40 /* de */,
+				595A5D65D8CB58BE7EF4B771 /* en */,
+				B0F86E13F32F9C5655D02B8A /* it */,
+				C7A36578D5D641553A8B0618 /* ja */,
+				6604915A4E026583579016C5 /* zh-Hans */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		3D97F0617419E2FCFF24FBBB /* Debug */ = {
@@ -591,7 +702,11 @@
 				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/Revclip/Vendor";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/Revclip/Vendor",
+					"$(PROJECT_DIR)/Revclip/Vendor/Sparkle",
+					"\"Revclip/Vendor/Sparkle\"",
+				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Revclip/Revclip-Prefix.pch";
 				INFOPLIST_FILE = Revclip/Info.plist;
@@ -753,7 +868,11 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/Revclip/Vendor";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/Revclip/Vendor",
+					"$(PROJECT_DIR)/Revclip/Vendor/Sparkle",
+					"\"Revclip/Vendor/Sparkle\"",
+				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Revclip/Revclip-Prefix.pch";
 				INFOPLIST_FILE = Revclip/Info.plist;

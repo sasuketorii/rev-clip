@@ -1,0 +1,47 @@
+"History" = "履歴";
+"Snippets" = "スニペット";
+"Edit Snippets..." = "スニペットを編集...";
+"Preferences..." = "設定...";
+"Quit Revclip" = "Revclipを終了";
+"Clear All" = "すべて削除";
+"Clear All History" = "すべての履歴を削除";
+"Are you sure you want to clear all clipboard history?" = "クリップボード履歴をすべて削除しますか？";
+"Cancel" = "キャンセル";
+
+"General" = "一般";
+"Menu" = "メニュー";
+"Type" = "タイプ";
+"Excluded Apps" = "除外アプリ";
+"Shortcuts" = "ショートカット";
+"Updates" = "アップデート";
+"Beta" = "ベータ";
+
+"Launch Revclip on login" = "ログイン時にRevclipを起動";
+"Max clipboard history size" = "クリップボード履歴の最大保存数";
+"Max menu items to display" = "メニュー表示の最大項目数";
+
+"Main" = "メイン";
+"Click to record shortcut" = "クリックしてショートカットを記録";
+
+"Snippet Editor" = "スニペットエディタ";
+"Add Folder" = "フォルダを追加";
+"Add Snippet" = "スニペットを追加";
+"Title:" = "タイトル:";
+"Content:" = "内容:";
+"Shortcut:" = "ショートカット:";
+"Save" = "保存";
+"Untitled Folder" = "無題のフォルダ";
+"Untitled Snippet" = "無題のスニペット";
+
+"Import Snippets..." = "スニペットをインポート...";
+"Export Snippets..." = "スニペットをエクスポート...";
+"Merge" = "マージ";
+"Replace" = "置換";
+
+"Excluded Applications" = "除外アプリケーション";
+"Add Current App" = "現在のアプリを追加";
+"Cannot add current application" = "現在のアプリを追加できません";
+
+"Check for Updates" = "アップデートを確認";
+"Automatically check for updates" = "自動的にアップデートを確認";
+"Version" = "バージョン";
