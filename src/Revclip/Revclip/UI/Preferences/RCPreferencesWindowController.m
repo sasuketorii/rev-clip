@@ -169,7 +169,7 @@ NSString * const RCPreferencesTabBeta = @"beta";
 
 - (void)configureWindow {
     NSWindow *window = self.window;
-    window.title = @"Preferences";
+    window.title = NSLocalizedString(@"Preferences", nil);
     window.styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable;
     window.collectionBehavior = NSWindowCollectionBehaviorMoveToActiveSpace;
     window.releasedWhenClosed = NO;
@@ -242,25 +242,25 @@ NSString * const RCPreferencesTabBeta = @"beta";
 
 - (NSString *)titleForTabIdentifier:(NSString *)tabIdentifier {
     if ([tabIdentifier isEqualToString:RCPreferencesTabGeneral]) {
-        return @"General";
+        return NSLocalizedString(@"General", nil);
     }
     if ([tabIdentifier isEqualToString:RCPreferencesTabMenu]) {
-        return @"Menu";
+        return NSLocalizedString(@"Menu", nil);
     }
     if ([tabIdentifier isEqualToString:RCPreferencesTabType]) {
-        return @"Type";
+        return NSLocalizedString(@"Type", nil);
     }
     if ([tabIdentifier isEqualToString:RCPreferencesTabExclude]) {
-        return @"Exclude";
+        return NSLocalizedString(@"Excluded Apps", nil);
     }
     if ([tabIdentifier isEqualToString:RCPreferencesTabShortcuts]) {
-        return @"Shortcuts";
+        return NSLocalizedString(@"Shortcuts", nil);
     }
     if ([tabIdentifier isEqualToString:RCPreferencesTabUpdates]) {
-        return @"Updates";
+        return NSLocalizedString(@"Updates", nil);
     }
     if ([tabIdentifier isEqualToString:RCPreferencesTabBeta]) {
-        return @"Beta";
+        return NSLocalizedString(@"Beta", nil);
     }
     return @"";
 }

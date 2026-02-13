@@ -41,6 +41,7 @@
 		7127A1C3A8473C42A2E21DEC /* RCGeneralPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 24F3BF24A239AA69518650DA /* RCGeneralPreferencesViewController.m */; };
 		73F52D0777F2D41F7EC9C968 /* RCTypePreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D6EDED05F8101B408F9A7FF7 /* RCTypePreferencesViewController.m */; };
 		789A5809BC4E90C4CE58DDAB /* RCSnippetImportExportService.m in Sources */ = {isa = PBXBuildFile; fileRef = 25A85028708E20A4E991CDE7 /* RCSnippetImportExportService.m */; };
+		7F5BB790761A50D194083C72 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 049763E14ED0FB3CC9955484 /* ServiceManagement.framework */; };
 		8307D3A9298D344F9E7F6381 /* RCDataCleanService.m in Sources */ = {isa = PBXBuildFile; fileRef = B23CE7EC747FB949A1ACBB2A /* RCDataCleanService.m */; };
 		8DAD0CF85421AEE62758228C /* RCDatabaseManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 48E70D0F63A020DF7D3F69E5 /* RCDatabaseManager.m */; };
 		95C33A6B03FAC2B3791FD748 /* RCSnippetEditorWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = C92CA72F81D386616D76799D /* RCSnippetEditorWindowController.m */; };
@@ -96,6 +97,7 @@
 		002EBE1A9967D6ADE09C25E1 /* RCUpdateService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCUpdateService.h; sourceTree = "<group>"; };
 		00C94718B196F1BCCB8F9454 /* RCDataCleanService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCDataCleanService.h; sourceTree = "<group>"; };
 		0409C392360E95647F42F188 /* RCLoginItemService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCLoginItemService.h; sourceTree = "<group>"; };
+		049763E14ED0FB3CC9955484 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
 		11CD652EC59173C40B1673BF /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = System/Library/Frameworks/ApplicationServices.framework; sourceTree = SDKROOT; };
 		1225D5E96D116823D7342959 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/MainMenu.strings; sourceTree = "<group>"; };
 		13C2851F528D2D7564540EEC /* FMDatabasePool.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMDatabasePool.h; sourceTree = "<group>"; };
@@ -218,6 +220,7 @@
 			files = (
 				AA10C257F7E5CDA1FABF961E /* ApplicationServices.framework in Frameworks */,
 				D4D5001C0ECBA162D2DF23B1 /* Carbon.framework in Frameworks */,
+				7F5BB790761A50D194083C72 /* ServiceManagement.framework in Frameworks */,
 				4E01F5798540DC7382280293 /* Sparkle.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -466,6 +469,7 @@
 			children = (
 				11CD652EC59173C40B1673BF /* ApplicationServices.framework */,
 				ADA1C708FEE8CC377FAB5E86 /* Carbon.framework */,
+				049763E14ED0FB3CC9955484 /* ServiceManagement.framework */,
 				29EFACD3596BD52D03777F8F /* Sparkle.framework */,
 			);
 			name = Frameworks;

@@ -41,10 +41,10 @@
 
     NSAlert *alert = [[NSAlert alloc] init];
     alert.alertStyle = NSAlertStyleWarning;
-    alert.messageText = @"Revclip requires Accessibility permission";
-    alert.informativeText = @"Revclip needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility.";
-    [alert addButtonWithTitle:@"Open System Settings"];
-    [alert addButtonWithTitle:@"Later"];
+    alert.messageText = NSLocalizedString(@"Revclip requires Accessibility permission", nil);
+    alert.informativeText = NSLocalizedString(@"Revclip needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility.", nil);
+    [alert addButtonWithTitle:NSLocalizedString(@"Open System Settings", nil)];
+    [alert addButtonWithTitle:NSLocalizedString(@"Later", nil)];
 
     NSModalResponse response = [alert runModal];
     if (response != NSAlertFirstButtonReturn) {

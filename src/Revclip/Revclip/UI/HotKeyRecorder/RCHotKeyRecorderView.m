@@ -11,7 +11,7 @@
 
 static CGFloat const kRCHotKeyRecorderCornerRadius = 6.0;
 static CGFloat const kRCHotKeyRecorderBorderWidth = 1.0;
-static CGFloat const kRCHotKeyRecorderHorizontalPadding = 8.0;
+static CGFloat const kRCHotKeyRecorderHorizontalPadding = 12.0;
 static CGFloat const kRCHotKeyRecorderFontSize = 13.0;
 
 static BOOL RCEqualKeyCombo(RCKeyCombo left, RCKeyCombo right) {
@@ -254,23 +254,23 @@ static NSEventModifierFlags RCRecorderRelevantModifiers(NSEventModifierFlags mod
 
     NSAlert *alert = [[NSAlert alloc] init];
     alert.alertStyle = NSAlertStyleWarning;
-    alert.messageText = @"このショートカットは動作しない可能性があります";
-    alert.informativeText = @"macOS 15 (Sequoia) 以降では、Option 単独または Option+Shift のみの修飾キー組み合わせはシステム制限により動作しません。\nCommand または Control を含む組み合わせを使用してください。";
-    [alert addButtonWithTitle:@"OK"];
+    alert.messageText = NSLocalizedString(@"This shortcut may not work", nil);
+    alert.informativeText = NSLocalizedString(@"On macOS 15 (Sequoia) and later, Option-only or Option+Shift-only modifier combinations are not supported due to system restrictions.\nPlease use a combination that includes Command or Control.", nil);
+    [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
     [alert beginSheetModalForWindow:window completionHandler:nil];
 }
 
 - (NSString *)rc_displayText {
     if (self.isRecording) {
         NSString *modifierText = [self rc_symbolStringFromModifiers:self.recordingModifierFlags];
-        return (modifierText.length > 0) ? modifierText : @"Type shortcut";
+        return (modifierText.length > 0) ? modifierText : NSLocalizedString(@"Type shortcut", nil);
     }
 
     if (RCIsValidKeyCombo(self.keyCombo)) {
         return [self rc_stringFromKeyCombo:self.keyCombo];
     }
 
-    return @"Click to record";
+    return NSLocalizedString(@"Click to record", nil);
 }
 
 - (NSString *)rc_stringFromKeyCombo:(RCKeyCombo)keyCombo {

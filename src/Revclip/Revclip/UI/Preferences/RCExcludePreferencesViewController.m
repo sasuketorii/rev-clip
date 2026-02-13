@@ -43,7 +43,7 @@ static NSString * const kRCExcludeColumnIdentifierName = @"name";
 #pragma mark - Layout
 
 - (void)configureUserInterface {
-    NSTextField *headerLabel = [NSTextField labelWithString:@"Excluded Applications"];
+    NSTextField *headerLabel = [NSTextField labelWithString:NSLocalizedString(@"Excluded Applications", nil)];
     headerLabel.translatesAutoresizingMaskIntoConstraints = NO;
     headerLabel.font = [NSFont boldSystemFontOfSize:13.0];
 
@@ -78,7 +78,7 @@ static NSString * const kRCExcludeColumnIdentifierName = @"name";
     [iconColumn setDataCell:iconCell];
 
     NSTableColumn *nameColumn = [[NSTableColumn alloc] initWithIdentifier:kRCExcludeColumnIdentifierName];
-    nameColumn.title = @"Application";
+    nameColumn.title = NSLocalizedString(@"Application", nil);
     nameColumn.minWidth = 120.0;
     nameColumn.editable = NO;
 
@@ -104,7 +104,7 @@ static NSString * const kRCExcludeColumnIdentifierName = @"name";
     self.removeButton.bezelStyle = NSBezelStyleRounded;
     self.removeButton.enabled = NO;
 
-    NSButton *addCurrentButton = [NSButton buttonWithTitle:@"Add Current App" target:self action:@selector(addCurrentApplication:)];
+    NSButton *addCurrentButton = [NSButton buttonWithTitle:NSLocalizedString(@"Add Current App", nil) target:self action:@selector(addCurrentApplication:)];
     addCurrentButton.translatesAutoresizingMaskIntoConstraints = NO;
     addCurrentButton.bezelStyle = NSBezelStyleRounded;
 
@@ -143,7 +143,7 @@ static NSString * const kRCExcludeColumnIdentifierName = @"name";
     (void)sender;
 
     NSOpenPanel *openPanel = [NSOpenPanel openPanel];
-    openPanel.prompt = @"Add";
+    openPanel.prompt = NSLocalizedString(@"Add", nil);
     openPanel.canChooseFiles = YES;
     openPanel.canChooseDirectories = NO;
     openPanel.canCreateDirectories = NO;
@@ -199,9 +199,9 @@ static NSString * const kRCExcludeColumnIdentifierName = @"name";
     if (bundleIdentifier.length == 0 || [bundleIdentifier isEqualToString:ownBundleIdentifier]) {
         NSAlert *alert = [[NSAlert alloc] init];
         alert.alertStyle = NSAlertStyleInformational;
-        alert.messageText = @"Cannot add current application";
-        alert.informativeText = @"The frontmost application is Revclip itself. Please switch to the application you want to exclude, then click this button.";
-        [alert addButtonWithTitle:@"OK"];
+        alert.messageText = NSLocalizedString(@"Cannot add current application", nil);
+        alert.informativeText = NSLocalizedString(@"The frontmost application is Revclip itself. Please switch to the application you want to exclude, then click this button.", nil);
+        [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
 
         NSWindow *window = self.view.window;
         if (window != nil) {

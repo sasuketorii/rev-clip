@@ -118,7 +118,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
 
 - (void)configureWindow {
     NSWindow *window = self.window;
-    window.title = @"Snippet Editor";
+    window.title = NSLocalizedString(@"Snippet Editor", nil);
     window.styleMask = NSWindowStyleMaskTitled
                      | NSWindowStyleMaskClosable
                      | NSWindowStyleMaskMiniaturizable
@@ -190,7 +190,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     self.outlineView.focusRingType = NSFocusRingTypeNone;
 
     NSTableColumn *column = [[NSTableColumn alloc] initWithIdentifier:@"TitleColumn"];
-    column.title = @"Snippets";
+    column.title = NSLocalizedString(@"Snippets", nil);
     column.resizingMask = NSTableColumnAutoresizingMask;
     column.width = leftPane.bounds.size.width;
 
@@ -207,7 +207,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
 - (void)buildEditorInRightPane:(NSView *)rightPane {
     CGFloat const inset = 16.0;
 
-    NSTextField *titleLabel = [self labelWithString:@"Title:"];
+    NSTextField *titleLabel = [self labelWithString:NSLocalizedString(@"Title:", nil)];
     titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
     [rightPane addSubview:titleLabel];
 
@@ -217,11 +217,12 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     self.titleField.action = @selector(saveButtonClicked:);
     [rightPane addSubview:self.titleField];
 
-    self.contentLabel = [self labelWithString:@"Content:"];
+    self.contentLabel = [self labelWithString:NSLocalizedString(@"Content:", nil)];
     self.contentLabel.translatesAutoresizingMaskIntoConstraints = NO;
     [rightPane addSubview:self.contentLabel];
 
     self.contentTextView = [[NSTextView alloc] initWithFrame:NSMakeRect(0.0, 0.0, 100.0, 100.0)];
+    self.contentTextView.textContainerInset = NSMakeSize(8.0, 8.0);
     self.contentTextView.minSize = NSMakeSize(0.0, 100.0);
     self.contentTextView.maxSize = NSMakeSize(CGFLOAT_MAX, CGFLOAT_MAX);
     self.contentTextView.verticallyResizable = YES;
@@ -241,7 +242,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     self.shortcutContainer.translatesAutoresizingMaskIntoConstraints = NO;
     [rightPane addSubview:self.shortcutContainer];
 
-    NSTextField *shortcutLabel = [self labelWithString:@"Shortcut:"];
+    NSTextField *shortcutLabel = [self labelWithString:NSLocalizedString(@"Shortcut:", nil)];
     shortcutLabel.translatesAutoresizingMaskIntoConstraints = NO;
     [self.shortcutContainer addSubview:shortcutLabel];
 
@@ -291,13 +292,13 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     NSMenu *menu = self.addButton.menu;
     [menu addItem:[NSMenuItem separatorItem]];
 
-    NSMenuItem *addFolderItem = [[NSMenuItem alloc] initWithTitle:@"Add Folder"
+    NSMenuItem *addFolderItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Add Folder", nil)
                                                            action:@selector(addFolderMenuItemSelected:)
                                                     keyEquivalent:@""];
     addFolderItem.target = self;
     [menu addItem:addFolderItem];
 
-    NSMenuItem *addSnippetItem = [[NSMenuItem alloc] initWithTitle:@"Add Snippet"
+    NSMenuItem *addSnippetItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Add Snippet", nil)
                                                             action:@selector(addSnippetMenuItemSelected:)
                                                      keyEquivalent:@""];
     addSnippetItem.target = self;
@@ -311,7 +312,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     self.removeButton.translatesAutoresizingMaskIntoConstraints = NO;
     [bottomBar addSubview:self.removeButton];
 
-    self.saveButton = [NSButton buttonWithTitle:@"Save"
+    self.saveButton = [NSButton buttonWithTitle:NSLocalizedString(@"Save", nil)
                                          target:self
                                          action:@selector(saveButtonClicked:)];
     self.saveButton.translatesAutoresizingMaskIntoConstraints = NO;
@@ -503,7 +504,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
 
     if ([selectedItem isKindOfClass:[RCSnippetFolderNode class]]) {
         RCSnippetFolderNode *folderNode = (RCSnippetFolderNode *)selectedItem;
-        NSString *title = [self normalizedTitleFromField:self.titleField fallback:@"Untitled Folder"];
+        NSString *title = [self normalizedTitleFromField:self.titleField fallback:NSLocalizedString(@"Untitled Folder", nil)];
 
         folderNode.folderDictionary[@"title"] = title;
         BOOL updated = [[RCDatabaseManager shared] updateSnippetFolder:folderNode.folderDictionary];
@@ -515,7 +516,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     }
 
     RCSnippetNode *snippetNode = (RCSnippetNode *)selectedItem;
-    NSString *title = [self normalizedTitleFromField:self.titleField fallback:@"Untitled Snippet"];
+    NSString *title = [self normalizedTitleFromField:self.titleField fallback:NSLocalizedString(@"Untitled Snippet", nil)];
     NSString *content = self.contentTextView.string ?: @"";
 
     snippetNode.snippetDictionary[@"title"] = title;
@@ -536,7 +537,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
         @"identifier": identifier,
         @"folder_index": @([self nextFolderIndexValue]),
         @"enabled": @1,
-        @"title": @"New Folder",
+        @"title": NSLocalizedString(@"New Folder", nil),
     };
 
     BOOL inserted = [[RCDatabaseManager shared] insertSnippetFolder:folderDict];
@@ -580,7 +581,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
         @"identifier": snippetIdentifier,
         @"snippet_index": @([self nextSnippetIndexValueInFolder:targetFolder]),
         @"enabled": @1,
-        @"title": @"New Snippet",
+        @"title": NSLocalizedString(@"New Snippet", nil),
         @"content": @"",
     };
 
@@ -900,7 +901,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
         NSString *title = [self stringValueFromDictionary:folderNode.folderDictionary
                                                        key:@"title"
                                               defaultValue:@""];
-        cell.textField.stringValue = (title.length > 0) ? title : @"Untitled Folder";
+        cell.textField.stringValue = (title.length > 0) ? title : NSLocalizedString(@"Untitled Folder", nil);
     } else {
         RCSnippetNode *snippetNode = (RCSnippetNode *)item;
         NSString *title = [self stringValueFromDictionary:snippetNode.snippetDictionary
@@ -910,7 +911,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
             NSString *content = [self stringValueFromDictionary:snippetNode.snippetDictionary
                                                             key:@"content"
                                                    defaultValue:@""];
-            title = (content.length > 0) ? [self truncatedString:content maxLength:24] : @"Untitled Snippet";
+            title = (content.length > 0) ? [self truncatedString:content maxLength:24] : NSLocalizedString(@"Untitled Snippet", nil);
         }
         cell.textField.stringValue = title;
     }

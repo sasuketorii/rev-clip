@@ -20,6 +20,7 @@ targets:
     dependencies:
       - sdk: ApplicationServices.framework
       - sdk: Carbon.framework
+      - sdk: ServiceManagement.framework
       - framework: Revclip/Vendor/Sparkle/Sparkle.framework
         embed: true
         weak: true

@@ -21,11 +21,11 @@
 }
 
 - (BOOL)isLoginItemEnabled {
-    return ([SMAppService mainApp].status == SMAppServiceStatusEnabled);
+    return ([SMAppService mainAppService].status == SMAppServiceStatusEnabled);
 }
 
 - (BOOL)setLoginItemEnabled:(BOOL)enabled {
-    SMAppService *service = [SMAppService mainApp];
+    SMAppService *service = [SMAppService mainAppService];
     NSError *error = nil;
     BOOL success = NO;
 

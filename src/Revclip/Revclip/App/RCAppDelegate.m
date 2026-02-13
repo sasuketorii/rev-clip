@@ -127,7 +127,7 @@
                                                                             merge:merge
                                                                             error:&importError];
     if (!imported) {
-        [self presentSnippetImportExportError:importError title:@"Failed to Import Snippets"];
+        [self presentSnippetImportExportError:importError title:NSLocalizedString(@"Failed to Import Snippets", nil)];
         return;
     }
 
@@ -151,7 +151,7 @@
     NSError *exportError = nil;
     BOOL exported = [[RCSnippetImportExportService shared] exportSnippetsToURL:panel.URL error:&exportError];
     if (!exported) {
-        [self presentSnippetImportExportError:exportError title:@"Failed to Export Snippets"];
+        [self presentSnippetImportExportError:exportError title:NSLocalizedString(@"Failed to Export Snippets", nil)];
     }
 }
 
@@ -161,19 +161,19 @@
     NSAlert *alert = [[NSAlert alloc] init];
     alert.alertStyle = NSAlertStyleCritical;
     alert.messageText = title;
-    alert.informativeText = error.localizedDescription ?: @"An unknown error occurred.";
-    [alert addButtonWithTitle:@"OK"];
+    alert.informativeText = error.localizedDescription ?: NSLocalizedString(@"An unknown error occurred.", nil);
+    [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
     [alert runModal];
 }
 
 - (BOOL)promptMergeOptionReturningMerge:(BOOL *)merge {
     NSAlert *alert = [[NSAlert alloc] init];
     alert.alertStyle = NSAlertStyleInformational;
-    alert.messageText = @"How do you want to import snippets?";
-    alert.informativeText = @"Choose whether to merge with existing snippets or replace them all.";
-    [alert addButtonWithTitle:@"Merge with existing snippets"];
-    [alert addButtonWithTitle:@"Replace all snippets"];
-    [alert addButtonWithTitle:@"Cancel"];
+    alert.messageText = NSLocalizedString(@"How do you want to import snippets?", nil);
+    alert.informativeText = NSLocalizedString(@"Choose whether to merge with existing snippets or replace them all.", nil);
+    [alert addButtonWithTitle:NSLocalizedString(@"Merge with existing snippets", nil)];
+    [alert addButtonWithTitle:NSLocalizedString(@"Replace all snippets", nil)];
+    [alert addButtonWithTitle:NSLocalizedString(@"Cancel", nil)];
 
     NSModalResponse response = [alert runModal];
     if (response == NSAlertFirstButtonReturn) {

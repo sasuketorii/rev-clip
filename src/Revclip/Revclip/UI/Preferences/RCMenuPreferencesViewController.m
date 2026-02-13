@@ -55,76 +55,76 @@ static CGFloat const kRCMenuPreferencesValueFieldWidth = 50.0;
 #pragma mark - Interface
 
 - (void)buildInterface {
-    NSTextField *titleLabel = [self sectionLabelWithText:@"Menu Settings"];
+    NSTextField *titleLabel = [self sectionLabelWithText:NSLocalizedString(@"Menu Settings", nil)];
     NSStackView *leftColumn = [self columnStackView];
     NSStackView *rightColumn = [self columnStackView];
 
     self.numberOfItemsInlineTextField = [self numericTextFieldWithMinValue:0 maxValue:99];
     self.numberOfItemsInlineStepper = [self numericStepperWithMinValue:0 maxValue:99];
-    [leftColumn addArrangedSubview:[self numericRowWithTitle:@"Number of items inline"
+    [leftColumn addArrangedSubview:[self numericRowWithTitle:NSLocalizedString(@"Number of items inline", nil)
                                                    textField:self.numberOfItemsInlineTextField
                                                      stepper:self.numberOfItemsInlineStepper]];
 
     self.numberOfItemsInFolderTextField = [self numericTextFieldWithMinValue:1 maxValue:99];
     self.numberOfItemsInFolderStepper = [self numericStepperWithMinValue:1 maxValue:99];
-    [leftColumn addArrangedSubview:[self numericRowWithTitle:@"Number of items in folder"
+    [leftColumn addArrangedSubview:[self numericRowWithTitle:NSLocalizedString(@"Number of items in folder", nil)
                                                    textField:self.numberOfItemsInFolderTextField
                                                      stepper:self.numberOfItemsInFolderStepper]];
 
     self.maxTitleLengthTextField = [self numericTextFieldWithMinValue:1 maxValue:200];
     self.maxTitleLengthStepper = [self numericStepperWithMinValue:1 maxValue:200];
-    [leftColumn addArrangedSubview:[self numericRowWithTitle:@"Max title length"
+    [leftColumn addArrangedSubview:[self numericRowWithTitle:NSLocalizedString(@"Max title length", nil)
                                                    textField:self.maxTitleLengthTextField
                                                      stepper:self.maxTitleLengthStepper]];
 
-    self.markWithNumbersButton = [self checkBoxWithTitle:@"Mark with numbers"];
+    self.markWithNumbersButton = [self checkBoxWithTitle:NSLocalizedString(@"Mark with numbers", nil)];
     [leftColumn addArrangedSubview:self.markWithNumbersButton];
 
-    self.startNumberingFromZeroButton = [self checkBoxWithTitle:@"Start numbering from 0"];
+    self.startNumberingFromZeroButton = [self checkBoxWithTitle:NSLocalizedString(@"Start numbering from 0", nil)];
     [leftColumn addArrangedSubview:self.startNumberingFromZeroButton];
 
-    self.addNumericKeyEquivalentsButton = [self checkBoxWithTitle:@"Add numeric key equivalents"];
+    self.addNumericKeyEquivalentsButton = [self checkBoxWithTitle:NSLocalizedString(@"Add numeric key equivalents", nil)];
     [leftColumn addArrangedSubview:self.addNumericKeyEquivalentsButton];
 
-    self.addClearHistoryItemButton = [self checkBoxWithTitle:@"Add clear history item"];
+    self.addClearHistoryItemButton = [self checkBoxWithTitle:NSLocalizedString(@"Add clear history item", nil)];
     [leftColumn addArrangedSubview:self.addClearHistoryItemButton];
 
-    self.showAlertBeforeClearButton = [self checkBoxWithTitle:@"Show alert before clear"];
+    self.showAlertBeforeClearButton = [self checkBoxWithTitle:NSLocalizedString(@"Show alert before clear", nil)];
     [leftColumn addArrangedSubview:self.showAlertBeforeClearButton];
 
-    self.showTooltipButton = [self checkBoxWithTitle:@"Show tooltip"];
+    self.showTooltipButton = [self checkBoxWithTitle:NSLocalizedString(@"Show tooltip", nil)];
     [rightColumn addArrangedSubview:self.showTooltipButton];
 
     self.maxTooltipLengthTextField = [self numericTextFieldWithMinValue:1 maxValue:9999];
     self.maxTooltipLengthStepper = [self numericStepperWithMinValue:1 maxValue:9999];
-    [rightColumn addArrangedSubview:[self numericRowWithTitle:@"Max tooltip length"
+    [rightColumn addArrangedSubview:[self numericRowWithTitle:NSLocalizedString(@"Max tooltip length", nil)
                                                     textField:self.maxTooltipLengthTextField
                                                       stepper:self.maxTooltipLengthStepper]];
 
-    self.showImagePreviewButton = [self checkBoxWithTitle:@"Show image preview"];
+    self.showImagePreviewButton = [self checkBoxWithTitle:NSLocalizedString(@"Show image preview", nil)];
     [rightColumn addArrangedSubview:self.showImagePreviewButton];
 
     self.thumbnailWidthTextField = [self numericTextFieldWithMinValue:16 maxValue:512];
     self.thumbnailWidthStepper = [self numericStepperWithMinValue:16 maxValue:512];
-    [rightColumn addArrangedSubview:[self numericRowWithTitle:@"Thumbnail width"
+    [rightColumn addArrangedSubview:[self numericRowWithTitle:NSLocalizedString(@"Thumbnail width", nil)
                                                     textField:self.thumbnailWidthTextField
                                                       stepper:self.thumbnailWidthStepper]];
 
     self.thumbnailHeightTextField = [self numericTextFieldWithMinValue:16 maxValue:512];
     self.thumbnailHeightStepper = [self numericStepperWithMinValue:16 maxValue:512];
-    [rightColumn addArrangedSubview:[self numericRowWithTitle:@"Thumbnail height"
+    [rightColumn addArrangedSubview:[self numericRowWithTitle:NSLocalizedString(@"Thumbnail height", nil)
                                                     textField:self.thumbnailHeightTextField
                                                       stepper:self.thumbnailHeightStepper]];
 
-    self.showColorPreviewButton = [self checkBoxWithTitle:@"Show color preview"];
+    self.showColorPreviewButton = [self checkBoxWithTitle:NSLocalizedString(@"Show color preview", nil)];
     [rightColumn addArrangedSubview:self.showColorPreviewButton];
 
-    self.showIconButton = [self checkBoxWithTitle:@"Show icon"];
+    self.showIconButton = [self checkBoxWithTitle:NSLocalizedString(@"Show icon", nil)];
     [rightColumn addArrangedSubview:self.showIconButton];
 
     self.iconSizeTextField = [self numericTextFieldWithMinValue:8 maxValue:64];
     self.iconSizeStepper = [self numericStepperWithMinValue:8 maxValue:64];
-    [rightColumn addArrangedSubview:[self numericRowWithTitle:@"Icon size"
+    [rightColumn addArrangedSubview:[self numericRowWithTitle:NSLocalizedString(@"Icon size", nil)
                                                     textField:self.iconSizeTextField
                                                       stepper:self.iconSizeStepper]];
 

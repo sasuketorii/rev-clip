@@ -249,7 +249,7 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
     [self performOnMainThreadSync:^{
         RCKeyCombo mainCombo = [RCHotKeyService keyComboFromUserDefaults:kRCHotKeyMainKeyCombo];
         if (!RCIsValidKeyCombo(mainCombo)) {
-            mainCombo = RCMakeKeyCombo(kRCKeyCodeV, cmdKey | shiftKey);
+            mainCombo = RCMakeKeyCombo(kRCKeyCodeV, controlKey | shiftKey);
             [RCHotKeyService saveKeyCombo:mainCombo toUserDefaults:kRCHotKeyMainKeyCombo];
         }
         [self registerMainHotKey:mainCombo];

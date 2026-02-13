@@ -50,10 +50,10 @@ static UInt32 const kRCDefaultKeyCodeB = 11;
 
     NSAlert *alert = [[NSAlert alloc] init];
     alert.alertStyle = NSAlertStyleWarning;
-    alert.messageText = @"Reset all shortcuts to defaults?";
-    alert.informativeText = @"Main Menu, History Menu, and Snippet Menu will be restored. Clear History will be removed.";
-    [alert addButtonWithTitle:@"Reset"];
-    [alert addButtonWithTitle:@"Cancel"];
+    alert.messageText = NSLocalizedString(@"Reset all shortcuts to defaults?", nil);
+    alert.informativeText = NSLocalizedString(@"Main Menu, History Menu, and Snippet Menu will be restored. Clear History will be removed.", nil);
+    [alert addButtonWithTitle:NSLocalizedString(@"Reset", nil)];
+    [alert addButtonWithTitle:NSLocalizedString(@"Cancel", nil)];
 
     NSWindow *window = self.view.window;
     if (window != nil) {
@@ -127,7 +127,7 @@ static UInt32 const kRCDefaultKeyCodeB = 11;
 
 - (RCKeyCombo)defaultKeyComboForDefaultsKey:(NSString *)defaultsKey {
     if ([defaultsKey isEqualToString:kRCHotKeyMainKeyCombo]) {
-        return RCMakeKeyCombo(kRCDefaultKeyCodeV, cmdKey | shiftKey);
+        return RCMakeKeyCombo(kRCDefaultKeyCodeV, controlKey | shiftKey);
     }
     if ([defaultsKey isEqualToString:kRCHotKeyHistoryKeyCombo]) {
         return RCMakeKeyCombo(kRCDefaultKeyCodeV, cmdKey | controlKey);

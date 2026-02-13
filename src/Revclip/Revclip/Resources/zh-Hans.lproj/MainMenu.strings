@@ -16,3 +16,21 @@
 "HVK-3U-jg9.title" = "导入片段...";
 /* Class = "NSMenuItem"; title = "Export Snippets..."; ObjectID = "zM9-aW-Jhj"; */
 "zM9-aW-Jhj.title" = "导出片段...";
+/* Class = "NSMenuItem"; title = "Edit"; ObjectID = "edt-M0-menu"; */
+"edt-M0-menu.title" = "编辑";
+/* Class = "NSMenu"; title = "Edit"; ObjectID = "edt-M1-subm"; */
+"edt-M1-subm.title" = "编辑";
+/* Class = "NSMenuItem"; title = "Undo"; ObjectID = "edt-U0-undo"; */
+"edt-U0-undo.title" = "撤销";
+/* Class = "NSMenuItem"; title = "Redo"; ObjectID = "edt-R0-redo"; */
+"edt-R0-redo.title" = "重做";
+/* Class = "NSMenuItem"; title = "Cut"; ObjectID = "edt-C0-cut"; */
+"edt-C0-cut.title" = "剪切";
+/* Class = "NSMenuItem"; title = "Copy"; ObjectID = "edt-C2-copy"; */
+"edt-C2-copy.title" = "拷贝";
+/* Class = "NSMenuItem"; title = "Paste"; ObjectID = "edt-P0-pste"; */
+"edt-P0-pste.title" = "粘贴";
+/* Class = "NSMenuItem"; title = "Delete"; ObjectID = "edt-D0-dele"; */
+"edt-D0-dele.title" = "删除";
+/* Class = "NSMenuItem"; title = "Select All"; ObjectID = "edt-A0-sela"; */
+"edt-A0-sela.title" = "全选";

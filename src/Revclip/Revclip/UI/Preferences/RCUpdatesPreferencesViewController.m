@@ -40,7 +40,7 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
 
     NSNumber *checkIntervalValue = [defaults objectForKey:kRCUpdateCheckIntervalKey];
     NSInteger intervalInSeconds = checkIntervalValue != nil ? checkIntervalValue.integerValue : kRCDefaultUpdateCheckInterval;
-    NSMenuItem *intervalItem = [self.checkIntervalPopUpButton itemWithTag:intervalInSeconds];
+    NSMenuItem *intervalItem = [self.checkIntervalPopUpButton.menu itemWithTag:intervalInSeconds];
     if (intervalItem == nil) {
         intervalInSeconds = kRCDefaultUpdateCheckInterval;
     }
@@ -56,19 +56,19 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
     NSString *buildVersion = [infoDictionary[@"CFBundleVersion"] isKindOfClass:NSString.class] ? infoDictionary[@"CFBundleVersion"] : @"";
 
     if (shortVersion.length > 0 && buildVersion.length > 0) {
-        self.versionInfoLabel.stringValue = [NSString stringWithFormat:@"Version %@ (%@)", shortVersion, buildVersion];
+        self.versionInfoLabel.stringValue = [NSString stringWithFormat:NSLocalizedString(@"Version %@ (%@)", nil), shortVersion, buildVersion];
         return;
     }
     if (shortVersion.length > 0) {
-        self.versionInfoLabel.stringValue = [NSString stringWithFormat:@"Version %@", shortVersion];
+        self.versionInfoLabel.stringValue = [NSString stringWithFormat:NSLocalizedString(@"Version %@", nil), shortVersion];
         return;
     }
     if (buildVersion.length > 0) {
-        self.versionInfoLabel.stringValue = [NSString stringWithFormat:@"Build %@", buildVersion];
+        self.versionInfoLabel.stringValue = [NSString stringWithFormat:NSLocalizedString(@"Build %@", nil), buildVersion];
         return;
     }
 
-    self.versionInfoLabel.stringValue = @"Version -";
+    self.versionInfoLabel.stringValue = NSLocalizedString(@"Version -", nil);
 }
 
 - (void)updateIntervalControlState {
@@ -96,9 +96,9 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
     (void)sender;
 
     NSAlert *alert = [[NSAlert alloc] init];
-    alert.messageText = @"Not Available Yet";
-    alert.informativeText = @"Update checking will be available in a future release.";
-    [alert addButtonWithTitle:@"OK"];
+    alert.messageText = NSLocalizedString(@"Not Available Yet", nil);
+    alert.informativeText = NSLocalizedString(@"Update checking will be available in a future release.", nil);
+    [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
     [alert runModal];
 }
 

@@ -20,9 +20,6 @@
 #import "RCUtilities.h"
 
 static NSString * const kRCStatusBarIconAssetName = @"StatusBarIcon";
-static NSString * const kRCNoHistoryTitle = @"No History";
-static NSString * const kRCNoSnippetsTitle = @"No Snippets";
-static NSString * const kRCEmptySnippetFolderTitle = @"(Empty)";
 static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
 @interface RCMenuManager ()
@@ -269,7 +266,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
         NSString *title = [self stringValueFromDictionary:targetFolder key:@"title" defaultValue:@""];
         if (title.length == 0) {
-            title = @"Untitled Folder";
+            title = NSLocalizedString(@"Untitled Folder", nil);
         }
 
         NSMenu *menu = [[NSMenu alloc] initWithTitle:title];
@@ -307,7 +304,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
     if (addClearHistory) {
         [self.statusMenu addItem:[NSMenuItem separatorItem]];
 
-        NSMenuItem *clearHistoryItem = [[NSMenuItem alloc] initWithTitle:@"Clear History"
+        NSMenuItem *clearHistoryItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Clear History", nil)
                                                                    action:@selector(clearHistoryMenuItemSelected:)
                                                             keyEquivalent:@""];
         clearHistoryItem.target = self;
@@ -328,7 +325,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
     }
 
     if (clipRows.count == 0) {
-        NSMenuItem *noHistoryItem = [[NSMenuItem alloc] initWithTitle:kRCNoHistoryTitle
+        NSMenuItem *noHistoryItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"No History", nil)
                                                                action:nil
                                                         keyEquivalent:@""];
         noHistoryItem.enabled = NO;
@@ -352,7 +349,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
     for (NSUInteger groupStart = inlineCount; groupStart < clipItems.count; groupStart += folderChunkSize) {
         NSUInteger groupEnd = MIN(groupStart + folderChunkSize, clipItems.count);
-        NSString *folderTitle = [NSString stringWithFormat:@"Items %lu-%lu",
+        NSString *folderTitle = [NSString stringWithFormat:NSLocalizedString(@"Items %lu-%lu", nil),
                                  (unsigned long)(groupStart + 1),
                                  (unsigned long)groupEnd];
 
@@ -388,7 +385,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
         NSString *title = [self stringValueFromDictionary:folder key:@"title" defaultValue:@""];
         if (title.length == 0) {
-            title = @"Untitled Folder";
+            title = NSLocalizedString(@"Untitled Folder", nil);
         }
 
         NSMenuItem *folderItem = [[NSMenuItem alloc] initWithTitle:title
@@ -402,7 +399,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
     }
 
     if (!hasAtLeastOneFolder) {
-        NSMenuItem *noSnippetsItem = [[NSMenuItem alloc] initWithTitle:kRCNoSnippetsTitle
+        NSMenuItem *noSnippetsItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"No Snippets", nil)
                                                                  action:nil
                                                           keyEquivalent:@""];
         noSnippetsItem.enabled = NO;
@@ -430,7 +427,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
             snippetTitle = [self truncatedString:snippetContent maxLength:24];
         }
         if (snippetTitle.length == 0) {
-            snippetTitle = @"Untitled Snippet";
+            snippetTitle = NSLocalizedString(@"Untitled Snippet", nil);
         }
 
         NSMenuItem *snippetItem = [[NSMenuItem alloc] initWithTitle:snippetTitle
@@ -443,7 +440,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
     }
 
     if (!hasSnippet) {
-        NSMenuItem *emptyItem = [[NSMenuItem alloc] initWithTitle:kRCEmptySnippetFolderTitle
+        NSMenuItem *emptyItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"(Empty)", nil)
                                                            action:nil
                                                     keyEquivalent:@""];
         emptyItem.enabled = NO;
@@ -452,20 +449,20 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 }
 
 - (void)appendApplicationSectionToMenu:(NSMenu *)menu {
-    NSMenuItem *preferencesItem = [[NSMenuItem alloc] initWithTitle:@"Preferences..."
+    NSMenuItem *preferencesItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Preferences...", nil)
                                                               action:@selector(openPreferences:)
                                                        keyEquivalent:@","];
     preferencesItem.keyEquivalentModifierMask = NSEventModifierFlagCommand;
     preferencesItem.target = self;
     [menu addItem:preferencesItem];
 
-    NSMenuItem *editSnippetsItem = [[NSMenuItem alloc] initWithTitle:@"Edit Snippets..."
+    NSMenuItem *editSnippetsItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Edit Snippets...", nil)
                                                                action:@selector(openSnippetEditor:)
                                                         keyEquivalent:@""];
     editSnippetsItem.target = self;
     [menu addItem:editSnippetsItem];
 
-    NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:@"Quit Revclip"
+    NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Quit Revclip", nil)
                                                        action:@selector(terminate:)
                                                 keyEquivalent:@"q"];
     quitItem.keyEquivalentModifierMask = NSEventModifierFlagCommand;
@@ -584,27 +581,27 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
 - (NSString *)fallbackTitleForPrimaryType:(NSString *)primaryType {
     if ([primaryType isEqualToString:NSPasteboardTypeTIFF]) {
-        return @"Image";
+        return NSLocalizedString(@"Image", nil);
     }
     if ([primaryType isEqualToString:NSPasteboardTypeURL]) {
-        return @"URL";
+        return NSLocalizedString(@"URL", nil);
     }
     if ([primaryType isEqualToString:NSPasteboardTypePDF]) {
-        return @"PDF";
+        return NSLocalizedString(@"PDF", nil);
     }
     if ([primaryType isEqualToString:NSPasteboardTypeRTF] || [primaryType isEqualToString:NSPasteboardTypeRTFD]) {
-        return @"Rich Text";
+        return NSLocalizedString(@"Rich Text", nil);
     }
     if ([primaryType isEqualToString:NSPasteboardTypeFileURL]) {
-        return @"Files";
+        return NSLocalizedString(@"Files", nil);
     }
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     if ([primaryType isEqualToString:NSFilenamesPboardType]) {
-        return @"Files";
+        return NSLocalizedString(@"Files", nil);
     }
 #pragma clang diagnostic pop
-    return @"Clip";
+    return NSLocalizedString(@"Clip", nil);
 }
 
 - (NSString *)tooltipForClipItem:(RCClipItem *)clipItem clipData:(RCClipData *)clipData {
@@ -767,10 +764,10 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
     if (shouldShowAlert) {
         NSAlert *alert = [[NSAlert alloc] init];
         alert.alertStyle = NSAlertStyleWarning;
-        alert.messageText = @"Clear clipboard history?";
-        alert.informativeText = @"All saved clips will be removed.";
-        [alert addButtonWithTitle:@"Clear"];
-        [alert addButtonWithTitle:@"Cancel"];
+        alert.messageText = NSLocalizedString(@"Clear clipboard history?", nil);
+        alert.informativeText = NSLocalizedString(@"All saved clips will be removed.", nil);
+        [alert addButtonWithTitle:NSLocalizedString(@"Clear", nil)];
+        [alert addButtonWithTitle:NSLocalizedString(@"Cancel", nil)];
 
         NSModalResponse response = [alert runModal];
         if (response != NSAlertFirstButtonReturn) {

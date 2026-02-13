@@ -23,7 +23,7 @@ static const NSInteger RCShowStatusItemDefault = 1;
 @property (nonatomic, weak) IBOutlet NSButton *pasteCommandButton;
 @property (nonatomic, weak) IBOutlet NSButton *reorderAfterPastingButton;
 @property (nonatomic, weak) IBOutlet NSButton *overwriteSameHistoryButton;
-@property (nonatomic, weak) IBOutlet NSButton *copySameHistoryButton;
+@property (nonatomic, weak) IBOutlet NSButton *duplicateSameHistoryButton;
 
 @end
 
@@ -82,7 +82,7 @@ static const NSInteger RCShowStatusItemDefault = 1;
 
 - (IBAction)copySameHistoryChanged:(id)sender {
     (void)sender;
-    [[NSUserDefaults standardUserDefaults] setBool:(self.copySameHistoryButton.state == NSControlStateValueOn)
+    [[NSUserDefaults standardUserDefaults] setBool:(self.duplicateSameHistoryButton.state == NSControlStateValueOn)
                                             forKey:kRCPrefCopySameHistory];
 }
 
@@ -96,7 +96,7 @@ static const NSInteger RCShowStatusItemDefault = 1;
     self.maxHistorySizeStepper.valueWraps = NO;
 
     [self.showStatusItemPopUpButton removeAllItems];
-    [self.showStatusItemPopUpButton addItemsWithTitles:@[@"Hide", @"Show"]];
+    [self.showStatusItemPopUpButton addItemsWithTitles:@[NSLocalizedString(@"Hide", nil), NSLocalizedString(@"Show", nil)]];
 }
 
 - (void)applyPreferenceValues {
@@ -122,7 +122,7 @@ static const NSInteger RCShowStatusItemDefault = 1;
     self.overwriteSameHistoryButton.state = [self boolPreferenceForKey:kRCPrefOverwriteSameHistory defaultValue:YES]
         ? NSControlStateValueOn
         : NSControlStateValueOff;
-    self.copySameHistoryButton.state = [self boolPreferenceForKey:kRCPrefCopySameHistory defaultValue:YES]
+    self.duplicateSameHistoryButton.state = [self boolPreferenceForKey:kRCPrefCopySameHistory defaultValue:YES]
         ? NSControlStateValueOn
         : NSControlStateValueOff;
 }
