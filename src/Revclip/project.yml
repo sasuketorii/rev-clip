@@ -41,7 +41,7 @@ targets:
         NSPrincipalClass: "NSApplication"
         NSHumanReadableCopyright: "Copyright © 2024-2026 Revclip. All rights reserved."
         CFBundleIconName: "AppIcon"
-        SUFeedURL: "https://revclip.com/appcast.xml"
+        SUFeedURL: "https://github.com/sasuketorii/rev-clip/releases/latest/download/appcast.xml"
         SUPublicEDKey: ""
     sources:
       - path: Revclip

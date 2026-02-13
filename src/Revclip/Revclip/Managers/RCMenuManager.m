@@ -22,7 +22,7 @@
 static NSString * const kRCStatusBarIconAssetName = @"StatusBarIcon";
 static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
-@interface RCMenuManager ()
+@interface RCMenuManager () <NSMenuDelegate>
 
 @property (nonatomic, strong, nullable) NSStatusItem *statusItem;
 @property (nonatomic, strong) NSMenu *statusMenu;
@@ -43,7 +43,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _statusMenu = [[NSMenu alloc] initWithTitle:@"Revclip"];
+        _statusMenu = [self menuWithTitle:@"Revclip"];
 
         NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
         [notificationCenter addObserver:self
@@ -162,6 +162,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
         button.imagePosition = NSImageOnly;
     }
 
+    [self configureMenuForSimpleTransparentBackground:self.statusMenu];
     self.statusItem.menu = self.statusMenu;
 }
 
@@ -210,7 +211,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
             return;
         }
 
-        NSMenu *menu = [[NSMenu alloc] initWithTitle:@"History"];
+        NSMenu *menu = [self menuWithTitle:@"History"];
         [self appendClipHistorySectionToMenu:menu];
         [menu addItem:[NSMenuItem separatorItem]];
         [self appendApplicationSectionToMenu:menu];
@@ -225,7 +226,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
             return;
         }
 
-        NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Snippets"];
+        NSMenu *menu = [self menuWithTitle:@"Snippets"];
         [self appendSnippetSectionToMenu:menu];
         [menu addItem:[NSMenuItem separatorItem]];
         [self appendApplicationSectionToMenu:menu];
@@ -269,7 +270,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
             title = NSLocalizedString(@"Untitled Folder", nil);
         }
 
-        NSMenu *menu = [[NSMenu alloc] initWithTitle:title];
+        NSMenu *menu = [self menuWithTitle:title];
         [self appendSnippetsForFolderIdentifier:folderIdentifier toMenu:menu];
         [menu addItem:[NSMenuItem separatorItem]];
         [self appendApplicationSectionToMenu:menu];
@@ -282,6 +283,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
         return;
     }
 
+    [self configureMenuForSimpleTransparentBackground:menu];
     NSMenu *originalMenu = self.statusItem.menu ?: self.statusMenu;
     self.statusItem.menu = menu;
     [self.statusItem.button performClick:nil];
@@ -295,6 +297,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
         return;
     }
 
+    [self configureMenuForSimpleTransparentBackground:self.statusMenu];
     [self.statusMenu removeAllItems];
     [self appendClipHistorySectionToMenu:self.statusMenu];
     [self.statusMenu addItem:[NSMenuItem separatorItem]];
@@ -356,7 +359,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
         NSMenuItem *folderItem = [[NSMenuItem alloc] initWithTitle:folderTitle
                                                              action:nil
                                                       keyEquivalent:@""];
-        NSMenu *folderMenu = [[NSMenu alloc] initWithTitle:folderTitle];
+        NSMenu *folderMenu = [self menuWithTitle:folderTitle];
         folderItem.submenu = folderMenu;
 
         for (NSUInteger index = groupStart; index < groupEnd; index++) {
@@ -391,7 +394,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
         NSMenuItem *folderItem = [[NSMenuItem alloc] initWithTitle:title
                                                              action:nil
                                                       keyEquivalent:@""];
-        NSMenu *folderMenu = [[NSMenu alloc] initWithTitle:title];
+        NSMenu *folderMenu = [self menuWithTitle:title];
         folderItem.submenu = folderMenu;
         [menu addItem:folderItem];
         hasAtLeastOneFolder = YES;
@@ -468,6 +471,56 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
     quitItem.keyEquivalentModifierMask = NSEventModifierFlagCommand;
     quitItem.target = NSApp;
     [menu addItem:quitItem];
+}
+
+- (NSMenu *)menuWithTitle:(NSString *)title {
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:title ?: @""];
+    menu.delegate = self;
+    [self configureMenuForSimpleTransparentBackground:menu];
+    return menu;
+}
+
+- (void)menuWillOpen:(NSMenu *)menu {
+    [self configureMenuForSimpleTransparentBackground:menu];
+}
+
+- (void)configureMenuForSimpleTransparentBackground:(NSMenu *)menu {
+    if (menu == nil) {
+        return;
+    }
+
+    NSAppearance *appearance = [self nonVibrantMenuAppearance];
+    if (appearance != nil) {
+        menu.appearance = appearance;
+    }
+}
+
+- (nullable NSAppearance *)nonVibrantMenuAppearance {
+    // NSMenu has no public API to switch off blur directly; using a non-vibrant appearance
+    // is the safest supported way to avoid vibrant menu rendering.
+    NSAppearance *applicationAppearance = NSApp.effectiveAppearance;
+    if (applicationAppearance != nil && !applicationAppearance.allowsVibrancy) {
+        return applicationAppearance;
+    }
+
+    NSAppearance *referenceAppearance = applicationAppearance ?: [NSAppearance appearanceNamed:NSAppearanceNameAqua];
+    NSAppearanceName bestMatch = [referenceAppearance bestMatchFromAppearancesWithNames:@[
+        NSAppearanceNameAccessibilityHighContrastDarkAqua,
+        NSAppearanceNameAccessibilityHighContrastAqua,
+        NSAppearanceNameDarkAqua,
+        NSAppearanceNameAqua
+    ]];
+
+    NSAppearanceName targetName = NSAppearanceNameAqua;
+    if ([bestMatch isEqualToString:NSAppearanceNameAccessibilityHighContrastDarkAqua]) {
+        targetName = NSAppearanceNameAccessibilityHighContrastDarkAqua;
+    } else if ([bestMatch isEqualToString:NSAppearanceNameAccessibilityHighContrastAqua]) {
+        targetName = NSAppearanceNameAccessibilityHighContrastAqua;
+    } else if ([bestMatch isEqualToString:NSAppearanceNameDarkAqua]) {
+        targetName = NSAppearanceNameDarkAqua;
+    }
+
+    return [NSAppearance appearanceNamed:targetName];
 }
 
 #pragma mark - Clip Menu Item

@@ -8,6 +8,7 @@
 #import "RCUpdatesPreferencesViewController.h"
 
 #import "RCConstants.h"
+#import "RCUpdateService.h"
 
 static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
 
@@ -94,12 +95,7 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
 
 - (IBAction)checkNowClicked:(id)sender {
     (void)sender;
-
-    NSAlert *alert = [[NSAlert alloc] init];
-    alert.messageText = NSLocalizedString(@"Not Available Yet", nil);
-    alert.informativeText = NSLocalizedString(@"Update checking will be available in a future release.", nil);
-    [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
-    [alert runModal];
+    [[RCUpdateService shared] checkForUpdates];
 }
 
 @end
