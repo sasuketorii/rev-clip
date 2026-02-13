@@ -63,6 +63,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
 @property (nonatomic, strong) RCHotKeyRecorderView *hotKeyRecorderView;
 @property (nonatomic, strong) NSPopUpButton *addButton;
 @property (nonatomic, strong) NSButton *removeButton;
+@property (nonatomic, strong) NSButton *enabledToggleButton;
 @property (nonatomic, strong) NSButton *saveButton;
 
 @property (nonatomic, assign) BOOL uiBuilt;
@@ -312,6 +313,14 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     self.removeButton.translatesAutoresizingMaskIntoConstraints = NO;
     [bottomBar addSubview:self.removeButton];
 
+    self.enabledToggleButton = [NSButton buttonWithTitle:NSLocalizedString(@"Enable/Disable", nil)
+                                                  target:self
+                                                  action:@selector(toggleSelectedItemEnabled:)];
+    self.enabledToggleButton.translatesAutoresizingMaskIntoConstraints = NO;
+    self.enabledToggleButton.bezelStyle = NSBezelStyleTexturedRounded;
+    self.enabledToggleButton.imagePosition = NSImageLeft;
+    [bottomBar addSubview:self.enabledToggleButton];
+
     self.saveButton = [NSButton buttonWithTitle:NSLocalizedString(@"Save", nil)
                                          target:self
                                          action:@selector(saveButtonClicked:)];
@@ -327,6 +336,9 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
         [self.removeButton.leadingAnchor constraintEqualToAnchor:self.addButton.trailingAnchor constant:8.0],
         [self.removeButton.centerYAnchor constraintEqualToAnchor:bottomBar.centerYAnchor],
         [self.removeButton.widthAnchor constraintEqualToConstant:32.0],
+
+        [self.enabledToggleButton.leadingAnchor constraintEqualToAnchor:self.removeButton.trailingAnchor constant:8.0],
+        [self.enabledToggleButton.centerYAnchor constraintEqualToAnchor:bottomBar.centerYAnchor],
 
         [self.saveButton.trailingAnchor constraintEqualToAnchor:bottomBar.trailingAnchor constant:-12.0],
         [self.saveButton.centerYAnchor constraintEqualToAnchor:bottomBar.centerYAnchor],
@@ -439,6 +451,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     self.titleField.enabled = hasSelection;
     self.saveButton.enabled = hasSelection;
     self.removeButton.enabled = hasSelection;
+    self.enabledToggleButton.enabled = hasSelection;
 
     if (!hasSelection) {
         self.titleField.stringValue = @"";
@@ -448,6 +461,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
         self.contentTextView.editable = NO;
         self.shortcutContainer.hidden = YES;
         self.hotKeyRecorderView.keyCombo = RCInvalidKeyCombo();
+        [self updateEnabledToggleButtonForItem:nil];
         self.updatingEditor = NO;
         return;
     }
@@ -467,6 +481,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
                                                                  key:@"identifier"
                                                         defaultValue:@""];
         self.hotKeyRecorderView.keyCombo = [self storedHotKeyComboForFolderIdentifier:folderIdentifier];
+        [self updateEnabledToggleButtonForItem:folderNode];
         self.updatingEditor = NO;
         return;
     }
@@ -484,6 +499,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     self.contentTextView.editable = YES;
     self.shortcutContainer.hidden = YES;
     self.hotKeyRecorderView.keyCombo = RCInvalidKeyCombo();
+    [self updateEnabledToggleButtonForItem:snippetNode];
 
     self.updatingEditor = NO;
 }
@@ -647,6 +663,44 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     if (folderNode != nil) {
         [self persistSnippetOrderForFolder:folderNode];
     }
+    [[RCMenuManager shared] rebuildMenu];
+}
+
+- (void)toggleSelectedItemEnabled:(id)sender {
+    (void)sender;
+
+    id selectedItem = [self selectedItem];
+    if (selectedItem == nil) {
+        return;
+    }
+
+    BOOL currentEnabled = [self isItemEnabled:selectedItem];
+    BOOL nextEnabled = !currentEnabled;
+    BOOL updated = NO;
+
+    if ([selectedItem isKindOfClass:[RCSnippetFolderNode class]]) {
+        RCSnippetFolderNode *folderNode = (RCSnippetFolderNode *)selectedItem;
+        folderNode.folderDictionary[@"enabled"] = @(nextEnabled);
+        updated = [[RCDatabaseManager shared] updateSnippetFolder:folderNode.folderDictionary];
+        if (updated) {
+            [self.outlineView reloadItem:folderNode reloadChildren:YES];
+            [self updateEnabledToggleButtonForItem:folderNode];
+        }
+    } else if ([selectedItem isKindOfClass:[RCSnippetNode class]]) {
+        RCSnippetNode *snippetNode = (RCSnippetNode *)selectedItem;
+        snippetNode.snippetDictionary[@"enabled"] = @(nextEnabled);
+        updated = [[RCDatabaseManager shared] updateSnippet:snippetNode.snippetDictionary];
+        if (updated) {
+            [self.outlineView reloadItem:snippetNode reloadChildren:NO];
+            [self updateEnabledToggleButtonForItem:snippetNode];
+        }
+    }
+
+    if (!updated) {
+        NSBeep();
+        return;
+    }
+
     [[RCMenuManager shared] rebuildMenu];
 }
 
@@ -916,6 +970,12 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
         cell.textField.stringValue = title;
     }
 
+    if ([self isItemEnabled:item]) {
+        cell.textField.textColor = NSColor.labelColor;
+    } else {
+        cell.textField.textColor = NSColor.secondaryLabelColor;
+    }
+
     return cell;
 }
 
@@ -1121,6 +1181,36 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     return maxIndex + 1;
 }
 
+- (void)updateEnabledToggleButtonForItem:(nullable id)item {
+    if (self.enabledToggleButton == nil) {
+        return;
+    }
+
+    if (item == nil) {
+        self.enabledToggleButton.image = [NSImage imageWithSystemSymbolName:@"eye" accessibilityDescription:NSLocalizedString(@"Enable/Disable", nil)];
+        return;
+    }
+
+    BOOL enabled = [self isItemEnabled:item];
+    NSString *symbolName = enabled ? @"eye" : @"eye.slash";
+    self.enabledToggleButton.image = [NSImage imageWithSystemSymbolName:symbolName
+                                                   accessibilityDescription:NSLocalizedString(@"Enable/Disable", nil)];
+}
+
+- (BOOL)isItemEnabled:(id)item {
+    if ([item isKindOfClass:[RCSnippetFolderNode class]]) {
+        RCSnippetFolderNode *folderNode = (RCSnippetFolderNode *)item;
+        return [self boolValueFromDictionary:folderNode.folderDictionary key:@"enabled" defaultValue:YES];
+    }
+
+    if ([item isKindOfClass:[RCSnippetNode class]]) {
+        RCSnippetNode *snippetNode = (RCSnippetNode *)item;
+        return [self boolValueFromDictionary:snippetNode.snippetDictionary key:@"enabled" defaultValue:YES];
+    }
+
+    return YES;
+}
+
 - (RCKeyCombo)storedHotKeyComboForFolderIdentifier:(NSString *)folderIdentifier {
     if (folderIdentifier.length == 0) {
         return RCInvalidKeyCombo();
@@ -1190,6 +1280,27 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     }
     if ([rawValue isKindOfClass:[NSString class]]) {
         return [(NSString *)rawValue integerValue];
+    }
+    return defaultValue;
+}
+
+- (BOOL)boolValueFromDictionary:(NSDictionary *)dictionary key:(NSString *)key defaultValue:(BOOL)defaultValue {
+    id rawValue = dictionary[key];
+    if ([rawValue isKindOfClass:[NSNumber class]]) {
+        return [(NSNumber *)rawValue boolValue];
+    }
+    if ([rawValue isKindOfClass:[NSString class]]) {
+        NSString *normalized = [[(NSString *)rawValue stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
+        if ([normalized isEqualToString:@"1"]
+            || [normalized isEqualToString:@"true"]
+            || [normalized isEqualToString:@"yes"]) {
+            return YES;
+        }
+        if ([normalized isEqualToString:@"0"]
+            || [normalized isEqualToString:@"false"]
+            || [normalized isEqualToString:@"no"]) {
+            return NO;
+        }
     }
     return defaultValue;
 }

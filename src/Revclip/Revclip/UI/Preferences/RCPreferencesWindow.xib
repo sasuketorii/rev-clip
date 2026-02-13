@@ -14,10 +14,10 @@
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <window key="window" title="Preferences" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" animationBehavior="default" id="Qp3-7m-bdU">
             <windowStyleMask key="styleMask" titled="YES" closable="YES"/>
-            <rect key="contentRect" x="280" y="260" width="480" height="300"/>
+            <rect key="contentRect" x="280" y="260" width="700" height="300"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1728" height="1117"/>
             <view key="contentView" id="dLo-LR-Zij">
-                <rect key="frame" x="0.0" y="0.0" width="480" height="300"/>
+                <rect key="frame" x="0.0" y="0.0" width="700" height="300"/>
                 <autoresizingMask key="autoresizingMask"/>
             </view>
             <point key="canvasLocation" x="105" y="182"/>

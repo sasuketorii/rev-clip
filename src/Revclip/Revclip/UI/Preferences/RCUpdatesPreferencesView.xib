@@ -16,12 +16,12 @@
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customView id="PAf-qP-Ikr">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="200"/>
+            <rect key="frame" x="0.0" y="0.0" width="700" height="200"/>
             <autoresizingMask key="autoresizingMask"/>
             <subviews>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="h2L-C6-CtQ">
                     <rect key="frame" x="20" y="162" width="217" height="18"/>
-                    <buttonCell key="cell" type="check" title="Automatically check for updates" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="eTQ-ae-LlQ">
+                    <buttonCell key="cell" type="check" title="自動的にアップデートを確認" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="eTQ-ae-LlQ">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -31,7 +31,7 @@
                 </button>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="H8Y-WN-YRt" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
                     <rect key="frame" x="20" y="130" width="82" height="17"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" title="Check interval:" id="n0h-kP-D2h">
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="確認間隔:" id="n0h-kP-D2h">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -39,14 +39,14 @@
                 </textField>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="4Nx-9w-HRR">
                     <rect key="frame" x="114" y="124" width="120" height="26"/>
-                    <popUpButtonCell key="cell" type="push" title="Daily" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="F0z-FY-hWw" id="Qbq-9x-u7d">
+                    <popUpButtonCell key="cell" type="push" title="毎日" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="F0z-FY-hWw" id="Qbq-9x-u7d">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
                         <menu key="menu" id="CUJ-Zn-eJ8">
                             <items>
-                                <menuItem title="Daily" state="on" tag="86400" id="F0z-FY-hWw"/>
-                                <menuItem title="Weekly" tag="604800" id="dV1-6K-i2N"/>
-                                <menuItem title="Monthly" tag="2592000" id="yyd-84-J9K"/>
+                                <menuItem title="毎日" state="on" tag="86400" id="F0z-FY-hWw"/>
+                                <menuItem title="毎週" tag="604800" id="dV1-6K-i2N"/>
+                                <menuItem title="毎月" tag="2592000" id="yyd-84-J9K"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
@@ -56,7 +56,7 @@
                 </popUpButton>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Qgg-fD-IJT">
                     <rect key="frame" x="20" y="20" width="97" height="32"/>
-                    <buttonCell key="cell" type="push" title="Check Now" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="4h6-KP-YBH">
+                    <buttonCell key="cell" type="push" title="今すぐ確認" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="4h6-KP-YBH">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -66,7 +66,7 @@
                 </button>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="4qK-4z-vwY" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
                     <rect key="frame" x="358" y="27" width="102" height="17"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" alignment="right" title="Version -" id="Z8L-zv-szg">
+                    <textFieldCell key="cell" lineBreakMode="clipping" alignment="right" title="バージョン -" id="Z8L-zv-szg">
                         <font key="font" metaFont="smallSystem"/>
                         <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -74,7 +74,7 @@
                 </textField>
             </subviews>
             <constraints>
-                <constraint firstAttribute="width" constant="480" id="x3F-cS-svT"/>
+                <constraint firstAttribute="width" constant="700" id="x3F-cS-svT"/>
                 <constraint firstAttribute="height" constant="200" id="d8w-z1-xMe"/>
                 <constraint firstItem="h2L-C6-CtQ" firstAttribute="leading" secondItem="PAf-qP-Ikr" secondAttribute="leading" constant="20" id="bnf-oz-s7p"/>
                 <constraint firstItem="h2L-C6-CtQ" firstAttribute="top" secondItem="PAf-qP-Ikr" secondAttribute="top" constant="20" id="Mz0-dG-FwW"/>

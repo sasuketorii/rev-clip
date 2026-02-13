@@ -22,6 +22,7 @@ NSString * const RCPreferencesTabExclude = @"exclude";
 NSString * const RCPreferencesTabShortcuts = @"shortcuts";
 NSString * const RCPreferencesTabUpdates = @"updates";
 NSString * const RCPreferencesTabBeta = @"beta";
+static const CGFloat RCPreferencesMinimumContentWidth = 700.0;
 
 @interface RCPreferencesWindowController () <NSToolbarDelegate>
 
@@ -133,7 +134,11 @@ NSString * const RCPreferencesTabBeta = @"beta";
 
     NSString *symbolName = [self symbolNameForTabIdentifier:itemIdentifier];
     if (symbolName.length > 0) {
-        item.image = [NSImage imageWithSystemSymbolName:symbolName accessibilityDescription:title];
+        NSImage *symbolImage = [NSImage imageWithSystemSymbolName:symbolName accessibilityDescription:title];
+        if (symbolImage == nil) {
+            symbolImage = [NSImage imageWithSystemSymbolName:@"gearshape" accessibilityDescription:title];
+        }
+        item.image = symbolImage;
     }
 
     return item;
@@ -151,6 +156,7 @@ NSString * const RCPreferencesTabBeta = @"beta";
     if (newSize.width < 1.0 || newSize.height < 1.0) {
         newSize = newView.frame.size;
     }
+    newSize.width = MAX(newSize.width, RCPreferencesMinimumContentWidth);
 
     NSRect windowFrame = self.window.frame;
     CGFloat titleBarHeight = windowFrame.size.height - self.window.contentLayoutRect.size.height;
@@ -173,6 +179,16 @@ NSString * const RCPreferencesTabBeta = @"beta";
     window.styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable;
     window.collectionBehavior = NSWindowCollectionBehaviorMoveToActiveSpace;
     window.releasedWhenClosed = NO;
+    window.contentMinSize = NSMakeSize(RCPreferencesMinimumContentWidth, 1.0);
+
+    NSRect currentFrame = window.frame;
+    NSRect currentContentRect = [window contentRectForFrameRect:currentFrame];
+    if (currentContentRect.size.width < RCPreferencesMinimumContentWidth) {
+        currentContentRect.size.width = RCPreferencesMinimumContentWidth;
+        NSRect targetFrame = [window frameRectForContentRect:currentContentRect];
+        targetFrame.origin.x = currentFrame.origin.x - (targetFrame.size.width - currentFrame.size.width) * 0.5;
+        [window setFrame:targetFrame display:NO];
+    }
 }
 
 - (NSArray<NSString *> *)tabIdentifiers {
@@ -285,7 +301,7 @@ NSString * const RCPreferencesTabBeta = @"beta";
         return @"arrow.triangle.2.circlepath";
     }
     if ([tabIdentifier isEqualToString:RCPreferencesTabBeta]) {
-        return @"flask";
+        return @"testtube.2";
     }
     return @"";
 }
