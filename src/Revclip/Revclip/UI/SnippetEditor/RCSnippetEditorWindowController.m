@@ -68,7 +68,7 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
 @property (nonatomic, strong) RCHotKeyRecorderView *hotKeyRecorderView;
 @property (nonatomic, strong) NSPopUpButton *addButton;
 @property (nonatomic, strong) NSButton *removeButton;
-@property (nonatomic, strong) NSButton *toggleEnabledButton;
+@property (nonatomic, strong) NSButton *enabledToggleButton;
 @property (nonatomic, strong) NSButton *importButton;
 @property (nonatomic, strong) NSButton *exportButton;
 @property (nonatomic, strong) NSButton *saveButton;
@@ -320,10 +320,10 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
     self.removeButton.translatesAutoresizingMaskIntoConstraints = NO;
     [bottomBar addSubview:self.removeButton];
 
-    self.toggleEnabledButton = [self actionButtonWithTitle:NSLocalizedString(@"Enable/Disable", nil)
-                                                symbolName:@"checkmark.circle"
-                                                    action:@selector(toggleEnabledButtonClicked:)];
-    [bottomBar addSubview:self.toggleEnabledButton];
+    self.enabledToggleButton = [self actionButtonWithTitle:NSLocalizedString(@"Enable/Disable", nil)
+                                                 symbolName:@"eye"
+                                                     action:@selector(toggleSelectedItemEnabled:)];
+    [bottomBar addSubview:self.enabledToggleButton];
 
     self.importButton = [self actionButtonWithTitle:NSLocalizedString(@"Import", nil)
                                          symbolName:@"square.and.arrow.down"
@@ -351,11 +351,11 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
         [self.removeButton.centerYAnchor constraintEqualToAnchor:bottomBar.centerYAnchor],
         [self.removeButton.widthAnchor constraintEqualToConstant:32.0],
 
-        [self.toggleEnabledButton.leadingAnchor constraintEqualToAnchor:self.removeButton.trailingAnchor constant:10.0],
-        [self.toggleEnabledButton.centerYAnchor constraintEqualToAnchor:bottomBar.centerYAnchor],
-        [self.toggleEnabledButton.widthAnchor constraintEqualToConstant:124.0],
+        [self.enabledToggleButton.leadingAnchor constraintEqualToAnchor:self.removeButton.trailingAnchor constant:10.0],
+        [self.enabledToggleButton.centerYAnchor constraintEqualToAnchor:bottomBar.centerYAnchor],
+        [self.enabledToggleButton.widthAnchor constraintEqualToConstant:124.0],
 
-        [self.importButton.leadingAnchor constraintEqualToAnchor:self.toggleEnabledButton.trailingAnchor constant:8.0],
+        [self.importButton.leadingAnchor constraintEqualToAnchor:self.enabledToggleButton.trailingAnchor constant:8.0],
         [self.importButton.centerYAnchor constraintEqualToAnchor:bottomBar.centerYAnchor],
         [self.importButton.widthAnchor constraintEqualToConstant:104.0],
 
@@ -494,7 +494,7 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
     self.titleField.enabled = hasSelection;
     self.saveButton.enabled = hasSelection;
     self.removeButton.enabled = hasSelection;
-    self.toggleEnabledButton.enabled = hasSelection;
+    self.enabledToggleButton.enabled = hasSelection;
 
     if (!hasSelection) {
         self.titleField.stringValue = @"";
@@ -504,6 +504,7 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
         self.contentTextView.editable = NO;
         self.shortcutContainer.hidden = YES;
         self.hotKeyRecorderView.keyCombo = RCInvalidKeyCombo();
+        [self updateEnabledToggleButtonForItem:nil];
         self.updatingEditor = NO;
         return;
     }
@@ -523,6 +524,7 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
                                                                  key:@"identifier"
                                                         defaultValue:@""];
         self.hotKeyRecorderView.keyCombo = [self storedHotKeyComboForFolderIdentifier:folderIdentifier];
+        [self updateEnabledToggleButtonForItem:folderNode];
         self.updatingEditor = NO;
         return;
     }
@@ -540,6 +542,7 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
     self.contentTextView.editable = YES;
     self.shortcutContainer.hidden = YES;
     self.hotKeyRecorderView.keyCombo = RCInvalidKeyCombo();
+    [self updateEnabledToggleButtonForItem:snippetNode];
 
     self.updatingEditor = NO;
 }
@@ -706,7 +709,7 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
     [[RCMenuManager shared] rebuildMenu];
 }
 
-- (void)toggleEnabledButtonClicked:(id)sender {
+- (void)toggleSelectedItemEnabled:(id)sender {
     (void)sender;
 
     id selectedItem = [self selectedItem];
@@ -714,34 +717,34 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
         return;
     }
 
+    BOOL currentEnabled = [self isItemEnabled:selectedItem];
+    BOOL nextEnabled = !currentEnabled;
+    BOOL updated = NO;
+
     if ([selectedItem isKindOfClass:[RCSnippetFolderNode class]]) {
         RCSnippetFolderNode *folderNode = (RCSnippetFolderNode *)selectedItem;
-        BOOL currentEnabled = [self boolValueFromDictionary:folderNode.folderDictionary key:@"enabled" defaultValue:YES];
-        folderNode.folderDictionary[@"enabled"] = @(!currentEnabled);
-        BOOL updated = [[RCDatabaseManager shared] updateSnippetFolder:folderNode.folderDictionary];
-        if (!updated) {
-            NSBeep();
-            return;
+        folderNode.folderDictionary[@"enabled"] = @(nextEnabled);
+        updated = [[RCDatabaseManager shared] updateSnippetFolder:folderNode.folderDictionary];
+        if (updated) {
+            [self.outlineView reloadItem:folderNode reloadChildren:YES];
+            [self updateEnabledToggleButtonForItem:folderNode];
         }
+    } else if ([selectedItem isKindOfClass:[RCSnippetNode class]]) {
+        RCSnippetNode *snippetNode = (RCSnippetNode *)selectedItem;
+        snippetNode.snippetDictionary[@"enabled"] = @(nextEnabled);
+        updated = [[RCDatabaseManager shared] updateSnippet:snippetNode.snippetDictionary];
+        if (updated) {
+            [self.outlineView reloadItem:snippetNode reloadChildren:NO];
+            [self updateEnabledToggleButtonForItem:snippetNode];
+        }
+    }
 
-        [self.outlineView reloadItem:folderNode reloadChildren:NO];
-        [[RCMenuManager shared] rebuildMenu];
+    if (!updated) {
+        NSBeep();
         return;
     }
 
-    if ([selectedItem isKindOfClass:[RCSnippetNode class]]) {
-        RCSnippetNode *snippetNode = (RCSnippetNode *)selectedItem;
-        BOOL currentEnabled = [self boolValueFromDictionary:snippetNode.snippetDictionary key:@"enabled" defaultValue:YES];
-        snippetNode.snippetDictionary[@"enabled"] = @(!currentEnabled);
-        BOOL updated = [[RCDatabaseManager shared] updateSnippet:snippetNode.snippetDictionary];
-        if (!updated) {
-            NSBeep();
-            return;
-        }
-
-        [self.outlineView reloadItem:snippetNode reloadChildren:NO];
-        [[RCMenuManager shared] rebuildMenu];
-    }
+    [[RCMenuManager shared] rebuildMenu];
 }
 
 - (void)importButtonClicked:(id)sender {
@@ -1108,6 +1111,12 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
         cell.textField.stringValue = title;
     }
 
+    if ([self isItemEnabled:item]) {
+        cell.textField.textColor = NSColor.labelColor;
+    } else {
+        cell.textField.textColor = NSColor.secondaryLabelColor;
+    }
+
     return cell;
 }
 
@@ -1447,6 +1456,36 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
     return maxIndex + 1;
 }
 
+- (void)updateEnabledToggleButtonForItem:(nullable id)item {
+    if (self.enabledToggleButton == nil) {
+        return;
+    }
+
+    if (item == nil) {
+        self.enabledToggleButton.image = [NSImage imageWithSystemSymbolName:@"eye" accessibilityDescription:NSLocalizedString(@"Enable/Disable", nil)];
+        return;
+    }
+
+    BOOL enabled = [self isItemEnabled:item];
+    NSString *symbolName = enabled ? @"eye" : @"eye.slash";
+    self.enabledToggleButton.image = [NSImage imageWithSystemSymbolName:symbolName
+                                                   accessibilityDescription:NSLocalizedString(@"Enable/Disable", nil)];
+}
+
+- (BOOL)isItemEnabled:(id)item {
+    if ([item isKindOfClass:[RCSnippetFolderNode class]]) {
+        RCSnippetFolderNode *folderNode = (RCSnippetFolderNode *)item;
+        return [self boolValueFromDictionary:folderNode.folderDictionary key:@"enabled" defaultValue:YES];
+    }
+
+    if ([item isKindOfClass:[RCSnippetNode class]]) {
+        RCSnippetNode *snippetNode = (RCSnippetNode *)item;
+        return [self boolValueFromDictionary:snippetNode.snippetDictionary key:@"enabled" defaultValue:YES];
+    }
+
+    return YES;
+}
+
 - (RCKeyCombo)storedHotKeyComboForFolderIdentifier:(NSString *)folderIdentifier {
     if (folderIdentifier.length == 0) {
         return RCInvalidKeyCombo();
@@ -1523,14 +1562,18 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
 - (BOOL)boolValueFromDictionary:(NSDictionary *)dictionary key:(NSString *)key defaultValue:(BOOL)defaultValue {
     id rawValue = dictionary[key];
     if ([rawValue isKindOfClass:[NSNumber class]]) {
-        return [rawValue boolValue];
+        return [(NSNumber *)rawValue boolValue];
     }
     if ([rawValue isKindOfClass:[NSString class]]) {
-        NSString *lower = [[(NSString *)rawValue stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
-        if ([lower isEqualToString:@"true"] || [lower isEqualToString:@"yes"] || [lower isEqualToString:@"1"]) {
+        NSString *normalized = [[(NSString *)rawValue stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
+        if ([normalized isEqualToString:@"1"]
+            || [normalized isEqualToString:@"true"]
+            || [normalized isEqualToString:@"yes"]) {
             return YES;
         }
-        if ([lower isEqualToString:@"false"] || [lower isEqualToString:@"no"] || [lower isEqualToString:@"0"]) {
+        if ([normalized isEqualToString:@"0"]
+            || [normalized isEqualToString:@"false"]
+            || [normalized isEqualToString:@"no"]) {
             return NO;
         }
     }
