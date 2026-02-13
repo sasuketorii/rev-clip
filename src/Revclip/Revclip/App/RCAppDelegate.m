@@ -7,8 +7,6 @@
 
 #import "RCAppDelegate.h"
 
-#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
-
 #import "RCAccessibilityService.h"
 #import "RCClipboardService.h"
 #import "RCDataCleanService.h"
@@ -110,7 +108,13 @@
     panel.canChooseFiles = YES;
     panel.canChooseDirectories = NO;
     panel.allowsMultipleSelection = NO;
-    panel.allowedContentTypes = @[UTTypeXML];
+    panel.allowedFileTypes = @[@"revclipsnippets", @"xml", @"plist"];
+
+    NSString *clipyDirectoryPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/com.clipy-app.Clipy"];
+    BOOL isDirectory = NO;
+    if ([[NSFileManager defaultManager] fileExistsAtPath:clipyDirectoryPath isDirectory:&isDirectory] && isDirectory) {
+        panel.directoryURL = [NSURL fileURLWithPath:clipyDirectoryPath];
+    }
 
     NSModalResponse openResponse = [panel runModal];
     if (openResponse != NSModalResponseOK || panel.URL == nil) {
@@ -140,8 +144,8 @@
 
     NSSavePanel *panel = [NSSavePanel savePanel];
     panel.canCreateDirectories = YES;
-    panel.nameFieldStringValue = @"snippets.xml";
-    panel.allowedContentTypes = @[UTTypeXML];
+    panel.nameFieldStringValue = @"snippets.revclipsnippets";
+    panel.allowedFileTypes = @[@"revclipsnippets"];
 
     NSModalResponse saveResponse = [panel runModal];
     if (saveResponse != NSModalResponseOK || panel.URL == nil) {

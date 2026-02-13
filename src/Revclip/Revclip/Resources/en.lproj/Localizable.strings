@@ -144,3 +144,15 @@
 "Could not move Revclip to Applications folder" = "Could not move Revclip to Applications folder";
 "An unknown error occurred while moving Revclip." = "An unknown error occurred while moving Revclip.";
 "Failed to relaunch the app from Applications." = "Failed to relaunch the app from Applications.";
+
+"Import" = "Import";
+"Export" = "Export";
+"Import Source" = "Import Source";
+"Choose import source." = "Choose import source.";
+"Import from Clipy Default File" = "Import from Clipy Default File";
+"Choose File..." = "Choose File...";
+"Export Scope" = "Export Scope";
+"Choose what to export." = "Choose what to export.";
+"Export Selected Item" = "Export Selected Item";
+"Export All Snippets" = "Export All Snippets";
+"Enable/Disable" = "Enable/Disable";

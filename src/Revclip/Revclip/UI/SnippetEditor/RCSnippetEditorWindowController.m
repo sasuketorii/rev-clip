@@ -12,6 +12,7 @@
 #import "RCHotKeyRecorderView.h"
 #import "RCHotKeyService.h"
 #import "RCMenuManager.h"
+#import "RCSnippetImportExportService.h"
 
 static NSPasteboardType const kRCSnippetOutlineDragType = @"com.revclip.snippet-outline-item";
 
@@ -24,6 +25,10 @@ static CGFloat const kRCSnippetEditorMinWidth = 500.0;
 static CGFloat const kRCSnippetEditorMinHeight = 400.0;
 static CGFloat const kRCSnippetEditorBottomBarHeight = 44.0;
 static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
+
+static NSString * const kRCSnippetImportExportExtensionRevclip = @"revclipsnippets";
+static NSString * const kRCSnippetImportExportExtensionXML = @"xml";
+static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
 
 @class RCSnippetFolderNode;
 
@@ -63,6 +68,9 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
 @property (nonatomic, strong) RCHotKeyRecorderView *hotKeyRecorderView;
 @property (nonatomic, strong) NSPopUpButton *addButton;
 @property (nonatomic, strong) NSButton *removeButton;
+@property (nonatomic, strong) NSButton *toggleEnabledButton;
+@property (nonatomic, strong) NSButton *importButton;
+@property (nonatomic, strong) NSButton *exportButton;
 @property (nonatomic, strong) NSButton *saveButton;
 
 @property (nonatomic, assign) BOOL uiBuilt;
@@ -312,6 +320,21 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     self.removeButton.translatesAutoresizingMaskIntoConstraints = NO;
     [bottomBar addSubview:self.removeButton];
 
+    self.toggleEnabledButton = [self actionButtonWithTitle:NSLocalizedString(@"Enable/Disable", nil)
+                                                symbolName:@"checkmark.circle"
+                                                    action:@selector(toggleEnabledButtonClicked:)];
+    [bottomBar addSubview:self.toggleEnabledButton];
+
+    self.importButton = [self actionButtonWithTitle:NSLocalizedString(@"Import", nil)
+                                         symbolName:@"square.and.arrow.down"
+                                             action:@selector(importButtonClicked:)];
+    [bottomBar addSubview:self.importButton];
+
+    self.exportButton = [self actionButtonWithTitle:NSLocalizedString(@"Export", nil)
+                                         symbolName:@"square.and.arrow.up"
+                                             action:@selector(exportButtonClicked:)];
+    [bottomBar addSubview:self.exportButton];
+
     self.saveButton = [NSButton buttonWithTitle:NSLocalizedString(@"Save", nil)
                                          target:self
                                          action:@selector(saveButtonClicked:)];
@@ -328,6 +351,18 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
         [self.removeButton.centerYAnchor constraintEqualToAnchor:bottomBar.centerYAnchor],
         [self.removeButton.widthAnchor constraintEqualToConstant:32.0],
 
+        [self.toggleEnabledButton.leadingAnchor constraintEqualToAnchor:self.removeButton.trailingAnchor constant:10.0],
+        [self.toggleEnabledButton.centerYAnchor constraintEqualToAnchor:bottomBar.centerYAnchor],
+        [self.toggleEnabledButton.widthAnchor constraintEqualToConstant:124.0],
+
+        [self.importButton.leadingAnchor constraintEqualToAnchor:self.toggleEnabledButton.trailingAnchor constant:8.0],
+        [self.importButton.centerYAnchor constraintEqualToAnchor:bottomBar.centerYAnchor],
+        [self.importButton.widthAnchor constraintEqualToConstant:104.0],
+
+        [self.exportButton.leadingAnchor constraintEqualToAnchor:self.importButton.trailingAnchor constant:8.0],
+        [self.exportButton.centerYAnchor constraintEqualToAnchor:bottomBar.centerYAnchor],
+        [self.exportButton.widthAnchor constraintEqualToConstant:116.0],
+
         [self.saveButton.trailingAnchor constraintEqualToAnchor:bottomBar.trailingAnchor constant:-12.0],
         [self.saveButton.centerYAnchor constraintEqualToAnchor:bottomBar.centerYAnchor],
         [self.saveButton.widthAnchor constraintEqualToConstant:80.0],
@@ -338,6 +373,26 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     NSTextField *label = [NSTextField labelWithString:stringValue ?: @""];
     label.font = [NSFont systemFontOfSize:13.0 weight:NSFontWeightRegular];
     return label;
+}
+
+- (NSButton *)actionButtonWithTitle:(NSString *)title
+                         symbolName:(NSString *)symbolName
+                             action:(SEL)action {
+    NSButton *button = [NSButton buttonWithTitle:title ?: @""
+                                          target:self
+                                          action:action];
+    button.translatesAutoresizingMaskIntoConstraints = NO;
+    button.bezelStyle = NSBezelStyleRounded;
+
+    if (@available(macOS 11.0, *)) {
+        NSImage *symbolImage = [NSImage imageWithSystemSymbolName:symbolName accessibilityDescription:title];
+        if (symbolImage != nil) {
+            button.image = symbolImage;
+            button.imagePosition = NSImageLeading;
+        }
+    }
+
+    return button;
 }
 
 #pragma mark - Data Load
@@ -439,6 +494,7 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     self.titleField.enabled = hasSelection;
     self.saveButton.enabled = hasSelection;
     self.removeButton.enabled = hasSelection;
+    self.toggleEnabledButton.enabled = hasSelection;
 
     if (!hasSelection) {
         self.titleField.stringValue = @"";
@@ -648,6 +704,142 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
         [self persistSnippetOrderForFolder:folderNode];
     }
     [[RCMenuManager shared] rebuildMenu];
+}
+
+- (void)toggleEnabledButtonClicked:(id)sender {
+    (void)sender;
+
+    id selectedItem = [self selectedItem];
+    if (selectedItem == nil) {
+        return;
+    }
+
+    if ([selectedItem isKindOfClass:[RCSnippetFolderNode class]]) {
+        RCSnippetFolderNode *folderNode = (RCSnippetFolderNode *)selectedItem;
+        BOOL currentEnabled = [self boolValueFromDictionary:folderNode.folderDictionary key:@"enabled" defaultValue:YES];
+        folderNode.folderDictionary[@"enabled"] = @(!currentEnabled);
+        BOOL updated = [[RCDatabaseManager shared] updateSnippetFolder:folderNode.folderDictionary];
+        if (!updated) {
+            NSBeep();
+            return;
+        }
+
+        [self.outlineView reloadItem:folderNode reloadChildren:NO];
+        [[RCMenuManager shared] rebuildMenu];
+        return;
+    }
+
+    if ([selectedItem isKindOfClass:[RCSnippetNode class]]) {
+        RCSnippetNode *snippetNode = (RCSnippetNode *)selectedItem;
+        BOOL currentEnabled = [self boolValueFromDictionary:snippetNode.snippetDictionary key:@"enabled" defaultValue:YES];
+        snippetNode.snippetDictionary[@"enabled"] = @(!currentEnabled);
+        BOOL updated = [[RCDatabaseManager shared] updateSnippet:snippetNode.snippetDictionary];
+        if (!updated) {
+            NSBeep();
+            return;
+        }
+
+        [self.outlineView reloadItem:snippetNode reloadChildren:NO];
+        [[RCMenuManager shared] rebuildMenu];
+    }
+}
+
+- (void)importButtonClicked:(id)sender {
+    (void)sender;
+
+    NSURL *defaultClipyURL = [self defaultClipySnippetsFileURL];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSURL *importURL = nil;
+
+    if (defaultClipyURL != nil && [fileManager fileExistsAtPath:defaultClipyURL.path]) {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.alertStyle = NSAlertStyleInformational;
+        alert.messageText = NSLocalizedString(@"Import Source", nil);
+        alert.informativeText = NSLocalizedString(@"Choose import source.", nil);
+        [alert addButtonWithTitle:NSLocalizedString(@"Import from Clipy Default File", nil)];
+        [alert addButtonWithTitle:NSLocalizedString(@"Choose File...", nil)];
+        [alert addButtonWithTitle:NSLocalizedString(@"Cancel", nil)];
+
+        NSModalResponse response = [alert runModal];
+        if (response == NSAlertFirstButtonReturn) {
+            importURL = defaultClipyURL;
+        } else if (response == NSAlertSecondButtonReturn) {
+            importURL = [self chooseImportFileURLWithDefaultDirectoryURL:[defaultClipyURL URLByDeletingLastPathComponent]];
+        } else {
+            return;
+        }
+    } else {
+        importURL = [self chooseImportFileURLWithDefaultDirectoryURL:[defaultClipyURL URLByDeletingLastPathComponent]];
+    }
+
+    if (importURL == nil) {
+        return;
+    }
+
+    NSError *importError = nil;
+    BOOL imported = [[RCSnippetImportExportService shared] importSnippetsFromURL:importURL merge:YES error:&importError];
+    if (!imported) {
+        [self presentSnippetImportExportError:importError title:NSLocalizedString(@"Failed to Import Snippets", nil)];
+        return;
+    }
+
+    [self reloadOutlineSelectingFolderIdentifier:nil snippetIdentifier:nil];
+    [[RCHotKeyService shared] reloadFolderHotKeys];
+    [[RCMenuManager shared] rebuildMenu];
+}
+
+- (void)exportButtonClicked:(id)sender {
+    (void)sender;
+
+    [self saveButtonClicked:nil];
+
+    id selectedItem = [self selectedItem];
+    BOOL exportSelectedOnly = NO;
+
+    if (selectedItem != nil) {
+        NSAlert *scopeAlert = [[NSAlert alloc] init];
+        scopeAlert.alertStyle = NSAlertStyleInformational;
+        scopeAlert.messageText = NSLocalizedString(@"Export Scope", nil);
+        scopeAlert.informativeText = NSLocalizedString(@"Choose what to export.", nil);
+        [scopeAlert addButtonWithTitle:NSLocalizedString(@"Export Selected Item", nil)];
+        [scopeAlert addButtonWithTitle:NSLocalizedString(@"Export All Snippets", nil)];
+        [scopeAlert addButtonWithTitle:NSLocalizedString(@"Cancel", nil)];
+
+        NSModalResponse scopeResponse = [scopeAlert runModal];
+        if (scopeResponse == NSAlertFirstButtonReturn) {
+            exportSelectedOnly = YES;
+        } else if (scopeResponse == NSAlertSecondButtonReturn) {
+            exportSelectedOnly = NO;
+        } else {
+            return;
+        }
+    }
+
+    NSString *baseName = exportSelectedOnly ? [self exportBaseFileNameForItem:selectedItem] : @"snippets";
+    NSString *defaultFileName = [[self sanitizedFileNameComponent:baseName] stringByAppendingPathExtension:kRCSnippetImportExportExtensionRevclip];
+
+    NSSavePanel *panel = [NSSavePanel savePanel];
+    panel.canCreateDirectories = YES;
+    panel.allowedFileTypes = @[kRCSnippetImportExportExtensionRevclip];
+    panel.nameFieldStringValue = defaultFileName;
+
+    NSModalResponse saveResponse = [panel runModal];
+    if (saveResponse != NSModalResponseOK || panel.URL == nil) {
+        return;
+    }
+
+    NSError *exportError = nil;
+    BOOL exported = NO;
+    if (exportSelectedOnly) {
+        NSArray<NSDictionary *> *folders = [self folderDictionariesForExportItem:selectedItem];
+        exported = [[RCSnippetImportExportService shared] exportFolders:folders toURL:panel.URL error:&exportError];
+    } else {
+        exported = [[RCSnippetImportExportService shared] exportSnippetsToURL:panel.URL error:&exportError];
+    }
+
+    if (!exported) {
+        [self presentSnippetImportExportError:exportError title:NSLocalizedString(@"Failed to Export Snippets", nil)];
+    }
 }
 
 #pragma mark - OutlineView Data Source
@@ -1017,6 +1209,140 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
 
 #pragma mark - Helpers
 
+- (NSURL *)defaultClipySnippetsFileURL {
+    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/com.clipy-app.Clipy/snippets.xml"];
+    return [NSURL fileURLWithPath:path];
+}
+
+- (NSURL *)chooseImportFileURLWithDefaultDirectoryURL:(NSURL *)directoryURL {
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    panel.canChooseFiles = YES;
+    panel.canChooseDirectories = NO;
+    panel.allowsMultipleSelection = NO;
+    panel.allowedFileTypes = @[
+        kRCSnippetImportExportExtensionRevclip,
+        kRCSnippetImportExportExtensionXML,
+        kRCSnippetImportExportExtensionPlist,
+    ];
+    if (directoryURL != nil) {
+        panel.directoryURL = directoryURL;
+    }
+
+    NSModalResponse response = [panel runModal];
+    if (response != NSModalResponseOK) {
+        return nil;
+    }
+    return panel.URL;
+}
+
+- (void)presentSnippetImportExportError:(NSError *)error title:(NSString *)title {
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.alertStyle = NSAlertStyleCritical;
+    alert.messageText = title ?: NSLocalizedString(@"An unknown error occurred.", nil);
+    alert.informativeText = error.localizedDescription ?: NSLocalizedString(@"An unknown error occurred.", nil);
+    [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
+    [alert runModal];
+}
+
+- (NSArray<NSDictionary *> *)folderDictionariesForExportItem:(id)item {
+    if ([item isKindOfClass:[RCSnippetFolderNode class]]) {
+        RCSnippetFolderNode *folderNode = (RCSnippetFolderNode *)item;
+        NSDictionary *folderDictionary = [self exportFolderDictionaryFromFolderNode:folderNode
+                                                                        snippetNodes:folderNode.snippetNodes];
+        return (folderDictionary != nil) ? @[folderDictionary] : @[];
+    }
+
+    if ([item isKindOfClass:[RCSnippetNode class]]) {
+        RCSnippetNode *snippetNode = (RCSnippetNode *)item;
+        RCSnippetFolderNode *folderNode = snippetNode.parentFolder;
+        if (folderNode == nil) {
+            return @[];
+        }
+
+        NSDictionary *folderDictionary = [self exportFolderDictionaryFromFolderNode:folderNode
+                                                                        snippetNodes:@[snippetNode]];
+        return (folderDictionary != nil) ? @[folderDictionary] : @[];
+    }
+
+    return @[];
+}
+
+- (NSDictionary *)exportFolderDictionaryFromFolderNode:(RCSnippetFolderNode *)folderNode
+                                           snippetNodes:(NSArray<RCSnippetNode *> *)snippetNodes {
+    if (folderNode == nil) {
+        return nil;
+    }
+
+    NSString *folderIdentifier = [self stringValueFromDictionary:folderNode.folderDictionary
+                                                              key:@"identifier"
+                                                     defaultValue:NSUUID.UUID.UUIDString];
+    NSString *folderTitle = [self stringValueFromDictionary:folderNode.folderDictionary
+                                                        key:@"title"
+                                               defaultValue:NSLocalizedString(@"Untitled Folder", nil)];
+    BOOL folderEnabled = [self boolValueFromDictionary:folderNode.folderDictionary key:@"enabled" defaultValue:YES];
+    NSInteger folderIndex = [self integerValueFromDictionary:folderNode.folderDictionary key:@"folder_index" defaultValue:0];
+
+    NSMutableArray<NSDictionary *> *snippets = [NSMutableArray arrayWithCapacity:snippetNodes.count];
+    [snippetNodes enumerateObjectsUsingBlock:^(RCSnippetNode * _Nonnull snippetNode, NSUInteger index, BOOL * _Nonnull stop) {
+        (void)stop;
+
+        NSString *snippetIdentifier = [self stringValueFromDictionary:snippetNode.snippetDictionary
+                                                                  key:@"identifier"
+                                                         defaultValue:NSUUID.UUID.UUIDString];
+        NSString *snippetTitle = [self stringValueFromDictionary:snippetNode.snippetDictionary
+                                                             key:@"title"
+                                                    defaultValue:NSLocalizedString(@"Untitled Snippet", nil)];
+        NSString *snippetContent = [self stringValueFromDictionary:snippetNode.snippetDictionary
+                                                               key:@"content"
+                                                      defaultValue:@""];
+        BOOL snippetEnabled = [self boolValueFromDictionary:snippetNode.snippetDictionary key:@"enabled" defaultValue:YES];
+
+        [snippets addObject:@{
+            @"identifier": snippetIdentifier,
+            @"snippet_index": @((NSInteger)index),
+            @"enabled": @(snippetEnabled),
+            @"title": snippetTitle,
+            @"content": snippetContent,
+        }];
+    }];
+
+    return @{
+        @"identifier": folderIdentifier,
+        @"folder_index": @(folderIndex),
+        @"enabled": @(folderEnabled),
+        @"title": folderTitle,
+        @"snippets": [snippets copy],
+    };
+}
+
+- (NSString *)exportBaseFileNameForItem:(id)item {
+    if ([item isKindOfClass:[RCSnippetFolderNode class]]) {
+        RCSnippetFolderNode *folderNode = (RCSnippetFolderNode *)item;
+        return [self stringValueFromDictionary:folderNode.folderDictionary key:@"title" defaultValue:@"folder"];
+    }
+
+    if ([item isKindOfClass:[RCSnippetNode class]]) {
+        RCSnippetNode *snippetNode = (RCSnippetNode *)item;
+        return [self stringValueFromDictionary:snippetNode.snippetDictionary key:@"title" defaultValue:@"snippet"];
+    }
+
+    return @"snippets";
+}
+
+- (NSString *)sanitizedFileNameComponent:(NSString *)name {
+    NSString *trimmed = [name stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (trimmed.length == 0) {
+        return @"snippets";
+    }
+
+    NSMutableCharacterSet *invalidSet = [NSCharacterSet characterSetWithCharactersInString:@"/\\:"].mutableCopy;
+    [invalidSet formUnionWithCharacterSet:[NSCharacterSet newlineCharacterSet]];
+
+    NSArray<NSString *> *components = [trimmed componentsSeparatedByCharactersInSet:invalidSet];
+    NSString *joined = [[components filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"length > 0"]] componentsJoinedByString:@"_"];
+    return (joined.length > 0) ? joined : @"snippets";
+}
+
 - (nullable RCSnippetFolderNode *)folderNodeForIdentifier:(NSString *)identifier {
     if (identifier.length == 0) {
         return nil;
@@ -1190,6 +1516,23 @@ static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
     }
     if ([rawValue isKindOfClass:[NSString class]]) {
         return [(NSString *)rawValue integerValue];
+    }
+    return defaultValue;
+}
+
+- (BOOL)boolValueFromDictionary:(NSDictionary *)dictionary key:(NSString *)key defaultValue:(BOOL)defaultValue {
+    id rawValue = dictionary[key];
+    if ([rawValue isKindOfClass:[NSNumber class]]) {
+        return [rawValue boolValue];
+    }
+    if ([rawValue isKindOfClass:[NSString class]]) {
+        NSString *lower = [[(NSString *)rawValue stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
+        if ([lower isEqualToString:@"true"] || [lower isEqualToString:@"yes"] || [lower isEqualToString:@"1"]) {
+            return YES;
+        }
+        if ([lower isEqualToString:@"false"] || [lower isEqualToString:@"no"] || [lower isEqualToString:@"0"]) {
+            return NO;
+        }
     }
     return defaultValue;
 }

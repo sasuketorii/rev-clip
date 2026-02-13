@@ -20,12 +20,12 @@
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customView id="Q0r-Ze-fj8">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="380"/>
+            <rect key="frame" x="0.0" y="0.0" width="700" height="380"/>
             <autoresizingMask key="autoresizingMask"/>
             <subviews>
                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="9nI-bh-dPc" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
                     <rect key="frame" x="20" y="344" width="120" height="22"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" title="Beta Features" id="Y4f-JL-Lso">
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="ベータ機能" id="Y4f-JL-Lso">
                         <font key="font" metaFont="message"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -33,7 +33,7 @@
                 </textField>
                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="wot-nR-fhg" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
                     <rect key="frame" x="20" y="323" width="300" height="17"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" title="These features are experimental and may change." id="AHB-eC-r0g">
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="これらの機能は実験的であり、変更される可能性があります。" id="AHB-eC-r0g">
                         <font key="font" metaFont="smallSystem"/>
                         <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -41,7 +41,7 @@
                 </textField>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="FSX-2G-0Ui">
                     <rect key="frame" x="20" y="286" width="205" height="18"/>
-                    <buttonCell key="cell" type="check" title="Paste Plain Text" bezelStyle="regularSquare" imagePosition="left" inset="2" id="mQr-OB-E2r">
+                    <buttonCell key="cell" type="check" title="プレーンテキストでペースト" bezelStyle="regularSquare" imagePosition="left" inset="2" id="mQr-OB-E2r">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -51,7 +51,7 @@
                 </button>
                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="o2K-Dj-lY5" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
                     <rect key="frame" x="248" y="287" width="56" height="17"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" title="Modifier" id="2ri-Q0-Ih8">
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="修飾キー" id="2ri-Q0-Ih8">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -80,7 +80,7 @@
                 </box>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="FZ8-bX-1UA">
                     <rect key="frame" x="20" y="238" width="205" height="18"/>
-                    <buttonCell key="cell" type="check" title="Delete History" bezelStyle="regularSquare" imagePosition="left" inset="2" id="aqo-h4-zJ4">
+                    <buttonCell key="cell" type="check" title="履歴を削除" bezelStyle="regularSquare" imagePosition="left" inset="2" id="aqo-h4-zJ4">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -90,7 +90,7 @@
                 </button>
                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="PU0-RM-OwU" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
                     <rect key="frame" x="248" y="239" width="56" height="17"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" title="Modifier" id="rVA-zc-uQx">
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="修飾キー" id="rVA-zc-uQx">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -119,7 +119,7 @@
                 </box>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="rKJ-GR-7M4">
                     <rect key="frame" x="20" y="190" width="220" height="18"/>
-                    <buttonCell key="cell" type="check" title="Paste and Delete History" bezelStyle="regularSquare" imagePosition="left" inset="2" id="5zc-lE-FSH">
+                    <buttonCell key="cell" type="check" title="ペーストして履歴を削除" bezelStyle="regularSquare" imagePosition="left" inset="2" id="5zc-lE-FSH">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -129,7 +129,7 @@
                 </button>
                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="UVC-Lp-R0f" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
                     <rect key="frame" x="248" y="191" width="56" height="17"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" title="Modifier" id="0FQ-R4-fzo">
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="修飾キー" id="0FQ-R4-fzo">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -158,7 +158,7 @@
                 </box>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="ziL-7m-zNH">
                     <rect key="frame" x="20" y="142" width="250" height="18"/>
-                    <buttonCell key="cell" type="check" title="Screenshot Monitoring" bezelStyle="regularSquare" imagePosition="left" inset="2" id="N3G-jY-bhg">
+                    <buttonCell key="cell" type="check" title="スクリーンショット監視" bezelStyle="regularSquare" imagePosition="left" inset="2" id="N3G-jY-bhg">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -168,7 +168,7 @@
                 </button>
             </subviews>
             <constraints>
-                <constraint firstAttribute="width" constant="480" id="b6W-zi-QzL"/>
+                <constraint firstAttribute="width" constant="700" id="b6W-zi-QzL"/>
                 <constraint firstAttribute="height" constant="380" id="Fm4-Ru-WwQ"/>
             </constraints>
             <point key="canvasLocation" x="118" y="178"/>

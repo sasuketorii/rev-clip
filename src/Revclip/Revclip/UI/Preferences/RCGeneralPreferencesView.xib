@@ -21,12 +21,12 @@
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customView id="bqE-j2-v8m">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="300"/>
+            <rect key="frame" x="0.0" y="0.0" width="700" height="300"/>
             <autoresizingMask key="autoresizingMask"/>
             <subviews>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Yf1-hq-3UA">
                     <rect key="frame" x="20" y="262" width="145" height="16"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" title="Maximum History Size" id="Q2q-8V-jS4">
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="履歴の最大保存数" id="Q2q-8V-jS4">
                         <font key="font" metaFont="message"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -55,7 +55,7 @@
                 </box>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hQ3-rp-SiL">
                     <rect key="frame" x="20" y="226" width="104" height="16"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" title="Login at Startup" id="bW2-vC-N0z">
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="ログイン時に起動" id="bW2-vC-N0z">
                         <font key="font" metaFont="message"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -73,7 +73,7 @@
                 </button>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="pV6-kg-MoF">
                     <rect key="frame" x="20" y="194" width="111" height="16"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" title="Show Status Item" id="dT8-AL-f4P">
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="ステータス項目の表示" id="dT8-AL-f4P">
                         <font key="font" metaFont="message"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -81,13 +81,13 @@
                 </textField>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="nJ5-Tm-2bR">
                     <rect key="frame" x="340" y="189" width="120" height="26"/>
-                    <popUpButtonCell key="cell" type="push" title="Show" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="sL2-Qn-Vd4" id="cG4-Um-zX8">
+                    <popUpButtonCell key="cell" type="push" title="表示" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="sL2-Qn-Vd4" id="cG4-Um-zX8">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
-                        <menu key="menu" title="Show Status Item" id="mE6-uS-7yQ">
+                        <menu key="menu" title="ステータス項目の表示" id="mE6-uS-7yQ">
                             <items>
-                                <menuItem title="Hide" id="wK3-Sc-hH7"/>
-                                <menuItem title="Show" state="on" id="sL2-Qn-Vd4"/>
+                                <menuItem title="非表示" id="wK3-Sc-hH7"/>
+                                <menuItem title="表示" state="on" id="sL2-Qn-Vd4"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
@@ -100,7 +100,7 @@
                 </box>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="uB1-pk-Vq9">
                     <rect key="frame" x="20" y="158" width="200" height="16"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" title="Paste Command" id="mK4-wT-Lc8">
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="ペーストコマンド" id="mK4-wT-Lc8">
                         <font key="font" metaFont="message"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -118,7 +118,7 @@
                 </button>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="qM3-vb-Kt1">
                     <rect key="frame" x="20" y="132" width="220" height="16"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" title="Reorder after Pasting" id="gR4-Ye-nN2">
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="ペースト後に並び替え" id="gR4-Ye-nN2">
                         <font key="font" metaFont="message"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -136,7 +136,7 @@
                 </button>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="xP6-fm-Jd3">
                     <rect key="frame" x="20" y="106" width="220" height="16"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" title="Overwrite Same History" id="rQ7-nU-mA1">
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="同一履歴を上書き" id="rQ7-nU-mA1">
                         <font key="font" metaFont="message"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -154,7 +154,7 @@
                 </button>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="iN2-bx-Qe7">
                     <rect key="frame" x="20" y="80" width="200" height="16"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" title="Copy Same History" id="sD3-vL-fM6">
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="同一履歴をコピー" id="sD3-vL-fM6">
                         <font key="font" metaFont="message"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -172,7 +172,7 @@
                 </button>
             </subviews>
             <constraints>
-                <constraint firstAttribute="width" constant="480" id="W0K-J9-Zqf"/>
+                <constraint firstAttribute="width" constant="700" id="W0K-J9-Zqf"/>
                 <constraint firstAttribute="height" constant="300" id="eJ8-Rh-Sq2"/>
                 <constraint firstItem="Yf1-hq-3UA" firstAttribute="leading" secondItem="bqE-j2-v8m" secondAttribute="leading" constant="20" id="2nB-VW-5qZ"/>
                 <constraint firstItem="s8n-LC-H7r" firstAttribute="top" secondItem="bqE-j2-v8m" secondAttribute="top" constant="20" id="4ad-Mz-fyW"/>

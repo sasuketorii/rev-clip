@@ -12,30 +12,65 @@
 
 NSErrorDomain const RCSnippetImportExportErrorDomain = @"com.revclip.snippet-import-export";
 
-static NSString * const kRCXMLRootElement = @"folders";
-static NSString * const kRCXMLLegacyRootElement = @"snippets";
-static NSString * const kRCXMLFolderElement = @"folder";
-static NSString * const kRCXMLFolderIdentifierElement = @"identifier";
-static NSString * const kRCXMLFolderTitleElement = @"title";
-static NSString * const kRCXMLFolderEnabledElement = @"enabled";
-static NSString * const kRCXMLFolderSnippetsElement = @"snippets";
-static NSString * const kRCXMLSnippetElement = @"snippet";
-static NSString * const kRCXMLSnippetIdentifierElement = @"identifier";
-static NSString * const kRCXMLSnippetTitleElement = @"title";
-static NSString * const kRCXMLSnippetContentElement = @"content";
-static NSString * const kRCXMLSnippetEnabledElement = @"enabled";
+static NSString * const kRCClipyXMLRootElement = @"folders";
+static NSString * const kRCClipyXMLLegacyRootElement = @"snippets";
+static NSString * const kRCClipyXMLFolderElement = @"folder";
+static NSString * const kRCClipyXMLFolderIdentifierElement = @"identifier";
+static NSString * const kRCClipyXMLFolderTitleElement = @"title";
+static NSString * const kRCClipyXMLFolderEnabledElement = @"enabled";
+static NSString * const kRCClipyXMLFolderSnippetsElement = @"snippets";
+static NSString * const kRCClipyXMLSnippetElement = @"snippet";
+static NSString * const kRCClipyXMLSnippetIdentifierElement = @"identifier";
+static NSString * const kRCClipyXMLSnippetTitleElement = @"title";
+static NSString * const kRCClipyXMLSnippetContentElement = @"content";
+static NSString * const kRCClipyXMLSnippetEnabledElement = @"enabled";
+
+static NSString * const kRCRevclipPlistFormatKey = @"format";
+static NSString * const kRCRevclipPlistFormatValue = @"revclip.snippets";
+static NSString * const kRCRevclipPlistVersionKey = @"version";
+static NSString * const kRCRevclipPlistFoldersKey = @"folders";
+static NSString * const kRCRevclipPlistExportedAtKey = @"exported_at";
+
+static NSString * const kRCFolderTitleFallback = @"untitled folder";
+static NSString * const kRCSnippetTitleFallback = @"untitled snippet";
+static NSString * const kRCImportedFolderTitle = @"Imported";
 
 @interface RCSnippetImportExportService ()
 
-- (BOOL)persistParsedFolders:(NSArray<NSDictionary *> *)folders merge:(BOOL)merge error:(NSError **)error;
-- (nullable NSArray<NSDictionary *> *)parseFoldersFromRootElement:(NSXMLElement *)rootElement error:(NSError **)error;
+- (nullable NSArray<NSDictionary *> *)folderDictionariesForFullExport:(NSError **)error;
+- (NSArray<NSDictionary *> *)normalizedFolderDictionariesForExport:(NSArray<NSDictionary *> *)folders;
+
+- (nullable NSArray<NSDictionary *> *)parseFoldersFromPlistData:(NSData *)data error:(NSError **)error;
+- (nullable NSArray<NSDictionary *> *)parseFoldersFromPlistRootObject:(id)rootObject error:(NSError **)error;
+- (nullable NSDictionary *)parseFolderDictionaryFromPlistObject:(id)object;
+- (nullable NSDictionary *)parseSnippetDictionaryFromPlistObject:(id)object;
+- (BOOL)looksLikeFolderObject:(id)object;
+- (BOOL)looksLikeSnippetObject:(id)object;
+- (BOOL)looksLikeFolderArray:(NSArray *)objects;
+- (BOOL)looksLikeSnippetArray:(NSArray *)objects;
+
+- (nullable NSArray<NSDictionary *> *)parseFoldersFromLegacyXMLData:(NSData *)data error:(NSError **)error;
+- (nullable NSArray<NSDictionary *> *)parseFoldersFromLegacyXMLRootElement:(NSXMLElement *)rootElement error:(NSError **)error;
 - (nullable NSXMLElement *)firstChildElementNamed:(NSString *)name inElement:(NSXMLElement *)element;
-- (nullable NSString *)trimmedValueForElement:(NSString *)name inElement:(NSXMLElement *)element;
 - (nullable NSString *)valueForElement:(NSString *)name inElement:(NSXMLElement *)element;
+- (nullable NSString *)trimmedValueForElement:(NSString *)name inElement:(NSXMLElement *)element;
+
+- (BOOL)persistParsedFolders:(NSArray<NSDictionary *> *)folders merge:(BOOL)merge error:(NSError **)error;
+- (nullable NSError *)databaseErrorFromDatabase:(FMDatabase *)db fallbackDescription:(NSString *)description;
+
+- (nullable id)nonNullValueInDictionary:(NSDictionary *)dictionary keys:(NSArray<NSString *> *)keys;
+- (NSString *)stringValueInDictionary:(NSDictionary *)dictionary keys:(NSArray<NSString *> *)keys defaultValue:(NSString *)defaultValue;
+- (NSInteger)integerValueInDictionary:(NSDictionary *)dictionary keys:(NSArray<NSString *> *)keys defaultValue:(NSInteger)defaultValue;
+- (BOOL)boolValueInDictionary:(NSDictionary *)dictionary keys:(NSArray<NSString *> *)keys defaultValue:(BOOL)defaultValue;
+- (NSArray *)arrayValueInDictionary:(NSDictionary *)dictionary keys:(NSArray<NSString *> *)keys;
+
 - (BOOL)boolValueFromXMLString:(nullable NSString *)value defaultValue:(BOOL)defaultValue;
-- (NSString *)xmlBooleanStringFromBool:(BOOL)value;
 - (NSString *)trimmedString:(nullable NSString *)value;
-- (NSString *)uniqueIdentifierExcludingSet:(NSSet<NSString *> *)reservedIdentifiers;
+- (NSString *)normalizedLookupString:(nullable NSString *)value;
+- (NSString *)snippetSignatureWithTitle:(nullable NSString *)title content:(nullable NSString *)content;
+- (NSString *)uniqueIdentifierExcludingMutableSet:(NSMutableSet<NSString *> *)reservedIdentifiers;
+- (NSString *)iso8601TimestampString;
+
 - (nullable NSError *)snippetErrorWithCode:(RCSnippetImportExportErrorCode)code
                                 description:(NSString *)description
                             underlyingError:(nullable NSError *)underlyingError;
@@ -43,9 +78,6 @@ static NSString * const kRCXMLSnippetEnabledElement = @"enabled";
                       code:(RCSnippetImportExportErrorCode)code
                description:(NSString *)description
            underlyingError:(nullable NSError *)underlyingError;
-- (NSInteger)nextFolderIndexFromExistingFolders:(NSArray<NSDictionary *> *)folders;
-- (NSString *)stringValueFromDictionary:(NSDictionary *)dictionary key:(NSString *)key defaultValue:(NSString *)defaultValue;
-- (BOOL)boolValueFromDictionary:(NSDictionary *)dictionary key:(NSString *)key defaultValue:(BOOL)defaultValue;
 
 @end
 
@@ -80,7 +112,7 @@ static NSString * const kRCXMLSnippetEnabledElement = @"enabled";
     if (!written) {
         return [self assignSnippetError:error
                                    code:RCSnippetImportExportErrorFileWrite
-                            description:@"Failed to write snippets XML file."
+                            description:@"Failed to write snippets file."
                         underlyingError:writeError];
     }
 
@@ -88,76 +120,58 @@ static NSString * const kRCXMLSnippetEnabledElement = @"enabled";
 }
 
 - (NSData *)exportSnippetsAsXMLData:(NSError **)error {
-    RCDatabaseManager *databaseManager = [RCDatabaseManager shared];
-    if (![databaseManager setupDatabase]) {
-        [self assignSnippetError:error
-                            code:RCSnippetImportExportErrorDatabase
-                     description:@"Database is not ready."
-                 underlyingError:nil];
+    NSArray<NSDictionary *> *folders = [self folderDictionariesForFullExport:error];
+    if (folders == nil) {
         return nil;
     }
 
-    NSArray<NSDictionary *> *folders = [databaseManager fetchAllSnippetFolders];
-    NSXMLElement *rootElement = [NSXMLElement elementWithName:kRCXMLRootElement];
-    [rootElement addAttribute:[NSXMLNode attributeWithName:@"version" stringValue:@"1.0"]];
+    return [self exportFoldersAsXMLData:folders error:error];
+}
 
-    for (NSDictionary *folder in folders) {
-        NSString *folderIdentifier = [self stringValueFromDictionary:folder key:@"identifier" defaultValue:@""];
-        if (folderIdentifier.length == 0) {
-            continue;
-        }
-
-        NSXMLElement *folderElement = [NSXMLElement elementWithName:kRCXMLFolderElement];
-        [folderElement addChild:[NSXMLElement elementWithName:kRCXMLFolderTitleElement
-                                                  stringValue:[self stringValueFromDictionary:folder
-                                                                                         key:@"title"
-                                                                                defaultValue:@"untitled folder"]]];
-        [folderElement addChild:[NSXMLElement elementWithName:kRCXMLFolderIdentifierElement stringValue:folderIdentifier]];
-        [folderElement addChild:[NSXMLElement elementWithName:kRCXMLFolderEnabledElement
-                                                  stringValue:[self xmlBooleanStringFromBool:[self boolValueFromDictionary:folder
-                                                                                                                       key:@"enabled"
-                                                                                                              defaultValue:YES]]]];
-
-        NSXMLElement *snippetsElement = [NSXMLElement elementWithName:kRCXMLFolderSnippetsElement];
-        NSArray<NSDictionary *> *snippets = [databaseManager fetchSnippetsForFolder:folderIdentifier];
-        for (NSDictionary *snippet in snippets) {
-            NSString *snippetIdentifier = [self stringValueFromDictionary:snippet key:@"identifier" defaultValue:@""];
-            if (snippetIdentifier.length == 0) {
-                snippetIdentifier = [NSUUID UUID].UUIDString;
-            }
-
-            NSXMLElement *snippetElement = [NSXMLElement elementWithName:kRCXMLSnippetElement];
-            [snippetElement addChild:[NSXMLElement elementWithName:kRCXMLSnippetIdentifierElement stringValue:snippetIdentifier]];
-            [snippetElement addChild:[NSXMLElement elementWithName:kRCXMLSnippetTitleElement
-                                                       stringValue:[self stringValueFromDictionary:snippet
-                                                                                              key:@"title"
-                                                                                     defaultValue:@"untitled snippet"]]];
-            [snippetElement addChild:[NSXMLElement elementWithName:kRCXMLSnippetContentElement
-                                                       stringValue:[self stringValueFromDictionary:snippet
-                                                                                              key:@"content"
-                                                                                     defaultValue:@""]]];
-
-            [snippetElement addChild:[NSXMLElement elementWithName:kRCXMLSnippetEnabledElement
-                                                       stringValue:[self xmlBooleanStringFromBool:[self boolValueFromDictionary:snippet
-                                                                                                                            key:@"enabled"
-                                                                                                                   defaultValue:YES]]]];
-            [snippetsElement addChild:snippetElement];
-        }
-
-        [folderElement addChild:snippetsElement];
-        [rootElement addChild:folderElement];
+- (BOOL)exportFolders:(NSArray<NSDictionary *> *)folders toURL:(NSURL *)fileURL error:(NSError **)error {
+    if (![fileURL isFileURL]) {
+        return [self assignSnippetError:error
+                                   code:RCSnippetImportExportErrorFileWrite
+                            description:@"Export destination is invalid."
+                        underlyingError:nil];
     }
 
-    NSXMLDocument *document = [[NSXMLDocument alloc] initWithRootElement:rootElement];
-    document.version = @"1.0";
-    document.characterEncoding = @"UTF-8";
+    NSData *xmlData = [self exportFoldersAsXMLData:folders error:error];
+    if (xmlData == nil) {
+        return NO;
+    }
 
-    NSData *xmlData = [document XMLDataWithOptions:NSXMLNodePrettyPrint];
-    if (xmlData.length == 0) {
+    NSError *writeError = nil;
+    BOOL written = [xmlData writeToURL:fileURL options:NSDataWritingAtomic error:&writeError];
+    if (!written) {
+        return [self assignSnippetError:error
+                                   code:RCSnippetImportExportErrorFileWrite
+                            description:@"Failed to write snippets file."
+                        underlyingError:writeError];
+    }
+
+    return YES;
+}
+
+- (NSData *)exportFoldersAsXMLData:(NSArray<NSDictionary *> *)folders error:(NSError **)error {
+    NSArray<NSDictionary *> *normalizedFolders = [self normalizedFolderDictionariesForExport:folders ?: @[]];
+    NSDictionary *plistRoot = @{
+        kRCRevclipPlistFormatKey: kRCRevclipPlistFormatValue,
+        kRCRevclipPlistVersionKey: @1,
+        kRCRevclipPlistExportedAtKey: [self iso8601TimestampString],
+        kRCRevclipPlistFoldersKey: normalizedFolders,
+    };
+
+    NSError *plistError = nil;
+    NSData *xmlData = [NSPropertyListSerialization dataWithPropertyList:plistRoot
+                                                                  format:NSPropertyListXMLFormat_v1_0
+                                                                 options:0
+                                                                   error:&plistError];
+    if (xmlData.length == 0 || plistError != nil) {
         [self assignSnippetError:error
                             code:RCSnippetImportExportErrorFileWrite
-                     description:@"Failed to build snippets XML data."
-                 underlyingError:nil];
+                     description:@"Failed to build snippets XML plist data."
+                 underlyingError:plistError];
         return nil;
     }
 
@@ -179,7 +193,7 @@ static NSString * const kRCXMLSnippetEnabledElement = @"enabled";
     if (data == nil) {
         return [self assignSnippetError:error
                                    code:RCSnippetImportExportErrorFileRead
-                            description:@"Failed to read snippets XML file."
+                            description:@"Failed to read snippets file."
                         underlyingError:readError];
     }
 
@@ -190,7 +204,7 @@ static NSString * const kRCXMLSnippetEnabledElement = @"enabled";
     if (data.length == 0) {
         return [self assignSnippetError:error
                                    code:RCSnippetImportExportErrorInvalidXMLFormat
-                            description:@"Snippets XML data is empty."
+                            description:@"Snippets data is empty."
                         underlyingError:nil];
     }
 
@@ -202,31 +216,411 @@ static NSString * const kRCXMLSnippetEnabledElement = @"enabled";
                         underlyingError:nil];
     }
 
+    NSArray<NSDictionary *> *parsedFolders = [self parseFoldersFromPlistData:data error:nil];
+    if (parsedFolders == nil) {
+        parsedFolders = [self parseFoldersFromLegacyXMLData:data error:nil];
+    }
+    if (parsedFolders == nil) {
+        return [self assignSnippetError:error
+                                   code:RCSnippetImportExportErrorInvalidXMLFormat
+                            description:@"Unsupported snippets file format."
+                        underlyingError:nil];
+    }
+
+    return [self persistParsedFolders:parsedFolders merge:merge error:error];
+}
+
+#pragma mark - Private: Export Source
+
+- (NSArray<NSDictionary *> *)folderDictionariesForFullExport:(NSError **)error {
+    RCDatabaseManager *databaseManager = [RCDatabaseManager shared];
+    if (![databaseManager setupDatabase]) {
+        [self assignSnippetError:error
+                            code:RCSnippetImportExportErrorDatabase
+                     description:@"Database is not ready."
+                 underlyingError:nil];
+        return nil;
+    }
+
+    NSArray<NSDictionary *> *folders = [databaseManager fetchAllSnippetFolders];
+    NSMutableArray<NSDictionary *> *result = [NSMutableArray arrayWithCapacity:folders.count];
+
+    for (NSDictionary *folder in folders) {
+        NSString *folderIdentifier = [self trimmedString:[self stringValueInDictionary:folder
+                                                                                   keys:@[@"identifier"]
+                                                                            defaultValue:@""]];
+        if (folderIdentifier.length == 0) {
+            folderIdentifier = [NSUUID UUID].UUIDString;
+        }
+
+        NSArray<NSDictionary *> *snippets = [databaseManager fetchSnippetsForFolder:folderIdentifier];
+        NSMutableArray<NSDictionary *> *snippetDictionaries = [NSMutableArray arrayWithCapacity:snippets.count];
+
+        for (NSDictionary *snippet in snippets) {
+            NSString *snippetIdentifier = [self trimmedString:[self stringValueInDictionary:snippet
+                                                                                        keys:@[@"identifier"]
+                                                                                 defaultValue:@""]];
+            if (snippetIdentifier.length == 0) {
+                snippetIdentifier = [NSUUID UUID].UUIDString;
+            }
+
+            NSDictionary *snippetDictionary = @{
+                @"identifier": snippetIdentifier,
+                @"snippet_index": @([self integerValueInDictionary:snippet keys:@[@"snippet_index", @"snippetIndex"] defaultValue:(NSInteger)snippetDictionaries.count]),
+                @"enabled": @([self boolValueInDictionary:snippet keys:@[@"enabled", @"enable"] defaultValue:YES]),
+                @"title": [self stringValueInDictionary:snippet keys:@[@"title", @"name"] defaultValue:kRCSnippetTitleFallback],
+                @"content": [self stringValueInDictionary:snippet keys:@[@"content", @"text", @"value"] defaultValue:@""],
+            };
+            [snippetDictionaries addObject:snippetDictionary];
+        }
+
+        NSDictionary *folderDictionary = @{
+            @"identifier": folderIdentifier,
+            @"folder_index": @([self integerValueInDictionary:folder keys:@[@"folder_index", @"folderIndex", @"index"] defaultValue:(NSInteger)result.count]),
+            @"enabled": @([self boolValueInDictionary:folder keys:@[@"enabled", @"enable"] defaultValue:YES]),
+            @"title": [self stringValueInDictionary:folder keys:@[@"title", @"name"] defaultValue:kRCFolderTitleFallback],
+            @"snippets": [snippetDictionaries copy],
+        };
+        [result addObject:folderDictionary];
+    }
+
+    return [result copy];
+}
+
+- (NSArray<NSDictionary *> *)normalizedFolderDictionariesForExport:(NSArray<NSDictionary *> *)folders {
+    NSMutableArray<NSDictionary *> *normalizedFolders = [NSMutableArray arrayWithCapacity:folders.count];
+    NSMutableSet<NSString *> *folderIdentifiers = [NSMutableSet set];
+    NSMutableSet<NSString *> *snippetIdentifiers = [NSMutableSet set];
+
+    NSInteger folderIndex = 0;
+    for (id folderObject in folders) {
+        if (![folderObject isKindOfClass:[NSDictionary class]]) {
+            continue;
+        }
+
+        NSDictionary *folder = (NSDictionary *)folderObject;
+        NSString *folderIdentifier = [self trimmedString:[self stringValueInDictionary:folder
+                                                                                   keys:@[@"identifier", @"id", @"uuid"]
+                                                                            defaultValue:@""]];
+        if (folderIdentifier.length == 0 || [folderIdentifiers containsObject:folderIdentifier]) {
+            folderIdentifier = [self uniqueIdentifierExcludingMutableSet:folderIdentifiers];
+        } else {
+            [folderIdentifiers addObject:folderIdentifier];
+        }
+
+        NSArray *snippetObjects = [self arrayValueInDictionary:folder keys:@[@"snippets", @"items", @"children"]];
+        NSMutableArray<NSDictionary *> *normalizedSnippets = [NSMutableArray arrayWithCapacity:snippetObjects.count];
+        NSInteger snippetIndex = 0;
+        for (id snippetObject in snippetObjects) {
+            if (![snippetObject isKindOfClass:[NSDictionary class]]) {
+                continue;
+            }
+
+            NSDictionary *snippet = (NSDictionary *)snippetObject;
+            NSString *snippetIdentifier = [self trimmedString:[self stringValueInDictionary:snippet
+                                                                                        keys:@[@"identifier", @"id", @"uuid"]
+                                                                                 defaultValue:@""]];
+            if (snippetIdentifier.length == 0 || [snippetIdentifiers containsObject:snippetIdentifier]) {
+                snippetIdentifier = [self uniqueIdentifierExcludingMutableSet:snippetIdentifiers];
+            } else {
+                [snippetIdentifiers addObject:snippetIdentifier];
+            }
+
+            NSDictionary *normalizedSnippet = @{
+                @"identifier": snippetIdentifier,
+                @"snippet_index": @([self integerValueInDictionary:snippet keys:@[@"snippet_index", @"snippetIndex", @"index"] defaultValue:snippetIndex]),
+                @"enabled": @([self boolValueInDictionary:snippet keys:@[@"enabled", @"enable"] defaultValue:YES]),
+                @"title": [self stringValueInDictionary:snippet keys:@[@"title", @"name"] defaultValue:kRCSnippetTitleFallback],
+                @"content": [self stringValueInDictionary:snippet keys:@[@"content", @"text", @"value"] defaultValue:@""],
+            };
+            [normalizedSnippets addObject:normalizedSnippet];
+            snippetIndex += 1;
+        }
+
+        NSDictionary *normalizedFolder = @{
+            @"identifier": folderIdentifier,
+            @"folder_index": @([self integerValueInDictionary:folder keys:@[@"folder_index", @"folderIndex", @"index"] defaultValue:folderIndex]),
+            @"enabled": @([self boolValueInDictionary:folder keys:@[@"enabled", @"enable"] defaultValue:YES]),
+            @"title": [self stringValueInDictionary:folder keys:@[@"title", @"name"] defaultValue:kRCFolderTitleFallback],
+            @"snippets": [normalizedSnippets copy],
+        };
+
+        [normalizedFolders addObject:normalizedFolder];
+        folderIndex += 1;
+    }
+
+    return [normalizedFolders copy];
+}
+
+#pragma mark - Private: Parse (plist)
+
+- (NSArray<NSDictionary *> *)parseFoldersFromPlistData:(NSData *)data error:(NSError **)error {
+    NSError *plistError = nil;
+    NSPropertyListFormat plistFormat = NSPropertyListXMLFormat_v1_0;
+    id rootObject = [NSPropertyListSerialization propertyListWithData:data
+                                                              options:NSPropertyListMutableContainersAndLeaves
+                                                               format:&plistFormat
+                                                                error:&plistError];
+    if (rootObject == nil) {
+        if (error != NULL) {
+            *error = plistError;
+        }
+        return nil;
+    }
+
+    return [self parseFoldersFromPlistRootObject:rootObject error:error];
+}
+
+- (NSArray<NSDictionary *> *)parseFoldersFromPlistRootObject:(id)rootObject error:(NSError **)error {
+    NSArray *folderObjects = nil;
+
+    if ([rootObject isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *rootDictionary = (NSDictionary *)rootObject;
+        id foldersValue = rootDictionary[kRCRevclipPlistFoldersKey];
+        if ([foldersValue isKindOfClass:[NSArray class]]) {
+            folderObjects = (NSArray *)foldersValue;
+        }
+
+        if (folderObjects == nil) {
+            id snippetsValue = rootDictionary[@"snippets"];
+            if ([snippetsValue isKindOfClass:[NSArray class]]) {
+                NSArray *snippetArray = (NSArray *)snippetsValue;
+                if ([self looksLikeFolderArray:snippetArray]) {
+                    folderObjects = snippetArray;
+                } else if ([self looksLikeSnippetArray:snippetArray]) {
+                    folderObjects = @[@{ @"title": [self stringValueInDictionary:rootDictionary keys:@[@"title", @"name"] defaultValue:kRCImportedFolderTitle],
+                                         @"identifier": [self stringValueInDictionary:rootDictionary keys:@[@"identifier", @"id", @"uuid"] defaultValue:@""],
+                                         @"enabled": @([self boolValueInDictionary:rootDictionary keys:@[@"enabled", @"enable"] defaultValue:YES]),
+                                         @"snippets": snippetArray }];
+                }
+            }
+        }
+
+        if (folderObjects == nil && [self looksLikeFolderObject:rootDictionary]) {
+            folderObjects = @[rootDictionary];
+        }
+
+        if (folderObjects == nil && [self looksLikeSnippetObject:rootDictionary]) {
+            folderObjects = @[@{ @"title": kRCImportedFolderTitle,
+                                 @"snippets": @[rootDictionary] }];
+        }
+    } else if ([rootObject isKindOfClass:[NSArray class]]) {
+        NSArray *rootArray = (NSArray *)rootObject;
+        if ([self looksLikeFolderArray:rootArray]) {
+            folderObjects = rootArray;
+        } else if ([self looksLikeSnippetArray:rootArray]) {
+            folderObjects = @[@{ @"title": kRCImportedFolderTitle,
+                                 @"snippets": rootArray }];
+        }
+    }
+
+    if (folderObjects == nil) {
+        [self assignSnippetError:error
+                            code:RCSnippetImportExportErrorInvalidXMLFormat
+                     description:@"Plist does not contain supported snippet folders."
+                 underlyingError:nil];
+        return nil;
+    }
+
+    NSMutableArray<NSDictionary *> *parsedFolders = [NSMutableArray arrayWithCapacity:folderObjects.count];
+    for (id folderObject in folderObjects) {
+        NSDictionary *folderDictionary = [self parseFolderDictionaryFromPlistObject:folderObject];
+        if (folderDictionary != nil) {
+            [parsedFolders addObject:folderDictionary];
+        }
+    }
+
+    return [parsedFolders copy];
+}
+
+- (NSDictionary *)parseFolderDictionaryFromPlistObject:(id)object {
+    if (![object isKindOfClass:[NSDictionary class]]) {
+        return nil;
+    }
+
+    NSDictionary *dictionary = (NSDictionary *)object;
+    NSString *title = [self stringValueInDictionary:dictionary keys:@[@"title", @"name"] defaultValue:kRCFolderTitleFallback];
+    NSString *identifier = [self stringValueInDictionary:dictionary keys:@[@"identifier", @"id", @"uuid", @"folder_id", @"folderId"] defaultValue:@""];
+    BOOL enabled = [self boolValueInDictionary:dictionary keys:@[@"enabled", @"enable"] defaultValue:YES];
+
+    NSArray *snippetObjects = [self arrayValueInDictionary:dictionary keys:@[@"snippets", @"items", @"children"]];
+    NSMutableArray<NSDictionary *> *snippets = [NSMutableArray arrayWithCapacity:snippetObjects.count];
+    for (id snippetObject in snippetObjects) {
+        NSDictionary *snippetDictionary = [self parseSnippetDictionaryFromPlistObject:snippetObject];
+        if (snippetDictionary != nil) {
+            [snippets addObject:snippetDictionary];
+        }
+    }
+
+    return @{
+        @"identifier": [self trimmedString:identifier],
+        @"title": title,
+        @"enabled": @(enabled),
+        @"snippets": [snippets copy],
+    };
+}
+
+- (NSDictionary *)parseSnippetDictionaryFromPlistObject:(id)object {
+    if (![object isKindOfClass:[NSDictionary class]]) {
+        return nil;
+    }
+
+    NSDictionary *dictionary = (NSDictionary *)object;
+    NSString *title = [self stringValueInDictionary:dictionary keys:@[@"title", @"name"] defaultValue:kRCSnippetTitleFallback];
+    NSString *content = [self stringValueInDictionary:dictionary keys:@[@"content", @"text", @"value", @"string"] defaultValue:@""];
+    NSString *identifier = [self stringValueInDictionary:dictionary keys:@[@"identifier", @"id", @"uuid", @"snippet_id", @"snippetId"] defaultValue:@""];
+    BOOL enabled = [self boolValueInDictionary:dictionary keys:@[@"enabled", @"enable"] defaultValue:YES];
+
+    return @{
+        @"identifier": [self trimmedString:identifier],
+        @"title": title,
+        @"content": content,
+        @"enabled": @(enabled),
+    };
+}
+
+- (BOOL)looksLikeFolderObject:(id)object {
+    if (![object isKindOfClass:[NSDictionary class]]) {
+        return NO;
+    }
+
+    NSDictionary *dictionary = (NSDictionary *)object;
+    id snippets = dictionary[@"snippets"] ?: dictionary[@"items"] ?: dictionary[@"children"];
+    return [snippets isKindOfClass:[NSArray class]];
+}
+
+- (BOOL)looksLikeSnippetObject:(id)object {
+    if (![object isKindOfClass:[NSDictionary class]]) {
+        return NO;
+    }
+
+    NSDictionary *dictionary = (NSDictionary *)object;
+    BOOL hasContent = ([dictionary[@"content"] isKindOfClass:[NSString class]]
+                    || [dictionary[@"text"] isKindOfClass:[NSString class]]
+                    || [dictionary[@"value"] isKindOfClass:[NSString class]]
+                    || [dictionary[@"string"] isKindOfClass:[NSString class]]);
+    BOOL hasTitle = [dictionary[@"title"] isKindOfClass:[NSString class]] || [dictionary[@"name"] isKindOfClass:[NSString class]];
+    BOOL hasNestedList = ([dictionary[@"snippets"] isKindOfClass:[NSArray class]]
+                       || [dictionary[@"items"] isKindOfClass:[NSArray class]]
+                       || [dictionary[@"children"] isKindOfClass:[NSArray class]]);
+    return !hasNestedList && (hasContent || hasTitle);
+}
+
+- (BOOL)looksLikeFolderArray:(NSArray *)objects {
+    if (objects.count == 0) {
+        return YES;
+    }
+
+    for (id object in objects) {
+        if ([self looksLikeFolderObject:object]) {
+            return YES;
+        }
+    }
+
+    return NO;
+}
+
+- (BOOL)looksLikeSnippetArray:(NSArray *)objects {
+    if (objects.count == 0) {
+        return NO;
+    }
+
+    for (id object in objects) {
+        if (![self looksLikeSnippetObject:object]) {
+            return NO;
+        }
+    }
+
+    return YES;
+}
+
+#pragma mark - Private: Parse (legacy XML)
+
+- (NSArray<NSDictionary *> *)parseFoldersFromLegacyXMLData:(NSData *)data error:(NSError **)error {
     NSError *parseError = nil;
     NSXMLDocument *document = [[NSXMLDocument alloc] initWithData:data options:0 error:&parseError];
     if (document == nil) {
-        return [self assignSnippetError:error
-                                   code:RCSnippetImportExportErrorInvalidXMLFormat
-                            description:@"Failed to parse snippets XML."
-                        underlyingError:parseError];
+        if (error != NULL) {
+            *error = parseError;
+        }
+        return nil;
     }
 
     NSXMLElement *rootElement = document.rootElement;
     NSString *rootName = rootElement.name ?: @"";
-    BOOL isRootSupported = [rootName isEqualToString:kRCXMLRootElement] || [rootName isEqualToString:kRCXMLLegacyRootElement];
+    BOOL isRootSupported = [rootName isEqualToString:kRCClipyXMLRootElement] || [rootName isEqualToString:kRCClipyXMLLegacyRootElement];
     if (!isRootSupported) {
-        return [self assignSnippetError:error
-                                   code:RCSnippetImportExportErrorInvalidXMLFormat
-                            description:@"Root element must be <folders> or <snippets>."
-                        underlyingError:nil];
+        [self assignSnippetError:error
+                            code:RCSnippetImportExportErrorInvalidXMLFormat
+                     description:@"Root element must be <folders> or <snippets>."
+                 underlyingError:nil];
+        return nil;
     }
 
-    NSArray<NSDictionary *> *parsedFolders = [self parseFoldersFromRootElement:rootElement error:error];
-    if (parsedFolders == nil) {
-        return NO;
+    return [self parseFoldersFromLegacyXMLRootElement:rootElement error:error];
+}
+
+- (NSArray<NSDictionary *> *)parseFoldersFromLegacyXMLRootElement:(NSXMLElement *)rootElement error:(NSError **)error {
+    NSMutableArray<NSDictionary *> *parsedFolders = [NSMutableArray array];
+
+    NSArray<NSXMLElement *> *folderElements = [rootElement elementsForName:kRCClipyXMLFolderElement];
+    if (folderElements.count == 0 && [rootElement.name isEqualToString:kRCClipyXMLLegacyRootElement]) {
+        folderElements = @[rootElement];
     }
 
-    return [self persistParsedFolders:parsedFolders merge:merge error:error];
+    for (NSXMLElement *folderElement in folderElements) {
+        NSString *folderIdentifier = [self trimmedValueForElement:kRCClipyXMLFolderIdentifierElement inElement:folderElement] ?: @"";
+        NSString *folderTitle = [self valueForElement:kRCClipyXMLFolderTitleElement inElement:folderElement] ?: kRCFolderTitleFallback;
+        BOOL folderEnabled = [self boolValueFromXMLString:[self valueForElement:kRCClipyXMLFolderEnabledElement inElement:folderElement]
+                                             defaultValue:YES];
+
+        NSXMLElement *snippetsElement = [self firstChildElementNamed:kRCClipyXMLFolderSnippetsElement inElement:folderElement];
+        NSArray<NSXMLElement *> *snippetElements = nil;
+        if (snippetsElement != nil) {
+            snippetElements = [snippetsElement elementsForName:kRCClipyXMLSnippetElement];
+        } else {
+            snippetElements = [folderElement elementsForName:kRCClipyXMLSnippetElement];
+        }
+
+        NSMutableArray<NSDictionary *> *parsedSnippets = [NSMutableArray arrayWithCapacity:snippetElements.count];
+        for (NSXMLElement *snippetElement in snippetElements) {
+            NSString *snippetIdentifier = [self trimmedValueForElement:kRCClipyXMLSnippetIdentifierElement inElement:snippetElement] ?: @"";
+            NSString *snippetTitle = [self valueForElement:kRCClipyXMLSnippetTitleElement inElement:snippetElement] ?: kRCSnippetTitleFallback;
+            NSString *snippetContent = [self valueForElement:kRCClipyXMLSnippetContentElement inElement:snippetElement] ?: @"";
+            BOOL snippetEnabled = [self boolValueFromXMLString:[self valueForElement:kRCClipyXMLSnippetEnabledElement inElement:snippetElement]
+                                                  defaultValue:YES];
+
+            [parsedSnippets addObject:@{
+                @"identifier": snippetIdentifier,
+                @"title": snippetTitle,
+                @"content": snippetContent,
+                @"enabled": @(snippetEnabled),
+            }];
+        }
+
+        [parsedFolders addObject:@{
+            @"identifier": folderIdentifier,
+            @"title": folderTitle,
+            @"enabled": @(folderEnabled),
+            @"snippets": [parsedSnippets copy],
+        }];
+    }
+
+    return [parsedFolders copy];
+}
+
+- (NSXMLElement *)firstChildElementNamed:(NSString *)name inElement:(NSXMLElement *)element {
+    NSArray<NSXMLElement *> *elements = [element elementsForName:name];
+    return elements.firstObject;
+}
+
+- (NSString *)valueForElement:(NSString *)name inElement:(NSXMLElement *)element {
+    NSXMLElement *childElement = [self firstChildElementNamed:name inElement:element];
+    return childElement.stringValue;
+}
+
+- (NSString *)trimmedValueForElement:(NSString *)name inElement:(NSXMLElement *)element {
+    return [self trimmedString:[self valueForElement:name inElement:element]];
 }
 
 #pragma mark - Private: Persist
@@ -235,77 +629,169 @@ static NSString * const kRCXMLSnippetEnabledElement = @"enabled";
     RCDatabaseManager *databaseManager = [RCDatabaseManager shared];
     NSArray<NSDictionary *> *existingFolders = merge ? [databaseManager fetchAllSnippetFolders] : @[];
 
-    NSMutableSet<NSString *> *plannedFolderIdentifiers = [NSMutableSet setWithCapacity:existingFolders.count + folders.count];
-    NSMutableSet<NSString *> *reservedSnippetIdentifiers = [NSMutableSet set];
-    if (merge) {
-        for (NSDictionary *folder in existingFolders) {
-            NSString *folderIdentifier = [self trimmedString:[self stringValueFromDictionary:folder key:@"identifier" defaultValue:@""]];
-            if (folderIdentifier.length == 0) {
-                continue;
-            }
+    NSMutableSet<NSString *> *usedFolderIdentifiers = [NSMutableSet set];
+    NSMutableSet<NSString *> *usedSnippetIdentifiers = [NSMutableSet set];
+    NSMutableDictionary<NSString *, NSMutableSet<NSString *> *> *snippetSignaturesByFolderIdentifier = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, NSNumber *> *nextSnippetIndexByFolderIdentifier = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, NSMutableArray<NSDictionary *> *> *snippetsToInsertByFolderIdentifier = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, NSString *> *existingFolderIdentifierByTitle = [NSMutableDictionary dictionary];
+    NSMutableArray<NSDictionary *> *newFoldersToInsert = [NSMutableArray array];
+    NSMutableArray<NSString *> *folderInsertionOrder = [NSMutableArray array];
 
-            [plannedFolderIdentifiers addObject:folderIdentifier];
-            NSArray<NSDictionary *> *existingSnippets = [databaseManager fetchSnippetsForFolder:folderIdentifier];
-            for (NSDictionary *snippet in existingSnippets) {
-                NSString *snippetIdentifier = [self trimmedString:[self stringValueFromDictionary:snippet key:@"identifier" defaultValue:@""]];
-                if (snippetIdentifier.length > 0) {
-                    [reservedSnippetIdentifiers addObject:snippetIdentifier];
-                }
-            }
-        }
-    }
+    NSInteger nextFolderIndex = 0;
 
-    NSInteger nextFolderIndex = merge ? [self nextFolderIndexFromExistingFolders:existingFolders] : 0;
-    NSMutableArray<NSDictionary *> *foldersToInsert = [NSMutableArray arrayWithCapacity:folders.count];
-
-    for (NSDictionary *parsedFolder in folders) {
-        NSString *folderIdentifier = [self trimmedString:[self stringValueFromDictionary:parsedFolder key:@"identifier" defaultValue:@""]];
+    for (NSDictionary *existingFolder in existingFolders) {
+        NSString *folderIdentifier = [self trimmedString:[self stringValueInDictionary:existingFolder keys:@[@"identifier"] defaultValue:@""]];
         if (folderIdentifier.length == 0) {
-            folderIdentifier = [self uniqueIdentifierExcludingSet:plannedFolderIdentifiers];
-        }
-
-        if ([plannedFolderIdentifiers containsObject:folderIdentifier]) {
             continue;
         }
 
-        NSArray<NSDictionary *> *parsedSnippets = [parsedFolder[@"snippets"] isKindOfClass:[NSArray class]]
-            ? parsedFolder[@"snippets"]
-            : @[];
-        NSMutableArray<NSDictionary *> *snippetsToInsert = [NSMutableArray arrayWithCapacity:parsedSnippets.count];
-        NSInteger snippetIndex = 0;
-        for (NSDictionary *parsedSnippet in parsedSnippets) {
-            NSString *snippetIdentifier = [self trimmedString:[self stringValueFromDictionary:parsedSnippet key:@"identifier" defaultValue:@""]];
-            if (snippetIdentifier.length == 0) {
-                snippetIdentifier = [self uniqueIdentifierExcludingSet:reservedSnippetIdentifiers];
-            } else if ([reservedSnippetIdentifiers containsObject:snippetIdentifier]) {
+        [usedFolderIdentifiers addObject:folderIdentifier];
+        [folderInsertionOrder addObject:folderIdentifier];
+
+        NSInteger existingFolderIndex = [self integerValueInDictionary:existingFolder keys:@[@"folder_index", @"folderIndex", @"index"] defaultValue:0];
+        if (existingFolderIndex >= nextFolderIndex) {
+            nextFolderIndex = existingFolderIndex + 1;
+        }
+
+        NSString *normalizedTitle = [self normalizedLookupString:[self stringValueInDictionary:existingFolder keys:@[@"title", @"name"] defaultValue:@""]];
+        if (normalizedTitle.length > 0 && existingFolderIdentifierByTitle[normalizedTitle] == nil) {
+            existingFolderIdentifierByTitle[normalizedTitle] = folderIdentifier;
+        }
+
+        NSArray<NSDictionary *> *existingSnippets = [databaseManager fetchSnippetsForFolder:folderIdentifier];
+        NSInteger nextSnippetIndex = 0;
+        NSMutableSet<NSString *> *existingSignatures = [NSMutableSet setWithCapacity:existingSnippets.count];
+
+        for (NSDictionary *existingSnippet in existingSnippets) {
+            NSString *snippetIdentifier = [self trimmedString:[self stringValueInDictionary:existingSnippet keys:@[@"identifier"] defaultValue:@""]];
+            if (snippetIdentifier.length > 0) {
+                [usedSnippetIdentifiers addObject:snippetIdentifier];
+            }
+
+            NSString *signature = [self snippetSignatureWithTitle:[self stringValueInDictionary:existingSnippet keys:@[@"title", @"name"] defaultValue:@""]
+                                                          content:[self stringValueInDictionary:existingSnippet keys:@[@"content", @"text", @"value"] defaultValue:@""]];
+            [existingSignatures addObject:signature];
+
+            NSInteger snippetIndex = [self integerValueInDictionary:existingSnippet keys:@[@"snippet_index", @"snippetIndex", @"index"] defaultValue:0];
+            if (snippetIndex >= nextSnippetIndex) {
+                nextSnippetIndex = snippetIndex + 1;
+            }
+        }
+
+        snippetSignaturesByFolderIdentifier[folderIdentifier] = existingSignatures;
+        nextSnippetIndexByFolderIdentifier[folderIdentifier] = @(nextSnippetIndex);
+        snippetsToInsertByFolderIdentifier[folderIdentifier] = [NSMutableArray array];
+    }
+
+    for (NSDictionary *parsedFolder in folders) {
+        NSString *folderTitle = [self stringValueInDictionary:parsedFolder keys:@[@"title", @"name"] defaultValue:kRCFolderTitleFallback];
+        BOOL folderEnabled = [self boolValueInDictionary:parsedFolder keys:@[@"enabled", @"enable"] defaultValue:YES];
+        NSString *folderIdentifier = [self trimmedString:[self stringValueInDictionary:parsedFolder keys:@[@"identifier", @"id", @"uuid"] defaultValue:@""]];
+
+        NSString *targetFolderIdentifier = nil;
+        BOOL isExistingFolder = NO;
+
+        if (merge && folderIdentifier.length > 0 && [usedFolderIdentifiers containsObject:folderIdentifier]) {
+            targetFolderIdentifier = folderIdentifier;
+            isExistingFolder = YES;
+        }
+
+        if (merge && !isExistingFolder) {
+            NSString *normalizedTitle = [self normalizedLookupString:folderTitle];
+            NSString *existingFolderIdentifier = existingFolderIdentifierByTitle[normalizedTitle];
+            if (existingFolderIdentifier.length > 0) {
+                targetFolderIdentifier = existingFolderIdentifier;
+                isExistingFolder = YES;
+            }
+        }
+
+        if (!isExistingFolder) {
+            if (folderIdentifier.length == 0 || [usedFolderIdentifiers containsObject:folderIdentifier]) {
+                folderIdentifier = [self uniqueIdentifierExcludingMutableSet:usedFolderIdentifiers];
+            } else {
+                [usedFolderIdentifiers addObject:folderIdentifier];
+            }
+
+            targetFolderIdentifier = folderIdentifier;
+            NSString *normalizedTitle = [self normalizedLookupString:folderTitle];
+            if (normalizedTitle.length > 0 && existingFolderIdentifierByTitle[normalizedTitle] == nil) {
+                existingFolderIdentifierByTitle[normalizedTitle] = targetFolderIdentifier;
+            }
+
+            if (snippetSignaturesByFolderIdentifier[targetFolderIdentifier] == nil) {
+                snippetSignaturesByFolderIdentifier[targetFolderIdentifier] = [NSMutableSet set];
+            }
+            if (nextSnippetIndexByFolderIdentifier[targetFolderIdentifier] == nil) {
+                nextSnippetIndexByFolderIdentifier[targetFolderIdentifier] = @0;
+            }
+            if (snippetsToInsertByFolderIdentifier[targetFolderIdentifier] == nil) {
+                snippetsToInsertByFolderIdentifier[targetFolderIdentifier] = [NSMutableArray array];
+            }
+
+            [folderInsertionOrder addObject:targetFolderIdentifier];
+            [newFoldersToInsert addObject:@{
+                @"identifier": targetFolderIdentifier,
+                @"folder_index": @(nextFolderIndex),
+                @"enabled": @(folderEnabled),
+                @"title": folderTitle,
+            }];
+            nextFolderIndex += 1;
+        }
+
+        NSMutableSet<NSString *> *signatureSet = snippetSignaturesByFolderIdentifier[targetFolderIdentifier];
+        if (signatureSet == nil) {
+            signatureSet = [NSMutableSet set];
+            snippetSignaturesByFolderIdentifier[targetFolderIdentifier] = signatureSet;
+        }
+
+        NSMutableArray<NSDictionary *> *snippetsToInsert = snippetsToInsertByFolderIdentifier[targetFolderIdentifier];
+        if (snippetsToInsert == nil) {
+            snippetsToInsert = [NSMutableArray array];
+            snippetsToInsertByFolderIdentifier[targetFolderIdentifier] = snippetsToInsert;
+        }
+
+        NSInteger nextSnippetIndex = [nextSnippetIndexByFolderIdentifier[targetFolderIdentifier] integerValue];
+        NSArray *parsedSnippets = [self arrayValueInDictionary:parsedFolder keys:@[@"snippets", @"items", @"children"]];
+
+        for (id parsedSnippetObject in parsedSnippets) {
+            if (![parsedSnippetObject isKindOfClass:[NSDictionary class]]) {
                 continue;
             }
 
-            [reservedSnippetIdentifiers addObject:snippetIdentifier];
+            NSDictionary *parsedSnippet = (NSDictionary *)parsedSnippetObject;
+            NSString *snippetTitle = [self stringValueInDictionary:parsedSnippet keys:@[@"title", @"name"] defaultValue:kRCSnippetTitleFallback];
+            NSString *snippetContent = [self stringValueInDictionary:parsedSnippet keys:@[@"content", @"text", @"value", @"string"] defaultValue:@""];
+            BOOL snippetEnabled = [self boolValueInDictionary:parsedSnippet keys:@[@"enabled", @"enable"] defaultValue:YES];
+
+            NSString *signature = [self snippetSignatureWithTitle:snippetTitle content:snippetContent];
+            if ([signatureSet containsObject:signature]) {
+                continue;
+            }
+
+            NSString *snippetIdentifier = [self trimmedString:[self stringValueInDictionary:parsedSnippet
+                                                                                        keys:@[@"identifier", @"id", @"uuid", @"snippet_id", @"snippetId"]
+                                                                                 defaultValue:@""]];
+            if (snippetIdentifier.length == 0 || [usedSnippetIdentifiers containsObject:snippetIdentifier]) {
+                snippetIdentifier = [self uniqueIdentifierExcludingMutableSet:usedSnippetIdentifiers];
+            } else {
+                [usedSnippetIdentifiers addObject:snippetIdentifier];
+            }
 
             NSDictionary *snippetDictionary = @{
                 @"identifier": snippetIdentifier,
-                @"folder_id": folderIdentifier,
-                @"snippet_index": @(snippetIndex),
-                @"enabled": @([self boolValueFromDictionary:parsedSnippet key:@"enabled" defaultValue:YES]),
-                @"title": [self stringValueFromDictionary:parsedSnippet key:@"title" defaultValue:@"untitled snippet"],
-                @"content": [self stringValueFromDictionary:parsedSnippet key:@"content" defaultValue:@""],
+                @"folder_id": targetFolderIdentifier,
+                @"snippet_index": @(nextSnippetIndex),
+                @"enabled": @(snippetEnabled),
+                @"title": snippetTitle,
+                @"content": snippetContent,
             };
             [snippetsToInsert addObject:snippetDictionary];
-            snippetIndex += 1;
+            [signatureSet addObject:signature];
+            nextSnippetIndex += 1;
         }
 
-        NSDictionary *folderDictionary = @{
-            @"identifier": folderIdentifier,
-            @"folder_index": @(nextFolderIndex),
-            @"enabled": @([self boolValueFromDictionary:parsedFolder key:@"enabled" defaultValue:YES]),
-            @"title": [self stringValueFromDictionary:parsedFolder key:@"title" defaultValue:@"untitled folder"],
-            @"snippets": [snippetsToInsert copy],
-        };
-        [foldersToInsert addObject:folderDictionary];
-
-        [plannedFolderIdentifiers addObject:folderIdentifier];
-        nextFolderIndex += 1;
+        nextSnippetIndexByFolderIdentifier[targetFolderIdentifier] = @(nextSnippetIndex);
     }
 
     __block NSError *transactionError = nil;
@@ -313,47 +799,41 @@ static NSString * const kRCXMLSnippetEnabledElement = @"enabled";
         if (!merge) {
             BOOL deleted = [db executeUpdate:@"DELETE FROM snippet_folders"];
             if (!deleted) {
-                transactionError = [NSError errorWithDomain:@"com.revclip.database"
-                                                       code:db.lastErrorCode
-                                                   userInfo:@{NSLocalizedDescriptionKey: db.lastErrorMessage ?: @"Failed to delete all snippet_folders rows."}];
+                transactionError = [self databaseErrorFromDatabase:db fallbackDescription:@"Failed to delete all snippet folders."];
                 *rollback = YES;
                 return NO;
             }
         }
 
-        for (NSDictionary *folderDictionary in foldersToInsert) {
+        for (NSDictionary *folderDictionary in newFoldersToInsert) {
             BOOL insertedFolder = [db executeUpdate:@"INSERT INTO snippet_folders (identifier, folder_index, enabled, title) VALUES (?, ?, ?, ?)"
                                withArgumentsInArray:@[
-                                   [self stringValueFromDictionary:folderDictionary key:@"identifier" defaultValue:@""],
+                                   [self stringValueInDictionary:folderDictionary keys:@[@"identifier"] defaultValue:@""],
                                    folderDictionary[@"folder_index"] ?: @0,
                                    folderDictionary[@"enabled"] ?: @1,
-                                   [self stringValueFromDictionary:folderDictionary key:@"title" defaultValue:@"untitled folder"],
+                                   [self stringValueInDictionary:folderDictionary keys:@[@"title", @"name"] defaultValue:kRCFolderTitleFallback],
                                ]];
             if (!insertedFolder) {
-                transactionError = [NSError errorWithDomain:@"com.revclip.database"
-                                                       code:db.lastErrorCode
-                                                   userInfo:@{NSLocalizedDescriptionKey: db.lastErrorMessage ?: @"Failed to insert snippet folder."}];
+                transactionError = [self databaseErrorFromDatabase:db fallbackDescription:@"Failed to insert snippet folder."];
                 *rollback = YES;
                 return NO;
             }
+        }
 
-            NSArray<NSDictionary *> *snippets = [folderDictionary[@"snippets"] isKindOfClass:[NSArray class]]
-                ? folderDictionary[@"snippets"]
-                : @[];
-            for (NSDictionary *snippetDictionary in snippets) {
+        for (NSString *folderIdentifier in folderInsertionOrder) {
+            NSArray<NSDictionary *> *snippetsToInsert = snippetsToInsertByFolderIdentifier[folderIdentifier];
+            for (NSDictionary *snippetDictionary in snippetsToInsert) {
                 BOOL insertedSnippet = [db executeUpdate:@"INSERT INTO snippets (identifier, folder_id, snippet_index, enabled, title, content) VALUES (?, ?, ?, ?, ?, ?)"
                                     withArgumentsInArray:@[
-                                        [self stringValueFromDictionary:snippetDictionary key:@"identifier" defaultValue:@""],
-                                        [self stringValueFromDictionary:snippetDictionary key:@"folder_id" defaultValue:@""],
+                                        [self stringValueInDictionary:snippetDictionary keys:@[@"identifier"] defaultValue:@""],
+                                        [self stringValueInDictionary:snippetDictionary keys:@[@"folder_id", @"folderId"] defaultValue:@""],
                                         snippetDictionary[@"snippet_index"] ?: @0,
                                         snippetDictionary[@"enabled"] ?: @1,
-                                        [self stringValueFromDictionary:snippetDictionary key:@"title" defaultValue:@"untitled snippet"],
-                                        [self stringValueFromDictionary:snippetDictionary key:@"content" defaultValue:@""],
+                                        [self stringValueInDictionary:snippetDictionary keys:@[@"title", @"name"] defaultValue:kRCSnippetTitleFallback],
+                                        [self stringValueInDictionary:snippetDictionary keys:@[@"content", @"text", @"value"] defaultValue:@""],
                                     ]];
                 if (!insertedSnippet) {
-                    transactionError = [NSError errorWithDomain:@"com.revclip.database"
-                                                           code:db.lastErrorCode
-                                                       userInfo:@{NSLocalizedDescriptionKey: db.lastErrorMessage ?: @"Failed to insert snippet."}];
+                    transactionError = [self databaseErrorFromDatabase:db fallbackDescription:@"Failed to insert snippet."];
                     *rollback = YES;
                     return NO;
                 }
@@ -373,87 +853,76 @@ static NSString * const kRCXMLSnippetEnabledElement = @"enabled";
     return YES;
 }
 
-#pragma mark - Private: Parse
-
-- (NSArray<NSDictionary *> *)parseFoldersFromRootElement:(NSXMLElement *)rootElement error:(NSError **)error {
-    NSArray<NSXMLElement *> *folderElements = [rootElement elementsForName:kRCXMLFolderElement];
-    NSMutableArray<NSDictionary *> *parsedFolders = [NSMutableArray arrayWithCapacity:folderElements.count];
-    NSMutableSet<NSString *> *seenFolderIdentifiers = [NSMutableSet setWithCapacity:folderElements.count];
-
-    for (NSXMLElement *folderElement in folderElements) {
-        NSString *folderIdentifier = [self trimmedValueForElement:kRCXMLFolderIdentifierElement inElement:folderElement];
-        if (folderIdentifier.length == 0) {
-            folderIdentifier = [self uniqueIdentifierExcludingSet:seenFolderIdentifiers];
-        }
-        if ([seenFolderIdentifiers containsObject:folderIdentifier]) {
-            continue;
-        }
-        [seenFolderIdentifiers addObject:folderIdentifier];
-
-        NSString *folderTitle = [self valueForElement:kRCXMLFolderTitleElement inElement:folderElement] ?: @"untitled folder";
-        BOOL folderEnabled = [self boolValueFromXMLString:[self valueForElement:kRCXMLFolderEnabledElement inElement:folderElement]
-                                             defaultValue:YES];
-
-        NSXMLElement *snippetsElement = [self firstChildElementNamed:kRCXMLFolderSnippetsElement inElement:folderElement];
-        if (snippetsElement == nil) {
-            [self assignSnippetError:error
-                                code:RCSnippetImportExportErrorMissingRequiredElement
-                         description:@"Missing required <snippets> element in <folder>."
-                     underlyingError:nil];
-            return nil;
-        }
-
-        NSArray<NSXMLElement *> *snippetElements = [snippetsElement elementsForName:kRCXMLSnippetElement];
-        NSMutableArray<NSDictionary *> *parsedSnippets = [NSMutableArray arrayWithCapacity:snippetElements.count];
-        for (NSXMLElement *snippetElement in snippetElements) {
-            NSString *snippetIdentifier = [self trimmedValueForElement:kRCXMLSnippetIdentifierElement inElement:snippetElement];
-            if (snippetIdentifier.length == 0) {
-                snippetIdentifier = [NSUUID UUID].UUIDString;
-            }
-            NSString *snippetTitle = [self valueForElement:kRCXMLSnippetTitleElement inElement:snippetElement] ?: @"untitled snippet";
-            NSString *snippetContent = [self valueForElement:kRCXMLSnippetContentElement inElement:snippetElement] ?: @"";
-            BOOL snippetEnabled = [self boolValueFromXMLString:[self valueForElement:kRCXMLSnippetEnabledElement inElement:snippetElement]
-                                                  defaultValue:YES];
-
-            NSDictionary *parsedSnippet = @{
-                @"identifier": snippetIdentifier,
-                @"title": snippetTitle,
-                @"content": snippetContent,
-                @"enabled": @(snippetEnabled),
-            };
-            [parsedSnippets addObject:parsedSnippet];
-        }
-
-        NSDictionary *parsedFolder = @{
-            @"identifier": folderIdentifier,
-            @"title": folderTitle,
-            @"enabled": @(folderEnabled),
-            @"snippets": [parsedSnippets copy],
-        };
-        [parsedFolders addObject:parsedFolder];
+- (NSError *)databaseErrorFromDatabase:(FMDatabase *)db fallbackDescription:(NSString *)description {
+    NSString *message = db.lastErrorMessage;
+    if (message.length == 0) {
+        message = description;
     }
 
-    return [parsedFolders copy];
+    return [NSError errorWithDomain:@"com.revclip.database"
+                               code:db.lastErrorCode
+                           userInfo:@{ NSLocalizedDescriptionKey: message ?: @"Database operation failed." }];
 }
 
-- (NSXMLElement *)firstChildElementNamed:(NSString *)name inElement:(NSXMLElement *)element {
-    NSArray<NSXMLElement *> *elements = [element elementsForName:name];
-    return elements.firstObject;
-}
+#pragma mark - Private: Dictionary helpers
 
-- (NSString *)trimmedValueForElement:(NSString *)name inElement:(NSXMLElement *)element {
-    NSString *value = [self valueForElement:name inElement:element];
-    return [self trimmedString:value];
-}
-
-- (NSString *)valueForElement:(NSString *)name inElement:(NSXMLElement *)element {
-    NSXMLElement *childElement = [self firstChildElementNamed:name inElement:element];
-    if (childElement == nil) {
-        return nil;
+- (id)nonNullValueInDictionary:(NSDictionary *)dictionary keys:(NSArray<NSString *> *)keys {
+    for (NSString *key in keys) {
+        id value = dictionary[key];
+        if (value != nil && value != [NSNull null]) {
+            return value;
+        }
     }
 
-    return childElement.stringValue;
+    return nil;
 }
+
+- (NSString *)stringValueInDictionary:(NSDictionary *)dictionary keys:(NSArray<NSString *> *)keys defaultValue:(NSString *)defaultValue {
+    id rawValue = [self nonNullValueInDictionary:dictionary keys:keys];
+    if ([rawValue isKindOfClass:[NSString class]]) {
+        return (NSString *)rawValue;
+    }
+    if ([rawValue respondsToSelector:@selector(stringValue)]) {
+        return [rawValue stringValue];
+    }
+
+    return defaultValue ?: @"";
+}
+
+- (NSInteger)integerValueInDictionary:(NSDictionary *)dictionary keys:(NSArray<NSString *> *)keys defaultValue:(NSInteger)defaultValue {
+    id rawValue = [self nonNullValueInDictionary:dictionary keys:keys];
+    if ([rawValue isKindOfClass:[NSNumber class]]) {
+        return [(NSNumber *)rawValue integerValue];
+    }
+    if ([rawValue isKindOfClass:[NSString class]]) {
+        return [(NSString *)rawValue integerValue];
+    }
+
+    return defaultValue;
+}
+
+- (BOOL)boolValueInDictionary:(NSDictionary *)dictionary keys:(NSArray<NSString *> *)keys defaultValue:(BOOL)defaultValue {
+    id rawValue = [self nonNullValueInDictionary:dictionary keys:keys];
+    if ([rawValue isKindOfClass:[NSNumber class]]) {
+        return [(NSNumber *)rawValue boolValue];
+    }
+    if ([rawValue isKindOfClass:[NSString class]]) {
+        return [self boolValueFromXMLString:(NSString *)rawValue defaultValue:defaultValue];
+    }
+
+    return defaultValue;
+}
+
+- (NSArray *)arrayValueInDictionary:(NSDictionary *)dictionary keys:(NSArray<NSString *> *)keys {
+    id rawValue = [self nonNullValueInDictionary:dictionary keys:keys];
+    if ([rawValue isKindOfClass:[NSArray class]]) {
+        return (NSArray *)rawValue;
+    }
+
+    return @[];
+}
+
+#pragma mark - Private: Generic helpers
 
 - (BOOL)boolValueFromXMLString:(NSString *)value defaultValue:(BOOL)defaultValue {
     NSString *normalized = [[value ?: @"" stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
@@ -463,23 +932,45 @@ static NSString * const kRCXMLSnippetEnabledElement = @"enabled";
     if ([normalized isEqualToString:@"false"] || [normalized isEqualToString:@"no"] || [normalized isEqualToString:@"0"]) {
         return NO;
     }
-    return defaultValue;
-}
 
-- (NSString *)xmlBooleanStringFromBool:(BOOL)value {
-    return value ? @"true" : @"false";
+    return defaultValue;
 }
 
 - (NSString *)trimmedString:(NSString *)value {
     return [[value ?: @"" stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] copy];
 }
 
-- (NSString *)uniqueIdentifierExcludingSet:(NSSet<NSString *> *)reservedIdentifiers {
+- (NSString *)normalizedLookupString:(NSString *)value {
+    return [[self trimmedString:value] lowercaseString];
+}
+
+- (NSString *)snippetSignatureWithTitle:(NSString *)title content:(NSString *)content {
+    NSString *normalizedTitle = [self normalizedLookupString:title];
+    NSString *normalizedContent = [self normalizedLookupString:content];
+    return [NSString stringWithFormat:@"%@\n%@", normalizedTitle, normalizedContent];
+}
+
+- (NSString *)uniqueIdentifierExcludingMutableSet:(NSMutableSet<NSString *> *)reservedIdentifiers {
     NSString *identifier = [NSUUID UUID].UUIDString;
     while ([reservedIdentifiers containsObject:identifier]) {
         identifier = [NSUUID UUID].UUIDString;
     }
+    [reservedIdentifiers addObject:identifier];
     return identifier;
+}
+
+- (NSString *)iso8601TimestampString {
+    if (@available(macOS 10.12, *)) {
+        NSISO8601DateFormatter *formatter = [[NSISO8601DateFormatter alloc] init];
+        formatter.formatOptions = NSISO8601DateFormatWithInternetDateTime;
+        return [formatter stringFromDate:[NSDate date]];
+    }
+
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+    formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+    formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
+    return [formatter stringFromDate:[NSDate date]];
 }
 
 #pragma mark - Private: Error
@@ -505,50 +996,8 @@ static NSString * const kRCXMLSnippetEnabledElement = @"enabled";
     if (error != NULL) {
         *error = [self snippetErrorWithCode:code description:description underlyingError:underlyingError];
     }
+
     return NO;
-}
-
-#pragma mark - Private: Helpers
-
-- (NSInteger)nextFolderIndexFromExistingFolders:(NSArray<NSDictionary *> *)folders {
-    NSInteger maxIndex = -1;
-    for (NSDictionary *folder in folders) {
-        id rawIndex = folder[@"folder_index"];
-        NSInteger folderIndex = 0;
-        if ([rawIndex isKindOfClass:[NSNumber class]]) {
-            folderIndex = [rawIndex integerValue];
-        } else if ([rawIndex isKindOfClass:[NSString class]]) {
-            folderIndex = [(NSString *)rawIndex integerValue];
-        } else {
-            continue;
-        }
-        if (folderIndex > maxIndex) {
-            maxIndex = folderIndex;
-        }
-    }
-    return maxIndex + 1;
-}
-
-- (NSString *)stringValueFromDictionary:(NSDictionary *)dictionary key:(NSString *)key defaultValue:(NSString *)defaultValue {
-    id rawValue = dictionary[key];
-    if ([rawValue isKindOfClass:[NSString class]]) {
-        return (NSString *)rawValue;
-    }
-    if ([rawValue respondsToSelector:@selector(stringValue)]) {
-        return [rawValue stringValue];
-    }
-    return defaultValue;
-}
-
-- (BOOL)boolValueFromDictionary:(NSDictionary *)dictionary key:(NSString *)key defaultValue:(BOOL)defaultValue {
-    id rawValue = dictionary[key];
-    if ([rawValue isKindOfClass:[NSNumber class]]) {
-        return [rawValue boolValue];
-    }
-    if ([rawValue isKindOfClass:[NSString class]]) {
-        return [self boolValueFromXMLString:(NSString *)rawValue defaultValue:defaultValue];
-    }
-    return defaultValue;
 }
 
 @end

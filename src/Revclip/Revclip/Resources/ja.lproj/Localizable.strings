@@ -144,3 +144,15 @@
 "Could not move Revclip to Applications folder" = "RevclipをApplicationsフォルダに移動できませんでした";
 "An unknown error occurred while moving Revclip." = "Revclipの移動中に不明なエラーが発生しました。";
 "Failed to relaunch the app from Applications." = "Applicationsフォルダからアプリを再起動できませんでした。";
+
+"Import" = "インポート";
+"Export" = "エクスポート";
+"Import Source" = "インポート元";
+"Choose import source." = "インポート元を選択してください。";
+"Import from Clipy Default File" = "Clipy標準ファイルを読み込む";
+"Choose File..." = "ファイルを選択...";
+"Export Scope" = "エクスポート対象";
+"Choose what to export." = "エクスポート対象を選択してください。";
+"Export Selected Item" = "選択中のみエクスポート";
+"Export All Snippets" = "すべてエクスポート";
+"Enable/Disable" = "有効/無効";

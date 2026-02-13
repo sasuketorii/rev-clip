@@ -26,6 +26,11 @@ typedef NS_ENUM(NSInteger, RCSnippetImportExportErrorCode) {
 // Export
 - (BOOL)exportSnippetsToURL:(NSURL *)fileURL error:(NSError **)error;
 - (nullable NSData *)exportSnippetsAsXMLData:(NSError **)error;
+- (BOOL)exportFolders:(NSArray<NSDictionary *> *)folders
+                 toURL:(NSURL *)fileURL
+                 error:(NSError **)error;
+- (nullable NSData *)exportFoldersAsXMLData:(NSArray<NSDictionary *> *)folders
+                                      error:(NSError **)error;
 
 // Import
 - (BOOL)importSnippetsFromURL:(NSURL *)fileURL
