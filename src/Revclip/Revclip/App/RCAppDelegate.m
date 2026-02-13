@@ -24,6 +24,13 @@
 #import "RCUpdateService.h"
 #import "RCUtilities.h"
 
+@import UniformTypeIdentifiers;
+
+static UTType *RCSnippetImportExportContentType(void) {
+    UTType *contentType = [UTType typeWithFilenameExtension:@"revclipsnippets"];
+    return (contentType != nil) ? contentType : UTTypeData;
+}
+
 @interface RCAppDelegate ()
 
 - (void)presentSnippetImportExportError:(NSError *)error title:(NSString *)title;
@@ -108,7 +115,11 @@
     panel.canChooseFiles = YES;
     panel.canChooseDirectories = NO;
     panel.allowsMultipleSelection = NO;
-    panel.allowedFileTypes = @[@"revclipsnippets", @"xml", @"plist"];
+    panel.allowedContentTypes = @[
+        RCSnippetImportExportContentType(),
+        UTTypeXML,
+        UTTypePropertyList,
+    ];
 
     NSString *clipyDirectoryPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/com.clipy-app.Clipy"];
     BOOL isDirectory = NO;
@@ -145,7 +156,7 @@
     NSSavePanel *panel = [NSSavePanel savePanel];
     panel.canCreateDirectories = YES;
     panel.nameFieldStringValue = @"snippets.revclipsnippets";
-    panel.allowedFileTypes = @[@"revclipsnippets"];
+    panel.allowedContentTypes = @[RCSnippetImportExportContentType()];
 
     NSModalResponse saveResponse = [panel runModal];
     if (saveResponse != NSModalResponseOK || panel.URL == nil) {

@@ -14,6 +14,8 @@
 #import "RCMenuManager.h"
 #import "RCSnippetImportExportService.h"
 
+@import UniformTypeIdentifiers;
+
 static NSPasteboardType const kRCSnippetOutlineDragType = @"com.revclip.snippet-outline-item";
 
 static NSString * const kRCSnippetDragTypeFolder = @"folder";
@@ -27,8 +29,11 @@ static CGFloat const kRCSnippetEditorBottomBarHeight = 44.0;
 static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
 
 static NSString * const kRCSnippetImportExportExtensionRevclip = @"revclipsnippets";
-static NSString * const kRCSnippetImportExportExtensionXML = @"xml";
-static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
+
+static UTType *RCSnippetImportExportContentType(void) {
+    UTType *contentType = [UTType typeWithFilenameExtension:kRCSnippetImportExportExtensionRevclip];
+    return (contentType != nil) ? contentType : UTTypeData;
+}
 
 @class RCSnippetFolderNode;
 
@@ -719,23 +724,42 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
 
     BOOL currentEnabled = [self isItemEnabled:selectedItem];
     BOOL nextEnabled = !currentEnabled;
+    NSNumber *nextEnabledNumber = @(nextEnabled);
     BOOL updated = NO;
 
     if ([selectedItem isKindOfClass:[RCSnippetFolderNode class]]) {
         RCSnippetFolderNode *folderNode = (RCSnippetFolderNode *)selectedItem;
-        folderNode.folderDictionary[@"enabled"] = @(nextEnabled);
-        updated = [[RCDatabaseManager shared] updateSnippetFolder:folderNode.folderDictionary];
+        NSMutableDictionary *updatedFolderDictionary = [folderNode.folderDictionary mutableCopy];
+        updatedFolderDictionary[@"enabled"] = nextEnabledNumber;
+        updated = [[RCDatabaseManager shared] updateSnippetFolder:updatedFolderDictionary];
         if (updated) {
+            folderNode.folderDictionary[@"enabled"] = nextEnabledNumber;
             [self.outlineView reloadItem:folderNode reloadChildren:YES];
             [self updateEnabledToggleButtonForItem:folderNode];
+        } else {
+            NSString *folderIdentifier = [self stringValueFromDictionary:folderNode.folderDictionary
+                                                                     key:@"identifier"
+                                                            defaultValue:@"<unknown-folder>"];
+            NSLog(@"[Revclip] Failed to update snippet folder enabled state. folderIdentifier=%@, enabled=%@",
+                  folderIdentifier,
+                  nextEnabledNumber);
         }
     } else if ([selectedItem isKindOfClass:[RCSnippetNode class]]) {
         RCSnippetNode *snippetNode = (RCSnippetNode *)selectedItem;
-        snippetNode.snippetDictionary[@"enabled"] = @(nextEnabled);
-        updated = [[RCDatabaseManager shared] updateSnippet:snippetNode.snippetDictionary];
+        NSMutableDictionary *updatedSnippetDictionary = [snippetNode.snippetDictionary mutableCopy];
+        updatedSnippetDictionary[@"enabled"] = nextEnabledNumber;
+        updated = [[RCDatabaseManager shared] updateSnippet:updatedSnippetDictionary];
         if (updated) {
+            snippetNode.snippetDictionary[@"enabled"] = nextEnabledNumber;
             [self.outlineView reloadItem:snippetNode reloadChildren:NO];
             [self updateEnabledToggleButtonForItem:snippetNode];
+        } else {
+            NSString *snippetIdentifier = [self stringValueFromDictionary:snippetNode.snippetDictionary
+                                                                       key:@"identifier"
+                                                              defaultValue:@"<unknown-snippet>"];
+            NSLog(@"[Revclip] Failed to update snippet enabled state. snippetIdentifier=%@, enabled=%@",
+                  snippetIdentifier,
+                  nextEnabledNumber);
         }
     }
 
@@ -823,7 +847,7 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
 
     NSSavePanel *panel = [NSSavePanel savePanel];
     panel.canCreateDirectories = YES;
-    panel.allowedFileTypes = @[kRCSnippetImportExportExtensionRevclip];
+    panel.allowedContentTypes = @[RCSnippetImportExportContentType()];
     panel.nameFieldStringValue = defaultFileName;
 
     NSModalResponse saveResponse = [panel runModal];
@@ -1228,10 +1252,10 @@ static NSString * const kRCSnippetImportExportExtensionPlist = @"plist";
     panel.canChooseFiles = YES;
     panel.canChooseDirectories = NO;
     panel.allowsMultipleSelection = NO;
-    panel.allowedFileTypes = @[
-        kRCSnippetImportExportExtensionRevclip,
-        kRCSnippetImportExportExtensionXML,
-        kRCSnippetImportExportExtensionPlist,
+    panel.allowedContentTypes = @[
+        RCSnippetImportExportContentType(),
+        UTTypeXML,
+        UTTypePropertyList,
     ];
     if (directoryURL != nil) {
         panel.directoryURL = directoryURL;
