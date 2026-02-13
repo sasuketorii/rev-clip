@@ -18,7 +18,7 @@ extern NSString * const kRCPrefStoreTypesKey;                  // Default: all t
 extern NSString * const kRCPrefOverwriteSameHistory;           // Default: YES
 extern NSString * const kRCPrefCopySameHistory;                // Default: YES
 extern NSString * const kRCCollectCrashReport;                 // Default: YES
-extern NSString * const loginItem;                             // Default: NO
+extern NSString * const loginItem;                             // Default: YES
 extern NSString * const suppressAlertForLoginItem;             // Default: NO
 
 // Menu

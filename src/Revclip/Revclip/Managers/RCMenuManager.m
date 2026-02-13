@@ -195,22 +195,19 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 - (void)popUpStatusMenuFromHotKey {
     [self performOnMainThread:^{
         [self applyStatusItemPreference];
-        if (self.statusItem == nil || self.statusItem.button == nil) {
+        if (self.statusItem == nil) {
             return;
         }
 
         [self rebuildMenuInternal];
-        [self.statusItem.button performClick:nil];
+        NSPoint mouseLocation = [NSEvent mouseLocation];
+        [self.statusMenu popUpMenuPositioningItem:nil atLocation:mouseLocation inView:nil];
     }];
 }
 
 - (void)popUpHistoryMenuFromHotKey {
     [self performOnMainThread:^{
         [self applyStatusItemPreference];
-        if (self.statusItem == nil || self.statusItem.button == nil) {
-            return;
-        }
-
         NSMenu *menu = [self menuWithTitle:@"History"];
         [self appendClipHistorySectionToMenu:menu];
         [menu addItem:[NSMenuItem separatorItem]];
@@ -222,10 +219,6 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 - (void)popUpSnippetMenuFromHotKey {
     [self performOnMainThread:^{
         [self applyStatusItemPreference];
-        if (self.statusItem == nil || self.statusItem.button == nil) {
-            return;
-        }
-
         NSMenu *menu = [self menuWithTitle:@"Snippets"];
         [self appendSnippetSectionToMenu:menu];
         [menu addItem:[NSMenuItem separatorItem]];
@@ -241,10 +234,6 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
     [self performOnMainThread:^{
         [self applyStatusItemPreference];
-        if (self.statusItem == nil || self.statusItem.button == nil) {
-            return;
-        }
-
         NSDictionary *targetFolder = nil;
         for (NSDictionary *folder in [[RCDatabaseManager shared] fetchAllSnippetFolders]) {
             NSString *identifier = [self stringValueFromDictionary:folder key:@"identifier" defaultValue:@""];
@@ -279,15 +268,13 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 }
 
 - (void)popUpTransientMenu:(NSMenu *)menu {
-    if (menu == nil || self.statusItem == nil || self.statusItem.button == nil) {
+    if (menu == nil) {
         return;
     }
 
     [self configureMenuForSimpleTransparentBackground:menu];
-    NSMenu *originalMenu = self.statusItem.menu ?: self.statusMenu;
-    self.statusItem.menu = menu;
-    [self.statusItem.button performClick:nil];
-    self.statusItem.menu = originalMenu;
+    NSPoint mouseLocation = [NSEvent mouseLocation];
+    [menu popUpMenuPositioningItem:nil atLocation:mouseLocation inView:nil];
 }
 
 #pragma mark - Menu Build

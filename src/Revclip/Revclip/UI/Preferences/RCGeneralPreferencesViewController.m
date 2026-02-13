@@ -8,6 +8,7 @@
 #import "RCGeneralPreferencesViewController.h"
 
 #import "RCConstants.h"
+#import "RCLoginItemService.h"
 
 static const NSInteger RCMaxHistorySizeMinimum = 1;
 static const NSInteger RCMaxHistorySizeMaximum = 9999;
@@ -50,8 +51,13 @@ static const NSInteger RCShowStatusItemDefault = 1;
 
 - (IBAction)loginAtStartupChanged:(id)sender {
     (void)sender;
-    [[NSUserDefaults standardUserDefaults] setBool:(self.loginAtStartupButton.state == NSControlStateValueOn)
-                                            forKey:loginItem];
+    BOOL enabled = (self.loginAtStartupButton.state == NSControlStateValueOn);
+    BOOL success = [[RCLoginItemService shared] setLoginItemEnabled:enabled];
+    if (success) {
+        [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:loginItem];
+    } else {
+        self.loginAtStartupButton.state = enabled ? NSControlStateValueOff : NSControlStateValueOn;
+    }
 }
 
 - (IBAction)showStatusItemChanged:(id)sender {

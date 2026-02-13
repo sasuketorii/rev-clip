@@ -29,7 +29,7 @@
         kRCPrefOverwriteSameHistory: @YES,
         kRCPrefCopySameHistory: @YES,
         kRCCollectCrashReport: @YES,
-        loginItem: @NO,
+        loginItem: @YES,
         suppressAlertForLoginItem: @NO,
         kRCPrefNumberOfItemsPlaceInlineKey: @0,
         kRCPrefNumberOfItemsPlaceInsideFolderKey: @10,

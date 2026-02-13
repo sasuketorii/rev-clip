@@ -10,6 +10,7 @@
 #import "RCAccessibilityService.h"
 #import "RCClipboardService.h"
 #import "RCDataCleanService.h"
+#import "RCConstants.h"
 #import "RCEnvironment.h"
 #import "RCDatabaseManager.h"
 #import "RCHotKeyService.h"
@@ -84,6 +85,12 @@ static UTType *RCSnippetImportExportContentType(void) {
 
     // 8. Screenshot monitoring (Beta)
     [[RCScreenshotMonitorService shared] startMonitoring];
+
+    // 9. Login item registration
+    BOOL loginItemEnabled = [[NSUserDefaults standardUserDefaults] boolForKey:loginItem];
+    if (loginItemEnabled) {
+        [[RCLoginItemService shared] setLoginItemEnabled:YES];
+    }
 
     NSLog(@"[Revclip] Application did finish launching.");
 }
