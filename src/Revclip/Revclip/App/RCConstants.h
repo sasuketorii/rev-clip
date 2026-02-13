@@ -30,7 +30,7 @@ extern NSString * const kRCPrefShowIconInTheMenuKey;               // Default: Y
 extern NSString * const kRCMenuItemsAreMarkedWithNumbersKey;       // Default: YES
 extern NSString * const kRCPrefMenuItemsTitleStartWithZeroKey;     // Default: NO
 extern NSString * const kRCShowToolTipOnMenuItemKey;               // Default: YES
-extern NSString * const kRCMaxLengthOfToolTipKey;                  // Default: 200
+extern NSString * const kRCMaxLengthOfToolTipKey;                  // Default: 10000
 extern NSString * const kRCShowImageInTheMenuKey;                  // Default: YES
 extern NSString * const kRCPrefShowColorPreviewInTheMenu;          // Default: YES
 extern NSString * const kRCAddNumericKeyEquivalentsKey;            // Default: NO

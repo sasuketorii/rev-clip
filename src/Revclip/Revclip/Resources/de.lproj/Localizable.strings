@@ -7,6 +7,11 @@
 "Clear All History" = "Gesamten Verlauf löschen";
 "Are you sure you want to clear all clipboard history?" = "Möchten Sie wirklich den gesamten Zwischenablagenverlauf löschen?";
 "Cancel" = "Abbrechen";
+"Delete" = "Löschen";
+"Delete this folder and all its snippets?" = "Diesen Ordner und alle darin enthaltenen Snippets löschen?";
+"Target folder: %@" = "Zielordner: %@";
+"Delete this snippet?" = "Dieses Snippet löschen?";
+"Target snippet: %@" = "Ziel-Snippet: %@";
 
 "General" = "Allgemein";
 "Menu" = "Menü";

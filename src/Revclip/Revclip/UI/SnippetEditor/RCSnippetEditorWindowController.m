@@ -667,51 +667,89 @@ static UTType *RCSnippetImportExportContentType(void) {
         return;
     }
 
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.alertStyle = NSAlertStyleWarning;
+    [alert addButtonWithTitle:NSLocalizedString(@"Delete", nil)];
+    [alert addButtonWithTitle:NSLocalizedString(@"Cancel", nil)];
+
+    void (^deleteHandler)(void) = nil;
+
     if ([selectedItem isKindOfClass:[RCSnippetFolderNode class]]) {
         RCSnippetFolderNode *folderNode = (RCSnippetFolderNode *)selectedItem;
         NSString *identifier = [self stringValueFromDictionary:folderNode.folderDictionary
                                                            key:@"identifier"
                                                   defaultValue:@""];
+        NSString *folderTitle = [self stringValueFromDictionary:folderNode.folderDictionary
+                                                            key:@"title"
+                                                   defaultValue:NSLocalizedString(@"Untitled Folder", nil)];
         if (identifier.length == 0) {
             return;
         }
 
-        BOOL deleted = [[RCDatabaseManager shared] deleteSnippetFolder:identifier];
-        if (!deleted) {
-            NSBeep();
+        alert.messageText = NSLocalizedString(@"Delete this folder and all its snippets?", nil);
+        alert.informativeText = [NSString stringWithFormat:NSLocalizedString(@"Target folder: %@", nil), folderTitle];
+
+        deleteHandler = ^{
+            BOOL deleted = [[RCDatabaseManager shared] deleteSnippetFolder:identifier];
+            if (!deleted) {
+                NSBeep();
+                return;
+            }
+
+            [[RCHotKeyService shared] unregisterSnippetFolderHotKey:identifier];
+            [self reloadOutlineSelectingFolderIdentifier:nil snippetIdentifier:nil];
+            [self persistFolderOrderFromCurrentTree];
+            [[RCMenuManager shared] rebuildMenu];
+        };
+    } else if ([selectedItem isKindOfClass:[RCSnippetNode class]]) {
+        RCSnippetNode *snippetNode = (RCSnippetNode *)selectedItem;
+        NSString *snippetIdentifier = [self stringValueFromDictionary:snippetNode.snippetDictionary
+                                                                  key:@"identifier"
+                                                         defaultValue:@""];
+        NSString *folderIdentifier = [self stringValueFromDictionary:snippetNode.parentFolder.folderDictionary
+                                                                 key:@"identifier"
+                                                        defaultValue:@""];
+        NSString *snippetTitle = [self stringValueFromDictionary:snippetNode.snippetDictionary
+                                                             key:@"title"
+                                                    defaultValue:NSLocalizedString(@"Untitled Snippet", nil)];
+        if (snippetIdentifier.length == 0) {
             return;
         }
 
-        [[RCHotKeyService shared] unregisterSnippetFolderHotKey:identifier];
-        [self reloadOutlineSelectingFolderIdentifier:nil snippetIdentifier:nil];
-        [self persistFolderOrderFromCurrentTree];
-        [[RCMenuManager shared] rebuildMenu];
+        alert.messageText = NSLocalizedString(@"Delete this snippet?", nil);
+        alert.informativeText = [NSString stringWithFormat:NSLocalizedString(@"Target snippet: %@", nil), snippetTitle];
+
+        deleteHandler = ^{
+            BOOL deleted = [[RCDatabaseManager shared] deleteSnippet:snippetIdentifier];
+            if (!deleted) {
+                NSBeep();
+                return;
+            }
+
+            [self reloadOutlineSelectingFolderIdentifier:folderIdentifier snippetIdentifier:nil];
+            RCSnippetFolderNode *folderNode = [self folderNodeForIdentifier:folderIdentifier];
+            if (folderNode != nil) {
+                [self persistSnippetOrderForFolder:folderNode];
+            }
+            [[RCMenuManager shared] rebuildMenu];
+        };
+    } else {
         return;
     }
 
-    RCSnippetNode *snippetNode = (RCSnippetNode *)selectedItem;
-    NSString *snippetIdentifier = [self stringValueFromDictionary:snippetNode.snippetDictionary
-                                                              key:@"identifier"
-                                                     defaultValue:@""];
-    NSString *folderIdentifier = [self stringValueFromDictionary:snippetNode.parentFolder.folderDictionary
-                                                             key:@"identifier"
-                                                    defaultValue:@""];
-    if (snippetIdentifier.length == 0) {
+    NSWindow *window = self.window;
+    if (window != nil) {
+        [alert beginSheetModalForWindow:window completionHandler:^(NSModalResponse returnCode) {
+            if (returnCode == NSAlertFirstButtonReturn && deleteHandler != nil) {
+                deleteHandler();
+            }
+        }];
         return;
     }
 
-    BOOL deleted = [[RCDatabaseManager shared] deleteSnippet:snippetIdentifier];
-    if (!deleted) {
-        NSBeep();
-        return;
+    if ([alert runModal] == NSAlertFirstButtonReturn && deleteHandler != nil) {
+        deleteHandler();
     }
-
-    [self reloadOutlineSelectingFolderIdentifier:folderIdentifier snippetIdentifier:nil];
-    RCSnippetFolderNode *folderNode = [self folderNodeForIdentifier:folderIdentifier];
-    if (folderNode != nil) {
-        [self persistSnippetOrderForFolder:folderNode];
-    }
-    [[RCMenuManager shared] rebuildMenu];
 }
 
 - (void)toggleSelectedItemEnabled:(id)sender {

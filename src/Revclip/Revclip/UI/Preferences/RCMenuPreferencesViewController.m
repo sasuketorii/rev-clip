@@ -95,8 +95,8 @@ static CGFloat const kRCMenuPreferencesValueFieldWidth = 50.0;
     self.showTooltipButton = [self checkBoxWithTitle:NSLocalizedString(@"Show tooltip", nil)];
     [rightColumn addArrangedSubview:self.showTooltipButton];
 
-    self.maxTooltipLengthTextField = [self numericTextFieldWithMinValue:1 maxValue:9999];
-    self.maxTooltipLengthStepper = [self numericStepperWithMinValue:1 maxValue:9999];
+    self.maxTooltipLengthTextField = [self numericTextFieldWithMinValue:1 maxValue:10000];
+    self.maxTooltipLengthStepper = [self numericStepperWithMinValue:1 maxValue:10000];
     [rightColumn addArrangedSubview:[self numericRowWithTitle:NSLocalizedString(@"Max tooltip length", nil)
                                                     textField:self.maxTooltipLengthTextField
                                                       stepper:self.maxTooltipLengthStepper]];

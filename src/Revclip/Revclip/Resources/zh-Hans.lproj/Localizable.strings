@@ -7,6 +7,11 @@
 "Clear All History" = "清除所有历史记录";
 "Are you sure you want to clear all clipboard history?" = "确定要清除所有剪贴板历史记录吗？";
 "Cancel" = "取消";
+"Delete" = "删除";
+"Delete this folder and all its snippets?" = "删除此文件夹及其所有片段吗？";
+"Target folder: %@" = "目标文件夹: %@";
+"Delete this snippet?" = "删除此片段吗？";
+"Target snippet: %@" = "目标片段: %@";
 
 "General" = "通用";
 "Menu" = "菜单";

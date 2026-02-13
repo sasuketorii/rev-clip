@@ -541,7 +541,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
     BOOL tooltipSatisfied = NO;
     if (needsTooltip && clipItem.title.length > 0) {
-        NSInteger maxLength = [self integerPreferenceForKey:kRCMaxLengthOfToolTipKey defaultValue:200];
+        NSInteger maxLength = [self integerPreferenceForKey:kRCMaxLengthOfToolTipKey defaultValue:10000];
         item.toolTip = [self truncatedString:clipItem.title maxLength:MAX(1, maxLength)];
         tooltipSatisfied = YES;
     }
@@ -589,7 +589,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
         if (needsClipDataForTooltip) {
             NSString *toolTip = [self tooltipForClipItem:clipItem clipData:clipData];
             if (toolTip.length > 0) {
-                NSInteger maxLength = [self integerPreferenceForKey:kRCMaxLengthOfToolTipKey defaultValue:200];
+                NSInteger maxLength = [self integerPreferenceForKey:kRCMaxLengthOfToolTipKey defaultValue:10000];
                 item.toolTip = [self truncatedString:toolTip maxLength:MAX(1, maxLength)];
             }
         }

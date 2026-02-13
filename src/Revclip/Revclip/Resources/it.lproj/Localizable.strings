@@ -7,6 +7,11 @@
 "Clear All History" = "Cancella tutta la cronologia";
 "Are you sure you want to clear all clipboard history?" = "Sei sicuro di voler cancellare tutta la cronologia degli appunti?";
 "Cancel" = "Annulla";
+"Delete" = "Elimina";
+"Delete this folder and all its snippets?" = "Eliminare questa cartella e tutti i suoi snippet?";
+"Target folder: %@" = "Cartella di destinazione: %@";
+"Delete this snippet?" = "Eliminare questo snippet?";
+"Target snippet: %@" = "Snippet di destinazione: %@";
 
 "General" = "Generale";
 "Menu" = "Menu";

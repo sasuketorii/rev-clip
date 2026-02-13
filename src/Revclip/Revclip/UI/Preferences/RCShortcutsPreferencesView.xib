@@ -112,7 +112,7 @@
                 <constraint firstItem="zL7-zl-6zP" firstAttribute="centerY" secondItem="pb0-ZG-cPu" secondAttribute="centerY" id="1qW-8g-c4A"/>
 
                 <constraint firstItem="6xU-vh-rJm" firstAttribute="leading" secondItem="Lqy-MW-dP9" secondAttribute="leading" constant="24" id="pE2-gf-S7g"/>
-                <constraint firstItem="6xU-vh-rJm" firstAttribute="bottom" secondItem="Lqy-MW-dP9" secondAttribute="bottom" constant="20" id="5zs-cX-Lvz"/>
+                <constraint firstItem="Lqy-MW-dP9" firstAttribute="bottom" secondItem="6xU-vh-rJm" secondAttribute="bottom" constant="20" id="5zs-cX-Lvz"/>
             </constraints>
             <point key="canvasLocation" x="118" y="178"/>
         </customView>

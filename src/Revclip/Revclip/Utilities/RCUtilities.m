@@ -39,7 +39,7 @@
         kRCMenuItemsAreMarkedWithNumbersKey: @YES,
         kRCPrefMenuItemsTitleStartWithZeroKey: @NO,
         kRCShowToolTipOnMenuItemKey: @YES,
-        kRCMaxLengthOfToolTipKey: @200,
+        kRCMaxLengthOfToolTipKey: @10000,
         kRCShowImageInTheMenuKey: @YES,
         kRCPrefShowColorPreviewInTheMenu: @YES,
         kRCAddNumericKeyEquivalentsKey: @NO,

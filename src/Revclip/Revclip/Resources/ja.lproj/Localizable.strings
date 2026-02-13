@@ -7,6 +7,11 @@
 "Clear All History" = "すべての履歴を削除";
 "Are you sure you want to clear all clipboard history?" = "クリップボード履歴をすべて削除しますか？";
 "Cancel" = "キャンセル";
+"Delete" = "削除";
+"Delete this folder and all its snippets?" = "このフォルダとすべてのスニペットを削除しますか？";
+"Target folder: %@" = "対象フォルダ: %@";
+"Delete this snippet?" = "このスニペットを削除しますか？";
+"Target snippet: %@" = "対象スニペット: %@";
 
 "General" = "一般";
 "Menu" = "メニュー";
