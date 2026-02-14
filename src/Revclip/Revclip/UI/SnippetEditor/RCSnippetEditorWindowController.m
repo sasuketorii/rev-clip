@@ -242,12 +242,15 @@ static UTType *RCSnippetImportExportContentType(void) {
     self.contentTextView.horizontallyResizable = NO;
     self.contentTextView.usesFindBar = YES;
     self.contentTextView.richText = NO;
+    self.contentTextView.allowsUndo = YES;
 
     self.contentScrollView = [[NSScrollView alloc] initWithFrame:NSZeroRect];
     self.contentScrollView.translatesAutoresizingMaskIntoConstraints = NO;
     self.contentScrollView.hasVerticalScroller = YES;
     self.contentScrollView.hasHorizontalScroller = NO;
     self.contentScrollView.borderType = NSBezelBorder;
+    self.contentTextView.textContainer.containerSize = NSMakeSize(0.0, CGFLOAT_MAX);
+    self.contentTextView.textContainer.widthTracksTextView = YES;
     self.contentScrollView.documentView = self.contentTextView;
     [rightPane addSubview:self.contentScrollView];
 
@@ -575,6 +578,9 @@ static UTType *RCSnippetImportExportContentType(void) {
         if (updated) {
             [self.outlineView reloadItem:folderNode reloadChildren:NO];
             [[RCMenuManager shared] rebuildMenu];
+            [self flashSaveSuccess];
+        } else {
+            NSBeep();
         }
         return;
     }
@@ -590,6 +596,9 @@ static UTType *RCSnippetImportExportContentType(void) {
     if (updated) {
         [self.outlineView reloadItem:snippetNode reloadChildren:NO];
         [[RCMenuManager shared] rebuildMenu];
+        [self flashSaveSuccess];
+    } else {
+        NSBeep();
     }
 }
 
@@ -806,6 +815,7 @@ static UTType *RCSnippetImportExportContentType(void) {
         return;
     }
 
+    [[RCHotKeyService shared] reloadFolderHotKeys];
     [[RCMenuManager shared] rebuildMenu];
 }
 
@@ -1279,6 +1289,16 @@ static UTType *RCSnippetImportExportContentType(void) {
 }
 
 #pragma mark - Helpers
+
+- (void)flashSaveSuccess {
+    NSString *originalTitle = self.saveButton.title;
+    self.saveButton.title = NSLocalizedString(@"Saved!", nil);
+    self.saveButton.enabled = NO;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        self.saveButton.title = originalTitle;
+        self.saveButton.enabled = ([self selectedItem] != nil);
+    });
+}
 
 - (NSURL *)defaultClipySnippetsFileURL {
     NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/com.clipy-app.Clipy/snippets.xml"];

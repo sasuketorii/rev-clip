@@ -475,6 +475,9 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
         updated = [db executeUpdate:sql withArgumentsInArray:arguments];
         if (!updated) {
             [self logDatabaseError:db context:@"Failed to update snippet_folders row"];
+        } else if (db.changes == 0) {
+            updated = NO;
+            NSLog(@"[RCDatabaseManager] updateSnippetFolder: no rows matched identifier");
         }
     }];
 
@@ -685,6 +688,9 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
         updated = [db executeUpdate:sql withArgumentsInArray:arguments];
         if (!updated) {
             [self logDatabaseError:db context:@"Failed to update snippets row"];
+        } else if (db.changes == 0) {
+            updated = NO;
+            NSLog(@"[RCDatabaseManager] updateSnippet: no rows matched identifier");
         }
     }];
 

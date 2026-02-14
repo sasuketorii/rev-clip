@@ -10,6 +10,8 @@
             <connections>
                 <outlet property="automaticCheckButton" destination="h2L-C6-CtQ" id="9M5-7j-7Dm"/>
                 <outlet property="checkIntervalPopUpButton" destination="4Nx-9w-HRR" id="qQW-F3-qSp"/>
+                <outlet property="checkNowButton" destination="Qgg-fD-IJT" id="wWz-TJ-FkF"/>
+                <outlet property="checkProgressIndicator" destination="aWe-iw-EuD" id="W8g-b1-Xf0"/>
                 <outlet property="versionInfoLabel" destination="4qK-4z-vwY" id="N9M-53-vgR"/>
                 <outlet property="view" destination="PAf-qP-Ikr" id="BaA-KQ-2Yz"/>
             </connections>
@@ -64,6 +66,10 @@
                         <action selector="checkNowClicked:" target="-2" id="aiY-4e-zwN"/>
                     </connections>
                 </button>
+                <progressIndicator hidden="YES" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" displayedWhenStopped="NO" controlSize="small" indeterminate="YES" style="spinning" id="aWe-iw-EuD">
+                    <rect key="frame" x="125" y="28" width="16" height="16"/>
+                    <progressIndicatorCell key="cell" controlSize="small" indeterminate="YES" style="spinning"/>
+                </progressIndicator>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="4qK-4z-vwY" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
                     <rect key="frame" x="358" y="27" width="102" height="17"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" alignment="right" title="バージョン -" id="Z8L-zv-szg">
@@ -85,6 +91,10 @@
                 <constraint firstItem="4Nx-9w-HRR" firstAttribute="width" constant="120" id="utx-j3-djX"/>
                 <constraint firstItem="Qgg-fD-IJT" firstAttribute="leading" secondItem="h2L-C6-CtQ" secondAttribute="leading" id="cYr-iV-cGd"/>
                 <constraint firstAttribute="bottom" secondItem="Qgg-fD-IJT" secondAttribute="bottom" constant="20" id="A6h-ZA-ZfT"/>
+                <constraint firstItem="aWe-iw-EuD" firstAttribute="leading" secondItem="Qgg-fD-IJT" secondAttribute="trailing" constant="8" id="4Mm-Q7-qRE"/>
+                <constraint firstItem="aWe-iw-EuD" firstAttribute="centerY" secondItem="Qgg-fD-IJT" secondAttribute="centerY" id="x4o-wb-6pJ"/>
+                <constraint firstItem="aWe-iw-EuD" firstAttribute="width" constant="16" id="16C-FN-llh"/>
+                <constraint firstItem="aWe-iw-EuD" firstAttribute="height" constant="16" id="ZJ6-b8-RhS"/>
                 <constraint firstAttribute="trailing" secondItem="4qK-4z-vwY" secondAttribute="trailing" constant="20" id="Vpi-Cv-zdc"/>
                 <constraint firstItem="4qK-4z-vwY" firstAttribute="centerY" secondItem="Qgg-fD-IJT" secondAttribute="centerY" id="eQ5-pE-w8d"/>
                 <constraint firstItem="4qK-4z-vwY" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Qgg-fD-IJT" secondAttribute="trailing" constant="12" id="7KR-BU-PeC"/>

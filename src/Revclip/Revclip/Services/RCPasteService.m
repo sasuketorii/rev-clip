@@ -14,6 +14,7 @@
 #import "RCConstants.h"
 
 static NSTimeInterval const kRCPasteMenuCloseDelay = 0.05;
+static NSTimeInterval const kRCPasteActivationDelay = 0.05;
 
 @interface RCPasteService ()
 
@@ -52,6 +53,9 @@ static NSTimeInterval const kRCPasteMenuCloseDelay = 0.05;
             return;
         }
         NSRunningApplication *activeApplication = [NSWorkspace sharedWorkspace].frontmostApplication;
+        if ([activeApplication.bundleIdentifier isEqualToString:NSBundle.mainBundle.bundleIdentifier]) {
+            activeApplication = nil;
+        }
         [self sendPasteKeyStrokeToApplication:activeApplication];
         return;
     }
@@ -63,6 +67,9 @@ static NSTimeInterval const kRCPasteMenuCloseDelay = 0.05;
     }
 
     NSRunningApplication *activeApplication = [NSWorkspace sharedWorkspace].frontmostApplication;
+    if ([activeApplication.bundleIdentifier isEqualToString:NSBundle.mainBundle.bundleIdentifier]) {
+        activeApplication = nil;
+    }
     [self sendPasteKeyStrokeToApplication:activeApplication];
 }
 
@@ -76,6 +83,9 @@ static NSTimeInterval const kRCPasteMenuCloseDelay = 0.05;
     }
 
     NSRunningApplication *activeApplication = [NSWorkspace sharedWorkspace].frontmostApplication;
+    if ([activeApplication.bundleIdentifier isEqualToString:NSBundle.mainBundle.bundleIdentifier]) {
+        activeApplication = nil;
+    }
     [self sendPasteKeyStrokeToApplication:activeApplication];
 }
 
@@ -121,9 +131,18 @@ static NSTimeInterval const kRCPasteMenuCloseDelay = 0.05;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kRCPasteMenuCloseDelay * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
         if (application != nil && !application.terminated) {
-            [application activateWithOptions:0];
+            if (@available(macOS 14.0, *)) {
+                [application activate];
+            } else {
+                [application activateWithOptions:0];
+            }
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kRCPasteActivationDelay * NSEC_PER_SEC)),
+                           dispatch_get_main_queue(), ^{
+                [self sendPasteKeyStroke];
+            });
+        } else {
+            [self sendPasteKeyStroke];
         }
-        [self sendPasteKeyStroke];
     });
 }
 

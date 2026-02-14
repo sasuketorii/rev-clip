@@ -15,6 +15,8 @@ static NSString * const kRCSparkleFrameworkName = @"Sparkle.framework";
 @protocol RCSPUUpdater <NSObject>
 @property (nonatomic, assign) BOOL automaticallyChecksForUpdates;
 @property (nonatomic, assign) NSTimeInterval updateCheckInterval;
+@optional
+@property (nonatomic, readonly) BOOL canCheckForUpdates;
 @end
 
 @protocol RCSPUStandardUpdaterController <NSObject>
@@ -34,7 +36,6 @@ static NSString * const kRCSparkleFrameworkName = @"Sparkle.framework";
 @interface RCUpdateService ()
 
 @property (nonatomic, strong, nullable) id<RCSPUStandardUpdaterController> updaterController;
-@property (nonatomic, assign) BOOL didAttemptSetup;
 
 @end
 
@@ -51,32 +52,55 @@ static NSString * const kRCSparkleFrameworkName = @"Sparkle.framework";
 
 - (void)setupUpdater {
     @synchronized (self) {
-        if (self.updaterController != nil || self.didAttemptSetup) {
+        if (self.updaterController != nil) {
             return;
         }
-        self.didAttemptSetup = YES;
 
         if (![self loadSparkleFrameworkIfAvailable]) {
+            NSLog(@"[RCUpdateService] Sparkle.framework not found.");
             return;
         }
 
         Class updaterControllerClass = NSClassFromString(@"SPUStandardUpdaterController");
         if (updaterControllerClass == Nil) {
+            NSLog(@"[RCUpdateService] SPUStandardUpdaterController class not found.");
             return;
         }
 
         self.updaterController = [self createUpdaterControllerWithClass:updaterControllerClass];
         if (self.updaterController == nil) {
+            NSLog(@"[RCUpdateService] Failed to create updater controller.");
             return;
         }
 
         [self applyStoredPreferencesToUpdater];
+        NSLog(@"[RCUpdateService] Sparkle updater initialized successfully.");
     }
 }
 
 - (void)checkForUpdates {
     [self setupUpdater];
+    if (self.updaterController == nil) {
+        NSLog(@"[RCUpdateService] Cannot check for updates: updater not initialized.");
+        return;
+    }
     [self.updaterController checkForUpdates:nil];
+}
+
+- (BOOL)canCheckForUpdates {
+    [self setupUpdater];
+    @synchronized (self) {
+        if (self.updaterController == nil) {
+            return NO;
+        }
+
+        id<RCSPUUpdater> updater = [self currentUpdater];
+        if (updater != nil && [updater respondsToSelector:@selector(canCheckForUpdates)]) {
+            return updater.canCheckForUpdates;
+        }
+
+        return YES;
+    }
 }
 
 - (BOOL)isAutomaticallyChecksForUpdates {

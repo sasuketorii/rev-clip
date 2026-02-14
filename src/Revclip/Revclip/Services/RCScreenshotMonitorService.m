@@ -9,10 +9,18 @@
 
 #import <Cocoa/Cocoa.h>
 
-static NSString * const kRCBetaScreenshotMonitoring = @"RCBetaScreenshotMonitoring";
+#import "RCConstants.h"
+#import "RCClipData.h"
+#import "RCClipItem.h"
+#import "RCClipboardService.h"
+#import "RCDatabaseManager.h"
+#import "RCUtilities.h"
+#import "NSImage+Resize.h"
+
 static NSString * const kRCMetadataItemIsScreenCapture = @"kMDItemIsScreenCapture";
 static NSString * const kRCMetadataItemFSCreationDate = @"kMDItemFSCreationDate";
 static NSString * const kRCMetadataItemPath = @"kMDItemPath";
+static NSString * const kRCScreenshotClipDataFileExtension = @"rcclip";
 
 @interface RCScreenshotMonitorService ()
 @property (nonatomic, strong, nullable) NSMetadataQuery *metadataQuery;
@@ -42,7 +50,7 @@ static NSString * const kRCMetadataItemPath = @"kMDItemPath";
         return;
     }
 
-    if (![[NSUserDefaults standardUserDefaults] boolForKey:kRCBetaScreenshotMonitoring]) {
+    if (![[NSUserDefaults standardUserDefaults] boolForKey:kRCBetaObserveScreenshot]) {
         return;
     }
 
@@ -178,7 +186,7 @@ static NSString * const kRCMetadataItemPath = @"kMDItemPath";
         return;
     }
 
-    [self copyImageAtPathToPasteboard:filePath];
+    [self saveScreenshotToClipHistory:filePath];
 }
 
 - (BOOL)shouldHandleMetadataItem:(NSMetadataItem *)item {
@@ -201,7 +209,9 @@ static NSString * const kRCMetadataItemPath = @"kMDItemPath";
         || [fileExtension isEqualToString:@"tif"];
 }
 
-- (void)copyImageAtPathToPasteboard:(NSString *)filePath {
+/// Saves the screenshot at the given path directly into clip history
+/// without overwriting the user's current clipboard contents.
+- (void)saveScreenshotToClipHistory:(NSString *)filePath {
     NSData *imageData = [NSData dataWithContentsOfFile:filePath];
     if (imageData.length == 0) {
         return;
@@ -212,15 +222,131 @@ static NSString * const kRCMetadataItemPath = @"kMDItemPath";
         return;
     }
 
-    NSString *fileExtension = filePath.pathExtension.lowercaseString;
-    NSPasteboardType pasteboardType = [fileExtension isEqualToString:@"png"] ? NSPasteboardTypePNG : NSPasteboardTypeTIFF;
-
-    NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-    [pasteboard clearContents];
-    if (![pasteboard setData:imageData forType:pasteboardType]) {
-        [pasteboard clearContents];
-        [pasteboard writeObjects:@[image]];
+    // Convert to TIFF data, which is how RCClipboardService stores images
+    NSData *tiffData = [image TIFFRepresentation];
+    if (tiffData.length == 0) {
+        return;
     }
+
+    // Build an RCClipData representing this screenshot image
+    RCClipData *clipData = [[RCClipData alloc] init];
+    clipData.TIFFData = tiffData;
+    clipData.primaryType = NSPasteboardTypeTIFF;
+
+    NSString *dataHash = [clipData dataHash];
+    if (dataHash.length == 0) {
+        return;
+    }
+
+    RCDatabaseManager *databaseManager = [RCDatabaseManager shared];
+    if (![databaseManager setupDatabase]) {
+        return;
+    }
+
+    NSInteger updateTime = (NSInteger)([[NSDate date] timeIntervalSince1970] * 1000.0);
+
+    // If an identical screenshot already exists in history, just update its timestamp
+    NSDictionary *existingClipDict = [databaseManager clipItemWithDataHash:dataHash];
+    if (existingClipDict != nil) {
+        if ([databaseManager updateClipItemUpdateTime:dataHash time:updateTime]) {
+            NSMutableDictionary *updatedDict = [existingClipDict mutableCopy];
+            updatedDict[@"update_time"] = @(updateTime);
+            RCClipItem *updatedItem = [[RCClipItem alloc] initWithDictionary:updatedDict];
+            [self postClipboardDidChangeNotificationWithClipItem:updatedItem];
+        }
+        return;
+    }
+
+    // Ensure the clip data directory exists
+    NSString *directoryPath = [RCUtilities clipDataDirectoryPath];
+    if (![RCUtilities ensureDirectoryExists:directoryPath]) {
+        return;
+    }
+
+    // Save clip data to file
+    NSString *identifier = [NSUUID UUID].UUIDString;
+    NSString *dataFileName = [NSString stringWithFormat:@"%@.%@", identifier, kRCScreenshotClipDataFileExtension];
+    NSString *dataPath = [directoryPath stringByAppendingPathComponent:dataFileName];
+
+    if (![clipData saveToPath:dataPath]) {
+        return;
+    }
+
+    // Generate thumbnail
+    NSString *thumbnailPath = [self generateThumbnailForImage:image
+                                                   identifier:identifier
+                                                directoryPath:directoryPath];
+
+    NSDictionary *clipDictionary = @{
+        @"data_path": dataPath,
+        @"title": [clipData title] ?: @"",
+        @"data_hash": dataHash,
+        @"primary_type": clipData.primaryType ?: @"",
+        @"update_time": @(updateTime),
+        @"thumbnail_path": thumbnailPath ?: @"",
+        @"is_color_code": @(NO),
+    };
+
+    if (![databaseManager insertClipItem:clipDictionary]) {
+        [[NSFileManager defaultManager] removeItemAtPath:dataPath error:nil];
+        if (thumbnailPath.length > 0) {
+            [[NSFileManager defaultManager] removeItemAtPath:thumbnailPath error:nil];
+        }
+        return;
+    }
+
+    RCClipItem *clipItem = [[RCClipItem alloc] initWithDictionary:clipDictionary];
+    [self postClipboardDidChangeNotificationWithClipItem:clipItem];
+}
+
+- (NSString *)generateThumbnailForImage:(NSImage *)image
+                             identifier:(NSString *)identifier
+                          directoryPath:(NSString *)directoryPath {
+    if (image == nil || identifier.length == 0 || directoryPath.length == 0) {
+        return @"";
+    }
+
+    CGFloat width = [[NSUserDefaults standardUserDefaults] doubleForKey:kRCThumbnailWidthKey];
+    CGFloat height = [[NSUserDefaults standardUserDefaults] doubleForKey:kRCThumbnailHeightKey];
+    if (width <= 0.0) width = 100.0;
+    if (height <= 0.0) height = 32.0;
+    NSSize targetSize = NSMakeSize(width, height);
+    NSImage *thumbnailImage = [image resizedImageToFitSize:targetSize];
+    if (thumbnailImage == nil) {
+        thumbnailImage = [image resizedImageToSize:targetSize];
+    }
+    if (thumbnailImage == nil) {
+        return @"";
+    }
+
+    NSData *thumbnailData = [thumbnailImage TIFFRepresentation];
+    if (thumbnailData.length == 0) {
+        return @"";
+    }
+
+    NSString *thumbnailFileName = [NSString stringWithFormat:@"%@.thumbnail.tiff", identifier];
+    NSString *thumbnailPath = [directoryPath stringByAppendingPathComponent:thumbnailFileName];
+
+    NSError *error = nil;
+    BOOL wrote = [thumbnailData writeToFile:thumbnailPath options:NSDataWritingAtomic error:&error];
+    if (!wrote) {
+        NSLog(@"[RCScreenshotMonitorService] Failed to save thumbnail at path '%@': %@", thumbnailPath, error.localizedDescription);
+        return @"";
+    }
+
+    return thumbnailPath;
+}
+
+- (void)postClipboardDidChangeNotificationWithClipItem:(RCClipItem *)clipItem {
+    if (clipItem == nil) {
+        return;
+    }
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [[NSNotificationCenter defaultCenter] postNotificationName:RCClipboardDidChangeNotification
+                                                            object:self
+                                                          userInfo:@{ @"clipItem": clipItem }];
+    });
 }
 
 @end

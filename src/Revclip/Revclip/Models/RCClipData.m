@@ -122,15 +122,12 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
 #pragma mark - Hash / Title
 
 - (NSString *)dataHash {
-    if (self.stringValue != nil) {
-        NSData *stringData = [self.stringValue dataUsingEncoding:NSUTF8StringEncoding];
-        return [[self class] sha256HexForData:stringData ?: [NSData data]];
-    }
-
     NSMutableData *buffer = [NSMutableData data];
+    [[self class] appendString:self.stringValue toBuffer:buffer];
     [[self class] appendData:self.RTFData toBuffer:buffer];
     [[self class] appendData:self.RTFDData toBuffer:buffer];
     [[self class] appendData:self.PDFData toBuffer:buffer];
+    [[self class] appendData:self.TIFFData toBuffer:buffer];
     for (NSString *fileName in self.fileNames) {
         [[self class] appendString:fileName toBuffer:buffer];
     }
@@ -138,7 +135,6 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
         [[self class] appendString:fileURL.absoluteString toBuffer:buffer];
     }
     [[self class] appendString:self.URLString toBuffer:buffer];
-    [[self class] appendData:self.TIFFData toBuffer:buffer];
     [[self class] appendString:self.primaryType toBuffer:buffer];
 
     return [[self class] sha256HexForData:buffer];

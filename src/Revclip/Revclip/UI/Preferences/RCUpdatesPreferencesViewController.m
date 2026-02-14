@@ -7,7 +7,6 @@
 
 #import "RCUpdatesPreferencesViewController.h"
 
-#import "RCConstants.h"
 #import "RCUpdateService.h"
 
 static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
@@ -16,6 +15,8 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
 
 @property (nonatomic, weak) IBOutlet NSButton *automaticCheckButton;
 @property (nonatomic, weak) IBOutlet NSPopUpButton *checkIntervalPopUpButton;
+@property (nonatomic, weak) IBOutlet NSButton *checkNowButton;
+@property (nonatomic, weak) IBOutlet NSProgressIndicator *checkProgressIndicator;
 @property (nonatomic, weak) IBOutlet NSTextField *versionInfoLabel;
 
 @end
@@ -30,23 +31,17 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
 }
 
 - (void)loadUpdateSettings {
-    NSUserDefaults *defaults = NSUserDefaults.standardUserDefaults;
-
-    NSNumber *automaticCheckValue = [defaults objectForKey:kRCEnableAutomaticCheckKey];
-    BOOL automaticCheckEnabled = automaticCheckValue != nil ? automaticCheckValue.boolValue : YES;
+    RCUpdateService *updateService = [RCUpdateService shared];
+    BOOL automaticCheckEnabled = updateService.automaticallyChecksForUpdates;
     self.automaticCheckButton.state = automaticCheckEnabled ? NSControlStateValueOn : NSControlStateValueOff;
-    if (automaticCheckValue == nil) {
-        [defaults setBool:automaticCheckEnabled forKey:kRCEnableAutomaticCheckKey];
-    }
 
-    NSNumber *checkIntervalValue = [defaults objectForKey:kRCUpdateCheckIntervalKey];
-    NSInteger intervalInSeconds = checkIntervalValue != nil ? checkIntervalValue.integerValue : kRCDefaultUpdateCheckInterval;
+    NSInteger intervalInSeconds = (NSInteger)updateService.updateCheckInterval;
     NSMenuItem *intervalItem = [self.checkIntervalPopUpButton.menu itemWithTag:intervalInSeconds];
     if (intervalItem == nil) {
         intervalInSeconds = kRCDefaultUpdateCheckInterval;
+        updateService.updateCheckInterval = (NSTimeInterval)intervalInSeconds;
     }
     [self.checkIntervalPopUpButton selectItemWithTag:intervalInSeconds];
-    [defaults setInteger:intervalInSeconds forKey:kRCUpdateCheckIntervalKey];
 
     [self updateIntervalControlState];
 }
@@ -79,7 +74,7 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
 
 - (IBAction)automaticCheckToggled:(NSButton *)sender {
     BOOL automaticCheckEnabled = sender.state == NSControlStateValueOn;
-    [NSUserDefaults.standardUserDefaults setBool:automaticCheckEnabled forKey:kRCEnableAutomaticCheckKey];
+    [RCUpdateService shared].automaticallyChecksForUpdates = automaticCheckEnabled;
     [self updateIntervalControlState];
 }
 
@@ -90,12 +85,59 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
         [sender selectItemWithTag:intervalInSeconds];
     }
 
-    [NSUserDefaults.standardUserDefaults setInteger:intervalInSeconds forKey:kRCUpdateCheckIntervalKey];
+    [RCUpdateService shared].updateCheckInterval = (NSTimeInterval)intervalInSeconds;
 }
 
 - (IBAction)checkNowClicked:(id)sender {
     (void)sender;
-    [[RCUpdateService shared] checkForUpdates];
+
+    RCUpdateService *updateService = [RCUpdateService shared];
+    if (!updateService.canCheckForUpdates) {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.alertStyle = NSAlertStyleWarning;
+        alert.messageText = NSLocalizedString(@"アップデートを確認できません", nil);
+        alert.informativeText = NSLocalizedString(@"アップデート機能の初期化に失敗しました。アプリケーションを再起動してください。", nil);
+        [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
+        [alert runModal];
+        return;
+    }
+
+    self.checkNowButton.enabled = NO;
+    self.checkProgressIndicator.hidden = NO;
+    [self.checkProgressIndicator startAnimation:nil];
+
+    [updateService checkForUpdates];
+
+    [self startCheckCompletionPolling];
+}
+
+- (void)startCheckCompletionPolling {
+    __block NSInteger pollCount = 0;
+    __weak typeof(self) weakSelf = self;
+
+    // Sparkle の canCheckForUpdates が YES に戻るまでポーリング（最大60回 = 30秒）
+    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+    dispatch_source_set_timer(timer,
+                              dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)),
+                              (uint64_t)(0.5 * NSEC_PER_SEC),
+                              (uint64_t)(0.1 * NSEC_PER_SEC));
+    dispatch_source_set_event_handler(timer, ^{
+        typeof(self) strongSelf = weakSelf;
+        if (strongSelf == nil) {
+            dispatch_source_cancel(timer);
+            return;
+        }
+
+        pollCount++;
+        BOOL canCheck = [RCUpdateService shared].canCheckForUpdates;
+        if (canCheck || pollCount >= 60) {
+            strongSelf.checkNowButton.enabled = YES;
+            [strongSelf.checkProgressIndicator stopAnimation:nil];
+            strongSelf.checkProgressIndicator.hidden = YES;
+            dispatch_source_cancel(timer);
+        }
+    });
+    dispatch_resume(timer);
 }
 
 @end

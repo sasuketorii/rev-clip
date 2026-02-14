@@ -36,7 +36,5 @@
 	<string>NSApplication</string>
 	<key>SUFeedURL</key>
 	<string>https://github.com/sasuketorii/rev-clip/releases/latest/download/appcast.xml</string>
-	<key>SUPublicEDKey</key>
-	<string></string>
 </dict>
 </plist>

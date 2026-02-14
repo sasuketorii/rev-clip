@@ -16,7 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// 監視中かどうか
 @property (nonatomic, readonly, getter=isMonitoring) BOOL monitoring;
 
-/// 監視を開始（NSUserDefaults kRCBetaScreenshotMonitoring が YES の場合のみ有効）
+/// 監視を開始（NSUserDefaults kRCBetaObserveScreenshot が YES の場合のみ有効）
 - (void)startMonitoring;
 
 /// 監視を停止

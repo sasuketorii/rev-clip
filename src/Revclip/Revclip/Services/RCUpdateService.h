@@ -19,6 +19,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// 手動アップデートチェック
 - (void)checkForUpdates;
 
+/// アップデートチェック可能かどうか
+@property (nonatomic, readonly) BOOL canCheckForUpdates;
+
 /// 自動チェックの有効/無効
 @property (nonatomic, assign, getter=isAutomaticallyChecksForUpdates) BOOL automaticallyChecksForUpdates;
 
