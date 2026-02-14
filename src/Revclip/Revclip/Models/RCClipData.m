@@ -98,8 +98,8 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
                 [fileURLs addObject:object];
             }
         }
-        clipData.fileURLs = [fileURLs copy];
         if (fileURLs.count > 0) {
+            clipData.fileURLs = [fileURLs copy];
             setPrimaryTypeIfNeeded(NSPasteboardTypeFileURL);
         }
     }
@@ -135,7 +135,12 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
         [[self class] appendString:fileURL.absoluteString toBuffer:buffer];
     }
     [[self class] appendString:self.URLString toBuffer:buffer];
+    // Include primaryType in hash to differentiate items with identical data but different primary types
     [[self class] appendString:self.primaryType toBuffer:buffer];
+
+    if (buffer.length == 0) {
+        return @"";
+    }
 
     return [[self class] sha256HexForData:buffer];
 }
@@ -168,10 +173,27 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
         || self.fileURLs.count > 0
         || self.URLString.length > 0;
     if (self.TIFFData.length > 0 && !hasNonImageData) {
-        return @"(Image)";
+        return NSLocalizedString(@"(Image)", @"Title for image-only clipboard data");
     }
 
     return @"";
+}
+
+#pragma mark - Equality
+
+- (BOOL)isEqual:(id)object {
+    if (self == object) {
+        return YES;
+    }
+    if (![object isKindOfClass:[RCClipData class]]) {
+        return NO;
+    }
+    RCClipData *other = (RCClipData *)object;
+    return [[self dataHash] isEqualToString:[other dataHash]];
+}
+
+- (NSUInteger)hash {
+    return [[self dataHash] hash];
 }
 
 #pragma mark - Write
@@ -183,6 +205,10 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
 
     [pasteboard clearContents];
 
+    // File URLs conform to NSPasteboardWriting, so use writeObjects: for them.
+    // Other data types (NSData, NSString for specific UTIs) do not conform to
+    // NSPasteboardWriting and must be set individually via setData:/setString:.
+    // clearContents above ensures the pasteboard is fresh before writing.
     if (self.fileURLs.count > 0) {
         [pasteboard writeObjects:self.fileURLs];
     }
@@ -259,10 +285,15 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
 
     NSString *directoryPath = [path stringByDeletingLastPathComponent];
     if (directoryPath.length > 0) {
-        [[NSFileManager defaultManager] createDirectoryAtPath:directoryPath
-                                  withIntermediateDirectories:YES
-                                                   attributes:nil
-                                                        error:nil];
+        NSError *directoryError = nil;
+        BOOL created = [[NSFileManager defaultManager] createDirectoryAtPath:directoryPath
+                                                 withIntermediateDirectories:YES
+                                                                  attributes:nil
+                                                                       error:&directoryError];
+        if (!created) {
+            NSLog(@"[RCClipData] Failed to create directory at path '%@': %@", directoryPath, directoryError.localizedDescription);
+            return NO;
+        }
     }
 
     NSError *archiveError = nil;
@@ -306,6 +337,7 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
 #pragma mark - Helpers
 
 + (NSString *)sha256HexForData:(NSData *)data {
+    NSAssert(data.length <= UINT32_MAX, @"Data length %lu exceeds CC_LONG (uint32_t) maximum", (unsigned long)data.length);
     unsigned char digest[CC_SHA256_DIGEST_LENGTH];
     CC_SHA256(data.bytes, (CC_LONG)data.length, digest);
 
@@ -321,6 +353,7 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
         return;
     }
 
+    NSAssert(source.length <= UINT32_MAX, @"Source data length %lu exceeds uint32_t maximum", (unsigned long)source.length);
     uint32_t length = CFSwapInt32HostToBig((uint32_t)source.length);
     [buffer appendBytes:&length length:sizeof(length)];
     [buffer appendData:source];

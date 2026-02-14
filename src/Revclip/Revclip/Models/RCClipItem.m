@@ -100,6 +100,21 @@ static BOOL RCBoolValueForKeys(NSDictionary *dictionary, NSArray<NSString *> *ke
     return self;
 }
 
+- (BOOL)isEqual:(id)object {
+    if (self == object) {
+        return YES;
+    }
+    if (![object isKindOfClass:[RCClipItem class]]) {
+        return NO;
+    }
+    RCClipItem *other = (RCClipItem *)object;
+    return self.itemId == other.itemId;
+}
+
+- (NSUInteger)hash {
+    return (NSUInteger)self.itemId;
+}
+
 - (NSDictionary *)toDictionary {
     return @{
         @"id": @(self.itemId),

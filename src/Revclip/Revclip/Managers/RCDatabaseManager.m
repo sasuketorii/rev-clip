@@ -88,10 +88,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block NSInteger version = 0;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         if (![db executeUpdate:@"CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)"]) {
             [self logDatabaseError:db context:@"Failed to create schema_version table before reading version"];
             return;
@@ -104,7 +100,7 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
         }
 
         if ([resultSet next]) {
-            version = [resultSet intForColumn:@"version"];
+            version = [resultSet longLongIntForColumn:@"version"];
         }
         [resultSet close];
     }];
@@ -124,12 +120,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL migrated = YES;
     [self.databaseQueue inTransaction:^(FMDatabase * _Nonnull db, BOOL * _Nonnull rollback) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            migrated = NO;
-            *rollback = YES;
-            return;
-        }
-
         if (version == 0 && ![self createBaseSchemaInDatabase:db]) {
             migrated = NO;
             *rollback = YES;
@@ -177,12 +167,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL succeeded = YES;
     [self.databaseQueue inTransaction:^(FMDatabase * _Nonnull db, BOOL * _Nonnull rollback) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            succeeded = NO;
-            *rollback = YES;
-            return;
-        }
-
         BOOL operationSucceeded = block(db, rollback);
         if (!operationSucceeded || *rollback) {
             succeeded = NO;
@@ -215,14 +199,13 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL inserted = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
-        inserted = [db executeUpdate:@"INSERT INTO clip_items (data_path, title, data_hash, primary_type, update_time, thumbnail_path, is_color_code) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        inserted = [db executeUpdate:@"INSERT OR IGNORE INTO clip_items (data_path, title, data_hash, primary_type, update_time, thumbnail_path, is_color_code) VALUES (?, ?, ?, ?, ?, ?, ?)"
                      withArgumentsInArray:@[dataPath, title, dataHash, primaryType, updateTime, thumbnailPath, isColorCode]];
         if (!inserted) {
             [self logDatabaseError:db context:@"Failed to insert clip_items row"];
+        } else if (db.changes == 0) {
+            inserted = NO;
+            NSLog(@"[RCDatabaseManager] insertClipItem: duplicate data_hash detected, row ignored");
         }
     }];
 
@@ -236,14 +219,13 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL updated = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         updated = [db executeUpdate:@"UPDATE clip_items SET update_time = ? WHERE data_hash = ?"
                withArgumentsInArray:@[@(updateTime), dataHash]];
         if (!updated) {
             [self logDatabaseError:db context:@"Failed to update clip_items.update_time"];
+        } else if (db.changes == 0) {
+            updated = NO;
+            NSLog(@"[RCDatabaseManager] updateClipItemUpdateTime: no rows matched data_hash");
         }
     }];
 
@@ -257,10 +239,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL deleted = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         deleted = [db executeUpdate:@"DELETE FROM clip_items WHERE data_hash = ?" withArgumentsInArray:@[dataHash]];
         if (!deleted) {
             [self logDatabaseError:db context:@"Failed to delete clip_items row by data_hash"];
@@ -277,10 +255,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL deleted = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         deleted = [db executeUpdate:@"DELETE FROM clip_items WHERE update_time < ?" withArgumentsInArray:@[@(updateTime)]];
         if (!deleted) {
             [self logDatabaseError:db context:@"Failed to delete old clip_items rows"];
@@ -297,10 +271,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block NSMutableArray<NSDictionary *> *rows = [NSMutableArray array];
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         FMResultSet *resultSet = [db executeQuery:@"SELECT id, data_path, title, data_hash, primary_type, update_time, thumbnail_path, is_color_code FROM clip_items ORDER BY update_time DESC LIMIT ?"
                              withArgumentsInArray:@[@(limit)]];
         if (!resultSet) {
@@ -324,10 +294,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block NSDictionary *clipItem = nil;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         FMResultSet *resultSet = [db executeQuery:@"SELECT id, data_path, title, data_hash, primary_type, update_time, thumbnail_path, is_color_code FROM clip_items WHERE data_hash = ? LIMIT 1"
                              withArgumentsInArray:@[dataHash]];
         if (!resultSet) {
@@ -351,10 +317,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block NSInteger count = 0;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         FMResultSet *resultSet = [db executeQuery:@"SELECT COUNT(*) AS total FROM clip_items"];
         if (!resultSet) {
             [self logDatabaseError:db context:@"Failed to count clip_items rows"];
@@ -362,7 +324,7 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
         }
 
         if ([resultSet next]) {
-            count = [resultSet intForColumn:@"total"];
+            count = [resultSet longLongIntForColumn:@"total"];
         }
         [resultSet close];
     }];
@@ -377,10 +339,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL deleted = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         deleted = [db executeUpdate:@"DELETE FROM clip_items"];
         if (!deleted) {
             [self logDatabaseError:db context:@"Failed to delete all clip_items rows"];
@@ -408,10 +366,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL inserted = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         inserted = [db executeUpdate:@"INSERT INTO snippet_folders (identifier, folder_index, enabled, title) VALUES (?, ?, ?, ?)"
                 withArgumentsInArray:@[identifier, folderIndex, enabled, title]];
         if (!inserted) {
@@ -468,10 +422,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL updated = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         updated = [db executeUpdate:sql withArgumentsInArray:arguments];
         if (!updated) {
             [self logDatabaseError:db context:@"Failed to update snippet_folders row"];
@@ -491,7 +441,10 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL deleted = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
+        // Explicitly delete child snippets before deleting the folder as a
+        // defensive measure, rather than relying solely on ON DELETE CASCADE.
+        if (![db executeUpdate:@"DELETE FROM snippets WHERE folder_id = ?" withArgumentsInArray:@[identifier]]) {
+            [self logDatabaseError:db context:@"Failed to delete child snippets for folder"];
             return;
         }
 
@@ -511,10 +464,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL deleted = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         deleted = [db executeUpdate:@"DELETE FROM snippet_folders"];
         if (!deleted) {
             [self logDatabaseError:db context:@"Failed to delete all snippet_folders rows"];
@@ -531,10 +480,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block NSMutableArray<NSDictionary *> *rows = [NSMutableArray array];
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         FMResultSet *resultSet = [db executeQuery:@"SELECT id, identifier, folder_index, enabled, title FROM snippet_folders ORDER BY folder_index ASC, id ASC"];
         if (!resultSet) {
             [self logDatabaseError:db context:@"Failed to fetch snippet_folders rows"];
@@ -557,10 +502,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL exists = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         FMResultSet *resultSet = [db executeQuery:@"SELECT 1 FROM snippet_folders WHERE identifier = ? LIMIT 1"
                              withArgumentsInArray:@[identifier]];
         if (!resultSet) {
@@ -596,10 +537,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL inserted = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         inserted = [db executeUpdate:@"INSERT INTO snippets (identifier, folder_id, snippet_index, enabled, title, content) VALUES (?, ?, ?, ?, ?, ?)"
                 withArgumentsInArray:@[identifier, folderID, snippetIndex, enabled, title, content]];
         if (!inserted) {
@@ -681,10 +618,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL updated = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         updated = [db executeUpdate:sql withArgumentsInArray:arguments];
         if (!updated) {
             [self logDatabaseError:db context:@"Failed to update snippets row"];
@@ -704,10 +637,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL deleted = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         deleted = [db executeUpdate:@"DELETE FROM snippets WHERE identifier = ?" withArgumentsInArray:@[identifier]];
         if (!deleted) {
             [self logDatabaseError:db context:@"Failed to delete snippets row"];
@@ -724,10 +653,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block NSMutableArray<NSDictionary *> *rows = [NSMutableArray array];
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         FMResultSet *resultSet = [db executeQuery:@"SELECT id, identifier, folder_id, snippet_index, enabled, title, content FROM snippets WHERE folder_id = ? ORDER BY snippet_index ASC, id ASC"
                              withArgumentsInArray:@[folderIdentifier]];
         if (!resultSet) {
@@ -751,10 +676,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL exists = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        if (![self enableForeignKeysForDatabase:db]) {
-            return;
-        }
-
         FMResultSet *resultSet = [db executeQuery:@"SELECT 1 FROM snippets WHERE identifier = ? LIMIT 1"
                              withArgumentsInArray:@[identifier]];
         if (!resultSet) {
@@ -782,12 +703,17 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     return [revclipDirectoryPath stringByAppendingPathComponent:@"revclip.db"];
 }
 
+// WARNING: This method must never be called from within an FMDatabaseQueue
+// inDatabase: or inTransaction: block. FMDatabaseQueue uses a serial dispatch
+// queue internally, so re-entrant calls will deadlock.
 - (BOOL)ensureDatabaseReadyForOperation {
-    if (self.setupCompleted) {
-        return YES;
-    }
+    @synchronized (self) {
+        if (self.setupCompleted) {
+            return YES;
+        }
 
-    return [self setupDatabase];
+        return [self setupDatabase];
+    }
 }
 
 - (BOOL)ensureDatabaseQueue {
@@ -823,6 +749,17 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
         return NO;
     }
 
+    // Enable foreign keys once on the connection. FMDatabaseQueue reuses a single
+    // connection, so this setting persists for all subsequent operations.
+    __block BOOL foreignKeysEnabled = NO;
+    [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        foreignKeysEnabled = [self enableForeignKeysForDatabase:db];
+    }];
+    if (!foreignKeysEnabled) {
+        self.databaseQueue = nil;
+        return NO;
+    }
+
     return YES;
 }
 
@@ -846,6 +783,9 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
         }
     }
 
+    // --- Schema version seed ---
+    // Seed the initial version row if the table is empty. This is logically
+    // separate from table/index creation above and only runs once on first launch.
     BOOL insertedVersion = [db executeUpdate:@"INSERT INTO schema_version (version) SELECT ? WHERE NOT EXISTS (SELECT 1 FROM schema_version)"
                         withArgumentsInArray:@[@(kRCCurrentSchemaVersion)]];
     if (!insertedVersion) {
@@ -857,7 +797,7 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 }
 
 - (BOOL)enableForeignKeysForDatabase:(FMDatabase *)db {
-    BOOL enabled = [db executeUpdate:@"PRAGMA foreign_keys = ON"];
+    BOOL enabled = [db executeStatements:@"PRAGMA foreign_keys = ON"];
     if (!enabled) {
         [self logDatabaseError:db context:@"Failed to enable foreign_keys pragma"];
     }
