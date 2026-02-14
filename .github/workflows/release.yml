@@ -26,15 +26,51 @@ jobs:
       # - Repository Settings -> Secrets and variables -> Actions -> New repository secret
       # - Name: SPARKLE_PRIVATE_KEY
       # - Value: Sparkle private EdDSA key (from generate_keys)
-      - name: Validate SPARKLE_PRIVATE_KEY
+      - name: Validate required secrets
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          APPLE_CERTIFICATE_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
         run: |
           set -euo pipefail
           if [[ -z "${SPARKLE_PRIVATE_KEY}" ]]; then
             echo "SPARKLE_PRIVATE_KEY is not configured."
             exit 1
           fi
+          if [[ -z "${APPLE_CERTIFICATE_P12}" ]]; then
+            echo "APPLE_CERTIFICATE_P12 is not configured."
+            exit 1
+          fi
+
+      - name: Import Apple certificate
+        env:
+          APPLE_CERTIFICATE_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN_PATH="${RUNNER_TEMP}/app-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
+          CERTIFICATE_PATH="${RUNNER_TEMP}/apple-certificate.p12"
+
+          if ! printf '%s' "${APPLE_CERTIFICATE_P12}" | base64 --decode > "${CERTIFICATE_PATH}" 2>/dev/null; then
+            printf '%s' "${APPLE_CERTIFICATE_P12}" | base64 -D > "${CERTIFICATE_PATH}"
+          fi
+
+          security create-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+          security set-keychain-settings -lut 21600 "${KEYCHAIN_PATH}"
+          security unlock-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+          security import "${CERTIFICATE_PATH}" \
+            -k "${KEYCHAIN_PATH}" \
+            -P "${APPLE_CERTIFICATE_PASSWORD}" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security \
+            -T /usr/bin/productbuild \
+            -T /usr/bin/xcodebuild
+          security list-keychains -d user -s "${KEYCHAIN_PATH}" "${HOME}/Library/Keychains/login.keychain-db"
+          security default-keychain -d user -s "${KEYCHAIN_PATH}"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+
+          echo "KEYCHAIN_PATH=${KEYCHAIN_PATH}" >> "${GITHUB_ENV}"
+          rm -f "${CERTIFICATE_PATH}"
 
       - name: Install XcodeGen
         run: |
@@ -69,7 +105,7 @@ jobs:
           SPARKLE_BIN="$(dirname "${GENERATE_APPCAST_PATH}")"
           echo "SPARKLE_BIN=${SPARKLE_BIN}" >> "${GITHUB_ENV}"
 
-      - name: Build archive (CODE_SIGNING_ALLOWED=NO)
+      - name: Build archive (with signing + hardened runtime)
         run: |
           set -euo pipefail
           mkdir -p "${RELEASE_DIR}"
@@ -81,8 +117,11 @@ jobs:
             -archivePath "${ARCHIVE_PATH}" \
             -destination "generic/platform=macOS" \
             SKIP_INSTALL=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            DEVELOPMENT_TEAM=LLKWV86ZBP \
+            CODE_SIGN_STYLE=Manual \
+            ENABLE_HARDENED_RUNTIME=YES \
             ONLY_ACTIVE_ARCH=NO
 
       - name: Extract .app from archive
@@ -122,6 +161,26 @@ jobs:
             "${DMG_PATH}"
 
           echo "DMG_PATH=${DMG_PATH}" >> "${GITHUB_ENV}"
+
+      - name: Notarize DMG
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          if [[ ! -f "${DMG_PATH}" ]]; then
+            echo "DMG not found: ${DMG_PATH}"
+            exit 1
+          fi
+
+          xcrun notarytool submit "${DMG_PATH}" \
+            --apple-id "${APPLE_ID}" \
+            --password "${APPLE_APP_PASSWORD}" \
+            --team-id "${APPLE_TEAM_ID}" \
+            --wait
+
+          xcrun stapler staple "${DMG_PATH}"
 
       - name: Sign DMG with Sparkle EdDSA
         env:
@@ -167,3 +226,11 @@ jobs:
             ${{ env.DMG_PATH }}
             ${{ env.APPCAST_PATH }}
           generate_release_notes: true
+
+      - name: Cleanup temporary keychain
+        if: always()
+        run: |
+          set -euo pipefail
+          if [[ -n "${KEYCHAIN_PATH:-}" ]]; then
+            security delete-keychain "${KEYCHAIN_PATH}" || true
+          fi
