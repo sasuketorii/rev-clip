@@ -10,7 +10,6 @@
 #import "RCConstants.h"
 #import "RCDatabaseManager.h"
 #import "FMDB.h"
-#import "RCHotKeyRecorderView.h"
 #import "RCHotKeyService.h"
 #import "RCMenuManager.h"
 #import "RCSnippetImportExportService.h"
@@ -30,37 +29,6 @@ static CGFloat const kRCSnippetEditorBottomBarHeight = 44.0;
 static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
 
 static NSString * const kRCSnippetImportExportExtensionRevclip = @"revclipsnippets";
-static UInt32 const kRCSnippetFolderHotKeyAllowedModifiers = (cmdKey | shiftKey | controlKey | optionKey);
-
-static BOOL RCParseUInt32FromObjectWithUpperBound(id object, UInt32 upperBound, UInt32 *outValue) {
-    if (outValue == NULL) {
-        return NO;
-    }
-
-    unsigned long long rawValue = 0;
-    if ([object isKindOfClass:[NSNumber class]]) {
-        rawValue = [(NSNumber *)object unsignedLongLongValue];
-    } else if ([object isKindOfClass:[NSString class]]) {
-        NSString *stringValue = [(NSString *)object stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-        if (stringValue.length == 0) {
-            return NO;
-        }
-
-        NSScanner *scanner = [NSScanner scannerWithString:stringValue];
-        if (![scanner scanUnsignedLongLong:&rawValue] || !scanner.isAtEnd) {
-            return NO;
-        }
-    } else {
-        return NO;
-    }
-
-    if (rawValue > upperBound) {
-        return NO;
-    }
-
-    *outValue = (UInt32)rawValue;
-    return YES;
-}
 
 static UTType *RCSnippetImportExportContentType(void) {
     UTType *contentType = [UTType typeWithFilenameExtension:kRCSnippetImportExportExtensionRevclip];
@@ -91,7 +59,7 @@ static UTType *RCSnippetImportExportContentType(void) {
 
 @end
 
-@interface RCSnippetEditorWindowController () <NSOutlineViewDataSource, NSOutlineViewDelegate, RCHotKeyRecorderViewDelegate>
+@interface RCSnippetEditorWindowController () <NSOutlineViewDataSource, NSOutlineViewDelegate>
 
 @property (nonatomic, strong) NSMutableArray<RCSnippetFolderNode *> *folderNodes;
 
@@ -101,8 +69,7 @@ static UTType *RCSnippetImportExportContentType(void) {
 @property (nonatomic, strong) NSTextField *contentLabel;
 @property (nonatomic, strong) NSScrollView *contentScrollView;
 @property (nonatomic, strong) NSTextView *contentTextView;
-@property (nonatomic, strong) NSView *shortcutContainer;
-@property (nonatomic, strong) RCHotKeyRecorderView *hotKeyRecorderView;
+@property (nonatomic, strong) NSTextField *saveShortcutHintLabel;
 @property (nonatomic, strong) NSPopUpButton *addButton;
 @property (nonatomic, strong) NSButton *removeButton;
 @property (nonatomic, strong) NSButton *enabledToggleButton;
@@ -116,7 +83,6 @@ static UTType *RCSnippetImportExportContentType(void) {
 
 - (NSArray<NSDictionary *> *)fetchAllSnippetRows;
 - (NSDictionary<NSString *, NSArray<NSDictionary *> *> *)snippetRowsGroupedByFolderIdentifier:(NSArray<NSDictionary *> *)snippetRows;
-- (void)persistHotKeyCombo:(RCKeyCombo)keyCombo forFolderIdentifier:(NSString *)folderIdentifier;
 
 @end
 
@@ -291,18 +257,11 @@ static UTType *RCSnippetImportExportContentType(void) {
     self.contentScrollView.documentView = self.contentTextView;
     [rightPane addSubview:self.contentScrollView];
 
-    self.shortcutContainer = [[NSView alloc] initWithFrame:NSZeroRect];
-    self.shortcutContainer.translatesAutoresizingMaskIntoConstraints = NO;
-    [rightPane addSubview:self.shortcutContainer];
-
-    NSTextField *shortcutLabel = [self labelWithString:NSLocalizedString(@"Shortcut:", nil)];
-    shortcutLabel.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.shortcutContainer addSubview:shortcutLabel];
-
-    self.hotKeyRecorderView = [[RCHotKeyRecorderView alloc] initWithFrame:NSZeroRect];
-    self.hotKeyRecorderView.translatesAutoresizingMaskIntoConstraints = NO;
-    self.hotKeyRecorderView.delegate = self;
-    [self.shortcutContainer addSubview:self.hotKeyRecorderView];
+    self.saveShortcutHintLabel = [NSTextField labelWithString:NSLocalizedString(@"Save with ⌘S", nil)];
+    self.saveShortcutHintLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    self.saveShortcutHintLabel.font = [NSFont systemFontOfSize:11.0 weight:NSFontWeightRegular];
+    self.saveShortcutHintLabel.textColor = NSColor.secondaryLabelColor;
+    [rightPane addSubview:self.saveShortcutHintLabel];
 
     [NSLayoutConstraint activateConstraints:@[
         [titleLabel.topAnchor constraintEqualToAnchor:rightPane.topAnchor constant:inset],
@@ -320,19 +279,10 @@ static UTType *RCSnippetImportExportContentType(void) {
         [self.contentScrollView.trailingAnchor constraintEqualToAnchor:rightPane.trailingAnchor constant:-inset],
         [self.contentScrollView.heightAnchor constraintGreaterThanOrEqualToConstant:120.0],
 
-        [self.shortcutContainer.topAnchor constraintEqualToAnchor:self.contentScrollView.bottomAnchor constant:12.0],
-        [self.shortcutContainer.leadingAnchor constraintEqualToAnchor:rightPane.leadingAnchor constant:inset],
-        [self.shortcutContainer.trailingAnchor constraintEqualToAnchor:rightPane.trailingAnchor constant:-inset],
-        [self.shortcutContainer.bottomAnchor constraintEqualToAnchor:rightPane.bottomAnchor constant:-inset],
-        [self.shortcutContainer.heightAnchor constraintEqualToConstant:30.0],
-
-        [shortcutLabel.leadingAnchor constraintEqualToAnchor:self.shortcutContainer.leadingAnchor],
-        [shortcutLabel.centerYAnchor constraintEqualToAnchor:self.shortcutContainer.centerYAnchor],
-
-        [self.hotKeyRecorderView.leadingAnchor constraintEqualToAnchor:shortcutLabel.trailingAnchor constant:8.0],
-        [self.hotKeyRecorderView.centerYAnchor constraintEqualToAnchor:self.shortcutContainer.centerYAnchor],
-        [self.hotKeyRecorderView.widthAnchor constraintEqualToConstant:180.0],
-        [self.hotKeyRecorderView.heightAnchor constraintEqualToConstant:28.0],
+        [self.saveShortcutHintLabel.topAnchor constraintEqualToAnchor:self.contentScrollView.bottomAnchor constant:8.0],
+        [self.saveShortcutHintLabel.leadingAnchor constraintEqualToAnchor:rightPane.leadingAnchor constant:inset],
+        [self.saveShortcutHintLabel.trailingAnchor constraintLessThanOrEqualToAnchor:rightPane.trailingAnchor constant:-inset],
+        [self.saveShortcutHintLabel.bottomAnchor constraintEqualToAnchor:rightPane.bottomAnchor constant:-inset],
     ]];
 }
 
@@ -385,6 +335,8 @@ static UTType *RCSnippetImportExportContentType(void) {
                                          action:@selector(saveButtonClicked:)];
     self.saveButton.translatesAutoresizingMaskIntoConstraints = NO;
     self.saveButton.bezelStyle = NSBezelStyleRounded;
+    self.saveButton.keyEquivalent = @"s";
+    self.saveButton.keyEquivalentModifierMask = NSEventModifierFlagCommand;
     [bottomBar addSubview:self.saveButton];
 
     [NSLayoutConstraint activateConstraints:@[
@@ -606,9 +558,8 @@ static UTType *RCSnippetImportExportContentType(void) {
         self.contentTextView.string = @"";
         self.contentLabel.hidden = NO;
         self.contentScrollView.hidden = NO;
+        self.saveShortcutHintLabel.hidden = YES;
         self.contentTextView.editable = NO;
-        self.shortcutContainer.hidden = YES;
-        self.hotKeyRecorderView.keyCombo = RCInvalidKeyCombo();
         [self updateEnabledToggleButtonForItem:nil];
         self.updatingEditor = NO;
         return;
@@ -622,13 +573,8 @@ static UTType *RCSnippetImportExportContentType(void) {
 
         self.contentLabel.hidden = YES;
         self.contentScrollView.hidden = YES;
+        self.saveShortcutHintLabel.hidden = YES;
         self.contentTextView.editable = NO;
-
-        self.shortcutContainer.hidden = NO;
-        NSString *folderIdentifier = [self stringValueFromDictionary:folderNode.folderDictionary
-                                                                 key:@"identifier"
-                                                        defaultValue:@""];
-        self.hotKeyRecorderView.keyCombo = [self storedHotKeyComboForFolderIdentifier:folderIdentifier];
         [self updateEnabledToggleButtonForItem:folderNode];
         self.updatingEditor = NO;
         return;
@@ -644,15 +590,29 @@ static UTType *RCSnippetImportExportContentType(void) {
 
     self.contentLabel.hidden = NO;
     self.contentScrollView.hidden = NO;
+    self.saveShortcutHintLabel.hidden = NO;
     self.contentTextView.editable = YES;
-    self.shortcutContainer.hidden = YES;
-    self.hotKeyRecorderView.keyCombo = RCInvalidKeyCombo();
     [self updateEnabledToggleButtonForItem:snippetNode];
 
     self.updatingEditor = NO;
 }
 
 #pragma mark - Actions
+
+- (BOOL)performKeyEquivalent:(NSEvent *)event {
+    if (event.type == NSEventTypeKeyDown) {
+        NSEventModifierFlags flags = (event.modifierFlags & NSEventModifierFlagDeviceIndependentFlagsMask);
+        NSString *pressedKey = event.charactersIgnoringModifiers.lowercaseString ?: @"";
+        if (flags == NSEventModifierFlagCommand && [pressedKey isEqualToString:@"s"]) {
+            if (self.saveButton == nil || !self.saveButton.enabled || [self selectedItem] == nil) {
+                return NO;
+            }
+            return [self saveButtonClicked:self.saveButton];
+        }
+    }
+
+    return [super performKeyEquivalent:event];
+}
 
 - (BOOL)saveButtonClicked:(id)sender {
     (void)sender;
@@ -1343,78 +1303,6 @@ static UTType *RCSnippetImportExportContentType(void) {
     [self refreshEditorForSelection];
 }
 
-#pragma mark - HotKey Recorder Delegate
-
-- (void)hotKeyRecorderView:(RCHotKeyRecorderView *)recorderView didRecordKeyCombo:(RCKeyCombo)keyCombo {
-    if (self.updatingEditor) {
-        return;
-    }
-
-    id selectedItem = [self selectedItem];
-    if (![selectedItem isKindOfClass:[RCSnippetFolderNode class]]) {
-        return;
-    }
-
-    RCSnippetFolderNode *folderNode = (RCSnippetFolderNode *)selectedItem;
-    NSString *folderIdentifier = [self stringValueFromDictionary:folderNode.folderDictionary
-                                                             key:@"identifier"
-                                                    defaultValue:@""];
-    if (folderIdentifier.length == 0) {
-        return;
-    }
-
-    BOOL folderEnabled = [self boolValueFromDictionary:folderNode.folderDictionary key:@"enabled" defaultValue:YES];
-    if (!folderEnabled) {
-        [self persistHotKeyCombo:keyCombo forFolderIdentifier:folderIdentifier];
-        return;
-    }
-
-    RCKeyCombo previousKeyCombo = [self storedHotKeyComboForFolderIdentifier:folderIdentifier];
-    BOOL registered = [[RCHotKeyService shared] registerSnippetFolderHotKey:keyCombo
-                                                         forFolderIdentifier:folderIdentifier];
-    if (registered) {
-        return;
-    }
-
-    self.updatingEditor = YES;
-    recorderView.keyCombo = previousKeyCombo;
-    self.updatingEditor = NO;
-
-    NSAlert *alert = [[NSAlert alloc] init];
-    alert.alertStyle = NSAlertStyleWarning;
-    alert.messageText = NSLocalizedString(@"Failed to register shortcut. The key combination may conflict with another shortcut.", nil);
-    [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
-
-    if (self.window != nil) {
-        [alert beginSheetModalForWindow:self.window completionHandler:nil];
-    } else {
-        [alert runModal];
-    }
-}
-
-- (void)hotKeyRecorderViewDidClearKeyCombo:(RCHotKeyRecorderView *)recorderView {
-    (void)recorderView;
-
-    if (self.updatingEditor) {
-        return;
-    }
-
-    id selectedItem = [self selectedItem];
-    if (![selectedItem isKindOfClass:[RCSnippetFolderNode class]]) {
-        return;
-    }
-
-    RCSnippetFolderNode *folderNode = (RCSnippetFolderNode *)selectedItem;
-    NSString *folderIdentifier = [self stringValueFromDictionary:folderNode.folderDictionary
-                                                             key:@"identifier"
-                                                    defaultValue:@""];
-    if (folderIdentifier.length == 0) {
-        return;
-    }
-
-    [[RCHotKeyService shared] unregisterSnippetFolderHotKey:folderIdentifier];
-}
-
 #pragma mark - Persist Order
 
 - (BOOL)persistFolderOrderFromCurrentTree {
@@ -1741,71 +1629,6 @@ static UTType *RCSnippetImportExportContentType(void) {
     }
 
     return YES;
-}
-
-- (void)persistHotKeyCombo:(RCKeyCombo)keyCombo forFolderIdentifier:(NSString *)folderIdentifier {
-    if (folderIdentifier.length == 0) {
-        return;
-    }
-
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    NSMutableDictionary<NSString *, NSDictionary *> *mutableCombos = [NSMutableDictionary dictionary];
-    id rawCombos = [defaults objectForKey:kRCFolderKeyCombos];
-    if ([rawCombos isKindOfClass:[NSDictionary class]]) {
-        [mutableCombos addEntriesFromDictionary:(NSDictionary<NSString *, NSDictionary *> *)rawCombos];
-    }
-
-    if (RCIsValidKeyCombo(keyCombo)) {
-        mutableCombos[folderIdentifier] = @{
-            @"keyCode": @(keyCombo.keyCode),
-            @"modifiers": @(keyCombo.modifiers),
-        };
-    } else {
-        [mutableCombos removeObjectForKey:folderIdentifier];
-    }
-
-    if (mutableCombos.count == 0) {
-        [defaults removeObjectForKey:kRCFolderKeyCombos];
-        return;
-    }
-
-    [defaults setObject:[mutableCombos copy] forKey:kRCFolderKeyCombos];
-}
-
-- (RCKeyCombo)storedHotKeyComboForFolderIdentifier:(NSString *)folderIdentifier {
-    if (folderIdentifier.length == 0) {
-        return RCInvalidKeyCombo();
-    }
-
-    id rawValue = [[NSUserDefaults standardUserDefaults] objectForKey:kRCFolderKeyCombos];
-    if (![rawValue isKindOfClass:[NSDictionary class]]) {
-        return RCInvalidKeyCombo();
-    }
-
-    NSDictionary *allCombos = (NSDictionary *)rawValue;
-    id comboObject = allCombos[folderIdentifier];
-    if (![comboObject isKindOfClass:[NSDictionary class]]) {
-        return RCInvalidKeyCombo();
-    }
-
-    NSDictionary *comboDictionary = (NSDictionary *)comboObject;
-    id keyCodeObject = comboDictionary[@"keyCode"];
-    id modifiersObject = comboDictionary[@"modifiers"];
-    UInt32 keyCode = 0;
-    UInt32 modifiers = 0;
-
-    BOOL hasValidKeyCode = RCParseUInt32FromObjectWithUpperBound(keyCodeObject, UINT16_MAX, &keyCode);
-    BOOL hasValidModifiers = RCParseUInt32FromObjectWithUpperBound(modifiersObject, UINT32_MAX, &modifiers);
-
-    if (!hasValidKeyCode || !hasValidModifiers) {
-        return RCInvalidKeyCombo();
-    }
-
-    if ((modifiers & ~kRCSnippetFolderHotKeyAllowedModifiers) != 0 || modifiers == 0) {
-        return RCInvalidKeyCombo();
-    }
-
-    return RCMakeKeyCombo(keyCode, modifiers);
 }
 
 - (NSString *)normalizedTitleFromField:(NSTextField *)field fallback:(NSString *)fallback {
