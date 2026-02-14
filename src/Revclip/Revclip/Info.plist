@@ -36,6 +36,8 @@
 	<string>NSApplication</string>
 	<key>SUFeedURL</key>
 	<string>https://github.com/sasuketorii/rev-clip/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>jW5CH5/B8IApRFYiwOGot/VUmo0uqvE1LawgUG1igUk=</string>
 	<key>NSAccessibilityUsageDescription</key>
 	<string>Revclip needs accessibility access to paste clipboard items into other applications.</string>
 </dict>

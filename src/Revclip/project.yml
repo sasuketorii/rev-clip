@@ -42,6 +42,7 @@ targets:
         NSHumanReadableCopyright: "Copyright © 2024-2026 Revclip. All rights reserved."
         CFBundleIconName: "AppIcon"
         SUFeedURL: "https://github.com/sasuketorii/rev-clip/releases/latest/download/appcast.xml"
+        SUPublicEDKey: "jW5CH5/B8IApRFYiwOGot/VUmo0uqvE1LawgUG1igUk="
         NSAccessibilityUsageDescription: "Revclip needs accessibility access to paste clipboard items into other applications."
     sources:
       - path: Revclip

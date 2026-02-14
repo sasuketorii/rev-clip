@@ -1,0 +1,169 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    env:
+      PROJECT_DIR: src/Revclip
+      SCHEME: Revclip
+      RELEASE_DIR: ${{ github.workspace }}/build/release
+      ARCHIVE_PATH: ${{ github.workspace }}/build/release/Revclip.xcarchive
+      SPARKLE_VERSION: 2.6.4
+      SPARKLE_TARBALL_SHA256: 50612a06038abc931f16011d7903b8326a362c1074dabccb718404ce8e585f0b
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Required secret:
+      # - Repository Settings -> Secrets and variables -> Actions -> New repository secret
+      # - Name: SPARKLE_PRIVATE_KEY
+      # - Value: Sparkle private EdDSA key (from generate_keys)
+      - name: Validate SPARKLE_PRIVATE_KEY
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${SPARKLE_PRIVATE_KEY}" ]]; then
+            echo "SPARKLE_PRIVATE_KEY is not configured."
+            exit 1
+          fi
+
+      - name: Install XcodeGen
+        run: |
+          set -euo pipefail
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+
+      - name: Generate Xcode project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -euo pipefail
+          xcodegen generate
+
+      - name: Download Sparkle tools
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/sparkle-tools
+          SPARKLE_ARCHIVE="/tmp/sparkle-tools/sparkle.tar.xz"
+          curl -fsSL \
+            "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz" \
+            -o "${SPARKLE_ARCHIVE}"
+
+          echo "${SPARKLE_TARBALL_SHA256}  ${SPARKLE_ARCHIVE}" | shasum -a 256 -c -
+
+          tar -xJf "${SPARKLE_ARCHIVE}" -C /tmp/sparkle-tools
+          GENERATE_APPCAST_PATH="$(find /tmp/sparkle-tools -type f -path '*/bin/generate_appcast' -print -quit || true)"
+          if [[ -z "${GENERATE_APPCAST_PATH}" ]]; then
+            echo "Failed to locate generate_appcast in downloaded Sparkle tools."
+            exit 1
+          fi
+          SPARKLE_BIN="$(dirname "${GENERATE_APPCAST_PATH}")"
+          echo "SPARKLE_BIN=${SPARKLE_BIN}" >> "${GITHUB_ENV}"
+
+      - name: Build archive (CODE_SIGNING_ALLOWED=NO)
+        run: |
+          set -euo pipefail
+          mkdir -p "${RELEASE_DIR}"
+          rm -rf "${ARCHIVE_PATH}"
+          xcodebuild archive \
+            -project "${PROJECT_DIR}/Revclip.xcodeproj" \
+            -scheme "${SCHEME}" \
+            -configuration Release \
+            -archivePath "${ARCHIVE_PATH}" \
+            -destination "generic/platform=macOS" \
+            SKIP_INSTALL=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            ONLY_ACTIVE_ARCH=NO
+
+      - name: Extract .app from archive
+        run: |
+          set -euo pipefail
+          ARCHIVED_APP_PATH="${ARCHIVE_PATH}/Products/Applications/Revclip.app"
+          if [[ ! -d "${ARCHIVED_APP_PATH}" ]]; then
+            echo "Archived app not found: ${ARCHIVED_APP_PATH}"
+            exit 1
+          fi
+
+          EXPORTED_APP_PATH="${RELEASE_DIR}/Revclip.app"
+          rm -rf "${EXPORTED_APP_PATH}"
+          ditto "${ARCHIVED_APP_PATH}" "${EXPORTED_APP_PATH}"
+          echo "APP_PATH=${EXPORTED_APP_PATH}" >> "${GITHUB_ENV}"
+
+      - name: Package DMG
+        run: |
+          set -euo pipefail
+          if [[ ! -d "${APP_PATH}" ]]; then
+            echo "App bundle not found: ${APP_PATH}"
+            exit 1
+          fi
+
+          DMG_PATH="${RELEASE_DIR}/Revclip-${GITHUB_REF_NAME}.dmg"
+          STAGING_DIR="${RUNNER_TEMP}/dmg-staging"
+          rm -rf "${STAGING_DIR}"
+          mkdir -p "${STAGING_DIR}"
+          ditto "${APP_PATH}" "${STAGING_DIR}/Revclip.app"
+          ln -s /Applications "${STAGING_DIR}/Applications"
+
+          hdiutil create \
+            -volname "Revclip" \
+            -srcfolder "${STAGING_DIR}" \
+            -format UDZO \
+            -ov \
+            "${DMG_PATH}"
+
+          echo "DMG_PATH=${DMG_PATH}" >> "${GITHUB_ENV}"
+
+      - name: Sign DMG with Sparkle EdDSA
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          SIGN_UPDATE="${SPARKLE_BIN}/sign_update"
+          if [[ ! -x "${SIGN_UPDATE}" ]]; then
+            echo "sign_update not found: ${SIGN_UPDATE}"
+            exit 1
+          fi
+
+          # Validate key + produce signature. Signature is not logged.
+          printf '%s' "${SPARKLE_PRIVATE_KEY}" | "${SIGN_UPDATE}" --ed-key-file - -p "${DMG_PATH}" > /dev/null
+
+      - name: Generate appcast.xml
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          APPCAST_PATH="${RELEASE_DIR}/appcast.xml"
+          GENERATE_APPCAST="${SPARKLE_BIN}/generate_appcast"
+          if [[ ! -x "${GENERATE_APPCAST}" ]]; then
+            echo "generate_appcast not found: ${GENERATE_APPCAST}"
+            exit 1
+          fi
+
+          DOWNLOAD_PREFIX="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/"
+          printf '%s' "${SPARKLE_PRIVATE_KEY}" | \
+            "${GENERATE_APPCAST}" \
+              --ed-key-file - \
+              --download-url-prefix "${DOWNLOAD_PREFIX}" \
+              --link "https://github.com/${GITHUB_REPOSITORY}/releases" \
+              -o "${APPCAST_PATH}" \
+              "${RELEASE_DIR}"
+
+          echo "APPCAST_PATH=${APPCAST_PATH}" >> "${GITHUB_ENV}"
+
+      - name: Publish GitHub Release with assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.DMG_PATH }}
+            ${{ env.APPCAST_PATH }}
+          generate_release_notes: true
