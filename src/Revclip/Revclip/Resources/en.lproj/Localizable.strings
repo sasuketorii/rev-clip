@@ -1,8 +1,8 @@
 "History" = "History";
 "Snippets" = "Snippets";
-"Edit Snippets..." = "Edit Snippets...";
+"Edit Templates..." = "Edit Templates...";
 "Preferences..." = "Preferences...";
-"Quit Revclip" = "Quit Revclip";
+"Quit Revpy" = "Quit Revpy";
 "Clear All" = "Clear All";
 "Clear All History" = "Clear All History";
 "Are you sure you want to clear all clipboard history?" = "Are you sure you want to clear all clipboard history?";
@@ -21,14 +21,14 @@
 "Updates" = "Updates";
 "Beta" = "Beta";
 
-"Launch Revclip on login" = "Launch Revclip on login";
+"Launch Revpy on login" = "Launch Revpy on login";
 "Max clipboard history size" = "Max clipboard history size";
 "Max menu items to display" = "Max menu items to display";
 
 "Main" = "Main";
 "Click to record shortcut" = "Click to record shortcut";
 
-"Snippet Editor" = "Snippet Editor";
+"Template Editor" = "Template Editor";
 "Add Folder" = "Add Folder";
 "Add Snippet" = "Add Snippet";
 "Title:" = "Title:";
@@ -89,7 +89,7 @@
 // Exclude Prefs
 "Application" = "Application";
 "Add" = "Add";
-"The frontmost application is Revclip itself. Please switch to the application you want to exclude, then click this button." = "The frontmost application is Revclip itself. Please switch to the application you want to exclude, then click this button.";
+"The frontmost application is Revpy itself. Please switch to the application you want to exclude, then click this button." = "The frontmost application is Revpy itself. Please switch to the application you want to exclude, then click this button.";
 
 // Menu Prefs
 "Menu Settings" = "Menu Settings";
@@ -120,7 +120,7 @@
 "This shortcut may not work" = "This shortcut may not work";
 "On macOS 15 (Sequoia) and later, Option-only or Option+Shift-only modifier combinations are not supported due to system restrictions.\nPlease use a combination that includes Command or Control." = "On macOS 15 (Sequoia) and later, Option-only or Option+Shift-only modifier combinations are not supported due to system restrictions.\nPlease use a combination that includes Command or Control.";
 
-// Snippet Editor
+// Template Editor
 "New Folder" = "New Folder";
 "New Snippet" = "New Snippet";
 
@@ -129,8 +129,8 @@
 "Update checking will be available in a future release." = "Update checking will be available in a future release.";
 
 // Accessibility
-"Revclip requires Accessibility permission" = "Revclip requires Accessibility permission";
-"Revclip needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility." = "Revclip needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility.";
+"Revpy requires Accessibility permission" = "Revpy requires Accessibility permission";
+"Revpy needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility." = "Revpy needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility.";
 "Open System Settings" = "Open System Settings";
 "Later" = "Later";
 
@@ -145,11 +145,11 @@
 
 // Move to Applications
 "Move to Applications folder?" = "Move to Applications folder?";
-"Revclip needs to be in the Applications folder to work properly. Would you like to move it there?" = "Revclip needs to be in the Applications folder to work properly. Would you like to move it there?";
+"Revpy needs to be in the Applications folder to work properly. Would you like to move it there?" = "Revpy needs to be in the Applications folder to work properly. Would you like to move it there?";
 "Move to Applications" = "Move to Applications";
 "Do Not Move" = "Do Not Move";
-"Could not move Revclip to Applications folder" = "Could not move Revclip to Applications folder";
-"An unknown error occurred while moving Revclip." = "An unknown error occurred while moving Revclip.";
+"Could not move Revpy to Applications folder" = "Could not move Revpy to Applications folder";
+"An unknown error occurred while moving Revpy." = "An unknown error occurred while moving Revpy.";
 "Failed to relaunch the app from Applications." = "Failed to relaunch the app from Applications.";
 
 "Import" = "Import";

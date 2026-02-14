@@ -1,8 +1,8 @@
 "History" = "Verlauf";
 "Snippets" = "Snippets";
-"Edit Snippets..." = "Snippets bearbeiten...";
+"Edit Templates..." = "Vorlagen bearbeiten...";
 "Preferences..." = "Einstellungen...";
-"Quit Revclip" = "Revclip beenden";
+"Quit Revpy" = "Revpy beenden";
 "Clear All" = "Alle löschen";
 "Clear All History" = "Gesamten Verlauf löschen";
 "Are you sure you want to clear all clipboard history?" = "Möchten Sie wirklich den gesamten Zwischenablagenverlauf löschen?";
@@ -21,14 +21,14 @@
 "Updates" = "Updates";
 "Beta" = "Beta";
 
-"Launch Revclip on login" = "Revclip beim Login starten";
+"Launch Revpy on login" = "Revpy beim Login starten";
 "Max clipboard history size" = "Maximale Größe des Zwischenablagenverlaufs";
 "Max menu items to display" = "Maximale Anzahl anzuzeigender Menüeinträge";
 
 "Main" = "Haupt";
 "Click to record shortcut" = "Klicken, um Tastenkürzel aufzuzeichnen";
 
-"Snippet Editor" = "Snippet-Editor";
+"Template Editor" = "Vorlageneditor";
 "Add Folder" = "Ordner hinzufügen";
 "Add Snippet" = "Snippet hinzufügen";
 "Title:" = "Titel:";
@@ -88,7 +88,7 @@
 // Exclude Prefs
 "Application" = "Application";
 "Add" = "Add";
-"The frontmost application is Revclip itself. Please switch to the application you want to exclude, then click this button." = "The frontmost application is Revclip itself. Please switch to the application you want to exclude, then click this button.";
+"The frontmost application is Revpy itself. Please switch to the application you want to exclude, then click this button." = "The frontmost application is Revpy itself. Please switch to the application you want to exclude, then click this button.";
 
 // Menu Prefs
 "Menu Settings" = "Menu Settings";
@@ -119,7 +119,7 @@
 "This shortcut may not work" = "This shortcut may not work";
 "On macOS 15 (Sequoia) and later, Option-only or Option+Shift-only modifier combinations are not supported due to system restrictions.\nPlease use a combination that includes Command or Control." = "On macOS 15 (Sequoia) and later, Option-only or Option+Shift-only modifier combinations are not supported due to system restrictions.\nPlease use a combination that includes Command or Control.";
 
-// Snippet Editor
+// Template Editor
 "New Folder" = "New Folder";
 "New Snippet" = "New Snippet";
 
@@ -128,8 +128,8 @@
 "Update checking will be available in a future release." = "Update checking will be available in a future release.";
 
 // Accessibility
-"Revclip requires Accessibility permission" = "Revclip requires Accessibility permission";
-"Revclip needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility." = "Revclip needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility.";
+"Revpy requires Accessibility permission" = "Revpy requires Accessibility permission";
+"Revpy needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility." = "Revpy needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility.";
 "Open System Settings" = "Open System Settings";
 "Later" = "Later";
 
@@ -144,9 +144,9 @@
 
 // Move to Applications
 "Move to Applications folder?" = "In den Ordner \u201eProgramme\u201c verschieben?";
-"Revclip needs to be in the Applications folder to work properly. Would you like to move it there?" = "Revclip muss sich im Ordner \u201eProgramme\u201c befinden, um ordnungsgemäß zu funktionieren. Möchten Sie es dorthin verschieben?";
+"Revpy needs to be in the Applications folder to work properly. Would you like to move it there?" = "Revpy muss sich im Ordner \u201eProgramme\u201c befinden, um ordnungsgemäß zu funktionieren. Möchten Sie es dorthin verschieben?";
 "Move to Applications" = "In Programme verschieben";
 "Do Not Move" = "Nicht verschieben";
-"Could not move Revclip to Applications folder" = "Revclip konnte nicht in den Ordner \u201eProgramme\u201c verschoben werden";
-"An unknown error occurred while moving Revclip." = "Beim Verschieben von Revclip ist ein unbekannter Fehler aufgetreten.";
+"Could not move Revpy to Applications folder" = "Revpy konnte nicht in den Ordner \u201eProgramme\u201c verschoben werden";
+"An unknown error occurred while moving Revpy." = "Beim Verschieben von Revpy ist ein unbekannter Fehler aufgetreten.";
 "Failed to relaunch the app from Applications." = "Die App konnte nicht aus dem Ordner \u201eProgramme\u201c neu gestartet werden.";

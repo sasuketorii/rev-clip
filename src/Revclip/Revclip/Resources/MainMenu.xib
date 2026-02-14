@@ -15,10 +15,10 @@
         <customObject id="RCd-YX-z1K" userLabel="AppDelegate" customClass="RCAppDelegate"/>
         <menu title="MainMenu" systemMenu="main" id="M9f-Bh-3ry">
             <items>
-                <menuItem title="Revclip" id="t4q-Ln-F0x">
-                    <menu key="submenu" title="Revclip" systemMenu="apple" id="m2M-7M-q1P">
+                <menuItem title="Revpy" id="t4q-Ln-F0x">
+                    <menu key="submenu" title="Revpy" systemMenu="apple" id="m2M-7M-q1P">
                         <items>
-                            <menuItem title="About Revclip" id="A9y-Ap-qzN">
+                            <menuItem title="About Revpy" id="A9y-Ap-qzN">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="orderFrontStandardAboutPanel:" target="-1" id="c8c-T2-tQ5"/>
@@ -27,7 +27,7 @@
                             <menuItem isSeparatorItem="YES" id="rQm-JX-4Pb">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="Quit Revclip" keyEquivalent="q" id="KcD-Zd-z5u">
+                            <menuItem title="Quit Revpy" keyEquivalent="q" id="KcD-Zd-z5u">
                                 <connections>
                                     <action selector="terminate:" target="-1" id="ajg-pW-Cg8"/>
                                 </connections>

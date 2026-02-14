@@ -1,13 +1,13 @@
 /* Class = "NSMenu"; title = "MainMenu"; ObjectID = "M9f-Bh-3ry"; */
 "M9f-Bh-3ry.title" = "MainMenu";
 /* Class = "NSMenuItem"; title = "Revclip"; ObjectID = "t4q-Ln-F0x"; */
-"t4q-Ln-F0x.title" = "Revclip";
+"t4q-Ln-F0x.title" = "Revpy";
 /* Class = "NSMenu"; title = "Revclip"; ObjectID = "m2M-7M-q1P"; */
-"m2M-7M-q1P.title" = "Revclip";
+"m2M-7M-q1P.title" = "Revpy";
 /* Class = "NSMenuItem"; title = "About Revclip"; ObjectID = "A9y-Ap-qzN"; */
-"A9y-Ap-qzN.title" = "Über Revclip";
+"A9y-Ap-qzN.title" = "Über Revpy";
 /* Class = "NSMenuItem"; title = "Quit Revclip"; ObjectID = "KcD-Zd-z5u"; */
-"KcD-Zd-z5u.title" = "Revclip beenden";
+"KcD-Zd-z5u.title" = "Revpy beenden";
 /* Class = "NSMenuItem"; title = "File"; ObjectID = "xJ0-zN-3xU"; */
 "xJ0-zN-3xU.title" = "Datei";
 /* Class = "NSMenu"; title = "File"; ObjectID = "V6Q-BM-uQn"; */

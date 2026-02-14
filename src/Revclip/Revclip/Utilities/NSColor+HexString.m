@@ -1,8 +1,8 @@
 //
 //  NSColor+HexString.m
-//  Revclip
+//  Revpy
 //
-//  Copyright (c) 2024-2026 Revclip. All rights reserved.
+//  Copyright (c) 2024-2026 Revpy. All rights reserved.
 //
 
 #import "NSColor+HexString.h"

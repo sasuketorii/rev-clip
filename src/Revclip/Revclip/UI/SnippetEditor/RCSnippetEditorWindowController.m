@@ -1,8 +1,8 @@
 //
 //  RCSnippetEditorWindowController.m
-//  Revclip
+//  Revpy
 //
-//  Copyright (c) 2024-2026 Revclip. All rights reserved.
+//  Copyright (c) 2024-2026 Revpy. All rights reserved.
 //
 
 #import "RCSnippetEditorWindowController.h"
@@ -133,7 +133,7 @@ static UTType *RCSnippetImportExportContentType(void) {
 
 - (void)configureWindow {
     NSWindow *window = self.window;
-    window.title = NSLocalizedString(@"Snippet Editor", nil);
+    window.title = NSLocalizedString(@"Template Editor", nil);
     window.styleMask = NSWindowStyleMaskTitled
                      | NSWindowStyleMaskClosable
                      | NSWindowStyleMaskMiniaturizable
@@ -268,8 +268,8 @@ static UTType *RCSnippetImportExportContentType(void) {
         [titleLabel.leadingAnchor constraintEqualToAnchor:rightPane.leadingAnchor constant:inset],
 
         [self.titleField.topAnchor constraintEqualToAnchor:titleLabel.bottomAnchor constant:6.0],
-        [self.titleField.leadingAnchor constraintEqualToAnchor:rightPane.leadingAnchor constant:inset],
-        [self.titleField.trailingAnchor constraintEqualToAnchor:rightPane.trailingAnchor constant:-inset],
+        [self.titleField.leadingAnchor constraintEqualToAnchor:rightPane.leadingAnchor constant:(inset - 3.0)],
+        [self.titleField.trailingAnchor constraintEqualToAnchor:rightPane.trailingAnchor constant:-(inset - 3.0)],
 
         [self.contentLabel.topAnchor constraintEqualToAnchor:self.titleField.bottomAnchor constant:12.0],
         [self.contentLabel.leadingAnchor constraintEqualToAnchor:rightPane.leadingAnchor constant:inset],
@@ -315,9 +315,11 @@ static UTType *RCSnippetImportExportContentType(void) {
     self.removeButton.translatesAutoresizingMaskIntoConstraints = NO;
     [bottomBar addSubview:self.removeButton];
 
-    self.enabledToggleButton = [self actionButtonWithTitle:NSLocalizedString(@"Enable/Disable", nil)
+    self.enabledToggleButton = [self actionButtonWithTitle:@""
                                                  symbolName:@"eye"
                                                      action:@selector(toggleSelectedItemEnabled:)];
+    self.enabledToggleButton.imagePosition = NSImageOnly;
+    self.enabledToggleButton.toolTip = NSLocalizedString(@"Enable/Disable", nil);
     [bottomBar addSubview:self.enabledToggleButton];
 
     self.importButton = [self actionButtonWithTitle:NSLocalizedString(@"Import", nil)
@@ -350,7 +352,7 @@ static UTType *RCSnippetImportExportContentType(void) {
 
         [self.enabledToggleButton.leadingAnchor constraintEqualToAnchor:self.removeButton.trailingAnchor constant:10.0],
         [self.enabledToggleButton.centerYAnchor constraintEqualToAnchor:bottomBar.centerYAnchor],
-        [self.enabledToggleButton.widthAnchor constraintEqualToConstant:124.0],
+        [self.enabledToggleButton.widthAnchor constraintEqualToConstant:36.0],
 
         [self.importButton.leadingAnchor constraintEqualToAnchor:self.enabledToggleButton.trailingAnchor constant:8.0],
         [self.importButton.centerYAnchor constraintEqualToAnchor:bottomBar.centerYAnchor],
@@ -449,7 +451,7 @@ static UTType *RCSnippetImportExportContentType(void) {
 
         FMResultSet *resultSet = [db executeQuery:@"SELECT id, identifier, folder_id, snippet_index, enabled, title, content FROM snippets ORDER BY folder_id ASC, snippet_index ASC, id ASC"];
         if (resultSet == nil) {
-            NSLog(@"[Revclip] Failed to fetch snippets in a single query for snippet editor reload.");
+            NSLog(@"[Revpy] Failed to fetch snippets in a single query for snippet editor reload.");
             return YES;
         }
 
@@ -781,7 +783,7 @@ static UTType *RCSnippetImportExportContentType(void) {
             [[RCHotKeyService shared] unregisterSnippetFolderHotKey:identifier];
             [self reloadOutlineSelectingFolderIdentifier:nil snippetIdentifier:nil];
             if (![self persistFolderOrderFromCurrentTree]) {
-                NSLog(@"[Revclip] Failed to persist folder order after folder deletion. folderIdentifier=%@",
+                NSLog(@"[Revpy] Failed to persist folder order after folder deletion. folderIdentifier=%@",
                       identifier);
             }
             [[RCMenuManager shared] rebuildMenu];
@@ -815,7 +817,7 @@ static UTType *RCSnippetImportExportContentType(void) {
             RCSnippetFolderNode *folderNode = [self folderNodeForIdentifier:folderIdentifier];
             if (folderNode != nil) {
                 if (![self persistSnippetOrderForFolder:folderNode]) {
-                    NSLog(@"[Revclip] Failed to persist snippet order after snippet deletion. folderIdentifier=%@",
+                    NSLog(@"[Revpy] Failed to persist snippet order after snippet deletion. folderIdentifier=%@",
                           folderIdentifier);
                 }
             }
@@ -866,7 +868,7 @@ static UTType *RCSnippetImportExportContentType(void) {
             NSString *folderIdentifier = [self stringValueFromDictionary:folderNode.folderDictionary
                                                                      key:@"identifier"
                                                             defaultValue:@"<unknown-folder>"];
-            NSLog(@"[Revclip] Failed to update snippet folder enabled state. folderIdentifier=%@, enabled=%@",
+            NSLog(@"[Revpy] Failed to update snippet folder enabled state. folderIdentifier=%@, enabled=%@",
                   folderIdentifier,
                   nextEnabledNumber);
         }
@@ -883,7 +885,7 @@ static UTType *RCSnippetImportExportContentType(void) {
             NSString *snippetIdentifier = [self stringValueFromDictionary:snippetNode.snippetDictionary
                                                                        key:@"identifier"
                                                               defaultValue:@"<unknown-snippet>"];
-            NSLog(@"[Revclip] Failed to update snippet enabled state. snippetIdentifier=%@, enabled=%@",
+            NSLog(@"[Revpy] Failed to update snippet enabled state. snippetIdentifier=%@, enabled=%@",
                   snippetIdentifier,
                   nextEnabledNumber);
         }
@@ -1245,15 +1247,31 @@ static UTType *RCSnippetImportExportContentType(void) {
 
 #pragma mark - OutlineView Delegate
 
+- (CGFloat)outlineView:(NSOutlineView *)outlineView heightOfRowByItem:(id)item {
+    if ([item isKindOfClass:[RCSnippetFolderNode class]]) {
+        NSInteger row = [outlineView rowForItem:item];
+        if (row > 0) {
+            return 30.0;
+        }
+    }
+    return 22.0;
+}
+
 - (nullable NSView *)outlineView:(NSOutlineView *)outlineView
               viewForTableColumn:(NSTableColumn *)tableColumn
                             item:(id)item {
     (void)tableColumn;
 
-    NSTableCellView *cell = [outlineView makeViewWithIdentifier:@"RCSnippetEditorCell" owner:self];
+    BOOL isFolder = [item isKindOfClass:[RCSnippetFolderNode class]];
+    NSInteger row = [outlineView rowForItem:item];
+    BOOL useSpacedFolderCell = isFolder && row > 0;
+
+    NSString *cellIdentifier = useSpacedFolderCell ? @"RCSnippetEditorFolderSpacedCell" : @"RCSnippetEditorCell";
+    NSTableCellView *cell = [outlineView makeViewWithIdentifier:cellIdentifier owner:self];
     if (cell == nil) {
-        cell = [[NSTableCellView alloc] initWithFrame:NSMakeRect(0.0, 0.0, 100.0, 22.0)];
-        cell.identifier = @"RCSnippetEditorCell";
+        CGFloat defaultHeight = useSpacedFolderCell ? 30.0 : 22.0;
+        cell = [[NSTableCellView alloc] initWithFrame:NSMakeRect(0.0, 0.0, 100.0, defaultHeight)];
+        cell.identifier = cellIdentifier;
 
         NSTextField *textField = [NSTextField labelWithString:@""];
         textField.translatesAutoresizingMaskIntoConstraints = NO;
@@ -1262,14 +1280,19 @@ static UTType *RCSnippetImportExportContentType(void) {
         [cell addSubview:textField];
         cell.textField = textField;
 
-        [NSLayoutConstraint activateConstraints:@[
+        NSMutableArray<NSLayoutConstraint *> *constraints = [NSMutableArray arrayWithArray:@[
             [textField.leadingAnchor constraintEqualToAnchor:cell.leadingAnchor constant:2.0],
             [textField.trailingAnchor constraintEqualToAnchor:cell.trailingAnchor constant:-4.0],
-            [textField.centerYAnchor constraintEqualToAnchor:cell.centerYAnchor],
         ]];
+        if (useSpacedFolderCell) {
+            [constraints addObject:[textField.bottomAnchor constraintEqualToAnchor:cell.bottomAnchor constant:-4.0]];
+        } else {
+            [constraints addObject:[textField.centerYAnchor constraintEqualToAnchor:cell.centerYAnchor]];
+        }
+        [NSLayoutConstraint activateConstraints:constraints];
     }
 
-    if ([item isKindOfClass:[RCSnippetFolderNode class]]) {
+    if (isFolder) {
         RCSnippetFolderNode *folderNode = (RCSnippetFolderNode *)item;
         NSString *title = [self stringValueFromDictionary:folderNode.folderDictionary
                                                        key:@"title"

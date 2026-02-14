@@ -1,8 +1,8 @@
 //
 //  RCShortcutsPreferencesViewController.m
-//  Revclip
+//  Revpy
 //
-//  Copyright (c) 2024-2026 Revclip. All rights reserved.
+//  Copyright (c) 2024-2026 Revpy. All rights reserved.
 //
 
 #import "RCShortcutsPreferencesViewController.h"
@@ -145,7 +145,7 @@ static UInt32 const kRCDefaultKeyCodeB = 11;
 
 - (RCKeyCombo)defaultKeyComboForDefaultsKey:(NSString *)defaultsKey {
     if ([defaultsKey isEqualToString:kRCHotKeyMainKeyCombo]) {
-        return RCMakeKeyCombo(kRCDefaultKeyCodeV, controlKey | shiftKey);
+        return RCMakeKeyCombo(kRCDefaultKeyCodeV, cmdKey | shiftKey);
     }
     if ([defaultsKey isEqualToString:kRCHotKeyHistoryKeyCombo]) {
         return RCMakeKeyCombo(kRCDefaultKeyCodeV, cmdKey | controlKey);

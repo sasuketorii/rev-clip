@@ -1,8 +1,8 @@
 //
 //  RCMenuManager.m
-//  Revclip
+//  Revpy
 //
-//  Copyright (c) 2024-2026 Revclip. All rights reserved.
+//  Copyright (c) 2024-2026 Revpy. All rights reserved.
 //
 
 #import "RCMenuManager.h"
@@ -40,7 +40,9 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
 - (NSString *)thumbnailCacheKeyForClipItem:(RCClipItem *)clipItem;
 - (void)loadThumbnailForClipItem:(RCClipItem *)clipItem
                         cacheKey:(NSString *)cacheKey
-                updatingMenuItem:(NSMenuItem *)menuItem;
+                updatingMenuItem:(NSMenuItem *)menuItem
+                    numberPrefix:(NSString *)numberPrefix
+                       baseTitle:(NSString *)baseTitle;
 - (nullable NSImage *)resizedThumbnailImageAtPath:(NSString *)thumbnailPath targetSize:(NSSize)targetSize;
 - (NSArray<NSString *> *)clipDataFilePathsSnapshotForCurrentHistoryWithDatabaseManager:(RCDatabaseManager *)databaseManager;
 - (void)removeClipDataFilesAtPaths:(NSArray<NSString *> *)paths;
@@ -48,6 +50,13 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
 - (void)handleMissingClipDataForClipItem:(RCClipItem *)clipItem reason:(NSString *)reason;
 - (BOOL)isKnownClipDataFileName:(NSString *)fileName;
 - (NSRange)composedSafePrefixRangeForString:(NSString *)string maxLength:(NSUInteger)maxLength;
+- (NSString *)menuBaseTitleForClipItem:(RCClipItem *)clipItem;
+- (NSString *)menuNumberPrefixForGlobalIndex:(NSUInteger)globalIndex;
+- (void)applyMenuItemTitleForItem:(NSMenuItem *)item
+                     numberPrefix:(NSString *)numberPrefix
+                        baseTitle:(NSString *)baseTitle
+                            image:(nullable NSImage *)image;
+- (NSRect)attachmentBoundsForMenuImage:(NSImage *)image;
 
 @end
 
@@ -65,7 +74,7 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _statusMenu = [self menuWithTitle:@"Revclip"];
+        _statusMenu = [self menuWithTitle:@"Revpy"];
         _thumbnailCache = [[NSCache alloc] init];
         _thumbnailGenerationQueue = dispatch_queue_create("com.revclip.menu.thumbnail", DISPATCH_QUEUE_CONCURRENT);
 
@@ -227,7 +236,7 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
         image = [NSImage imageNamed:NSImageNameSmartBadgeTemplate];
     }
     if (image == nil) {
-        image = [NSImage imageWithSystemSymbolName:@"doc.on.clipboard" accessibilityDescription:@"Revclip"];
+        image = [NSImage imageWithSystemSymbolName:@"doc.on.clipboard" accessibilityDescription:@"Revpy"];
     }
 
     if (image == nil) {
@@ -356,7 +365,7 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
 }
 
 - (NSMenu *)buildStandaloneMenu {
-    NSMenu *menu = [self menuWithTitle:@"Revclip"];
+    NSMenu *menu = [self menuWithTitle:@"Revpy"];
     [self appendClipHistorySectionToMenu:menu];
     [menu addItem:[NSMenuItem separatorItem]];
     [self appendSnippetSectionToMenu:menu];
@@ -527,13 +536,13 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
     preferencesItem.target = self;
     [menu addItem:preferencesItem];
 
-    NSMenuItem *editSnippetsItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Edit Snippets...", nil)
+    NSMenuItem *editSnippetsItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Edit Templates...", nil)
                                                                action:@selector(openSnippetEditor:)
                                                         keyEquivalent:@""];
     editSnippetsItem.target = self;
     [menu addItem:editSnippetsItem];
 
-    NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Quit Revclip", nil)
+    NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Quit Revpy", nil)
                                                        action:@selector(terminate:)
                                                 keyEquivalent:@"q"];
     quitItem.keyEquivalentModifierMask = NSEventModifierFlagCommand;
@@ -594,6 +603,8 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
 #pragma mark - Clip Menu Item
 
 - (NSMenuItem *)clipMenuItemForClipItem:(RCClipItem *)clipItem globalIndex:(NSUInteger)globalIndex {
+    NSString *baseTitle = [self menuBaseTitleForClipItem:clipItem];
+    NSString *numberPrefix = [self menuNumberPrefixForGlobalIndex:globalIndex];
     NSString *menuTitle = [self menuTitleForClipItem:clipItem globalIndex:globalIndex];
 
     NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:menuTitle
@@ -601,6 +612,7 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
                                            keyEquivalent:@""];
     item.target = self;
     item.representedObject = clipItem.dataHash ?: @"";
+    [self applyMenuItemTitleForItem:item numberPrefix:numberPrefix baseTitle:baseTitle image:nil];
 
     BOOL needsTooltip = [self boolPreferenceForKey:kRCShowToolTipOnMenuItemKey defaultValue:YES];
     BOOL showImagePreview = [self boolPreferenceForKey:kRCShowImageInTheMenuKey defaultValue:YES];
@@ -620,34 +632,36 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
         if (showImagePreview && clipItem.thumbnailPath.length > 0 && thumbnailCacheKey.length > 0) {
             NSImage *cachedThumbnail = [self.thumbnailCache objectForKey:thumbnailCacheKey];
             if (cachedThumbnail != nil) {
-                item.image = cachedThumbnail;
+                [self applyMenuItemTitleForItem:item numberPrefix:numberPrefix baseTitle:baseTitle image:cachedThumbnail];
                 imageSatisfied = YES;
             } else {
                 if (showMenuIcon) {
                     NSImage *placeholderImage = [self typeIconForClipItem:clipItem];
                     if (placeholderImage != nil) {
-                        item.image = placeholderImage;
+                        [self applyMenuItemTitleForItem:item numberPrefix:numberPrefix baseTitle:baseTitle image:placeholderImage];
                         imageSatisfied = YES;
                     }
                 }
 
                 [self loadThumbnailForClipItem:clipItem
                                       cacheKey:thumbnailCacheKey
-                              updatingMenuItem:item];
+                              updatingMenuItem:item
+                                  numberPrefix:numberPrefix
+                                     baseTitle:baseTitle];
             }
         }
 
         if (!imageSatisfied && showMenuIcon) {
             NSImage *iconImage = [self typeIconForClipItem:clipItem];
             if (iconImage != nil) {
-                item.image = iconImage;
+                [self applyMenuItemTitleForItem:item numberPrefix:numberPrefix baseTitle:baseTitle image:iconImage];
                 imageSatisfied = YES;
             }
         }
     } else if (!showColorPreview && showMenuIcon) {
         NSImage *iconImage = [self typeIconForClipItem:clipItem];
         if (iconImage != nil) {
-            item.image = iconImage;
+            [self applyMenuItemTitleForItem:item numberPrefix:numberPrefix baseTitle:baseTitle image:iconImage];
             imageSatisfied = YES;
         }
     }
@@ -668,7 +682,7 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
         if (needsClipDataForImage) {
             NSImage *image = [self imageForClipItem:clipItem clipData:clipData];
             if (image != nil) {
-                item.image = image;
+                [self applyMenuItemTitleForItem:item numberPrefix:numberPrefix baseTitle:baseTitle image:image];
             }
         }
     }
@@ -685,22 +699,97 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
 }
 
 - (NSString *)menuTitleForClipItem:(RCClipItem *)clipItem globalIndex:(NSUInteger)globalIndex {
+    NSString *baseTitle = [self menuBaseTitleForClipItem:clipItem];
+    NSString *numberPrefix = [self menuNumberPrefixForGlobalIndex:globalIndex];
+    if (numberPrefix.length == 0) {
+        return baseTitle;
+    }
+    return [numberPrefix stringByAppendingString:baseTitle];
+}
+
+- (NSString *)menuBaseTitleForClipItem:(RCClipItem *)clipItem {
     NSString *title = clipItem.title ?: @"";
     if (title.length == 0) {
         title = [self fallbackTitleForPrimaryType:clipItem.primaryType];
     }
 
     NSInteger maxLength = [self integerPreferenceForKey:kRCPrefMaxMenuItemTitleLengthKey defaultValue:20];
-    title = [self truncatedString:title maxLength:MAX(1, maxLength)];
+    return [self truncatedString:title maxLength:MAX(1, maxLength)];
+}
 
+- (NSString *)menuNumberPrefixForGlobalIndex:(NSUInteger)globalIndex {
     BOOL shouldPrefixIndex = [self boolPreferenceForKey:kRCMenuItemsAreMarkedWithNumbersKey defaultValue:YES];
     if (!shouldPrefixIndex) {
-        return title;
+        return @"";
     }
 
     BOOL startWithZero = [self boolPreferenceForKey:kRCPrefMenuItemsTitleStartWithZeroKey defaultValue:NO];
     NSInteger number = startWithZero ? (NSInteger)globalIndex : ((NSInteger)globalIndex + 1);
-    return [NSString stringWithFormat:@"%ld. %@", (long)number, title];
+    return [NSString stringWithFormat:@"%ld. ", (long)number];
+}
+
+- (void)applyMenuItemTitleForItem:(NSMenuItem *)item
+                     numberPrefix:(NSString *)numberPrefix
+                        baseTitle:(NSString *)baseTitle
+                            image:(nullable NSImage *)image {
+    if (item == nil) {
+        return;
+    }
+
+    NSString *safeNumberPrefix = numberPrefix ?: @"";
+    NSString *safeBaseTitle = baseTitle ?: @"";
+    NSString *plainTitle = (safeNumberPrefix.length > 0) ? [safeNumberPrefix stringByAppendingString:safeBaseTitle] : safeBaseTitle;
+
+    item.title = plainTitle;
+
+    if (image != nil && safeNumberPrefix.length > 0) {
+        NSDictionary<NSAttributedStringKey, id> *attributes = @{
+            NSFontAttributeName: [NSFont menuFontOfSize:0]
+        };
+
+        NSMutableAttributedString *attributedTitle = [[NSMutableAttributedString alloc] initWithString:safeNumberPrefix
+                                                                                             attributes:attributes];
+        NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
+        attachment.image = image;
+        attachment.bounds = [self attachmentBoundsForMenuImage:image];
+        [attributedTitle appendAttributedString:[NSAttributedString attributedStringWithAttachment:attachment]];
+
+        if (safeBaseTitle.length > 0) {
+            NSString *suffix = [NSString stringWithFormat:@" %@", safeBaseTitle];
+            [attributedTitle appendAttributedString:[[NSAttributedString alloc] initWithString:suffix attributes:attributes]];
+        }
+
+        item.attributedTitle = attributedTitle;
+        item.image = nil;
+        return;
+    }
+
+    item.attributedTitle = nil;
+    item.image = image;
+}
+
+- (NSRect)attachmentBoundsForMenuImage:(NSImage *)image {
+    if (image == nil) {
+        return NSMakeRect(0.0, -2.0, 16.0, 16.0);
+    }
+
+    NSSize imageSize = image.size;
+    if (imageSize.width <= 0.0 || imageSize.height <= 0.0) {
+        return NSMakeRect(0.0, -2.0, 16.0, 16.0);
+    }
+
+    if (imageSize.width <= 20.0 && imageSize.height <= 20.0) {
+        return NSMakeRect(0.0, -2.0, 16.0, 16.0);
+    }
+
+    CGFloat maxDimension = 40.0;
+    CGFloat scale = MIN(maxDimension / imageSize.width, maxDimension / imageSize.height);
+    if (scale > 1.0) {
+        scale = 1.0;
+    }
+    CGFloat width = floor(imageSize.width * scale);
+    CGFloat height = floor(imageSize.height * scale);
+    return NSMakeRect(0.0, -10.0, width, height);
 }
 
 - (NSString *)fallbackTitleForPrimaryType:(NSString *)primaryType {
@@ -840,13 +929,17 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
 
 - (void)loadThumbnailForClipItem:(RCClipItem *)clipItem
                         cacheKey:(NSString *)cacheKey
-                updatingMenuItem:(NSMenuItem *)menuItem {
+                updatingMenuItem:(NSMenuItem *)menuItem
+                    numberPrefix:(NSString *)numberPrefix
+                       baseTitle:(NSString *)baseTitle {
     if (clipItem.thumbnailPath.length == 0 || cacheKey.length == 0 || menuItem == nil) {
         return;
     }
 
     NSString *thumbnailPath = [clipItem.thumbnailPath copy];
     NSString *expectedDataHash = [clipItem.dataHash copy] ?: @"";
+    NSString *numberPrefixCopy = [numberPrefix copy] ?: @"";
+    NSString *baseTitleCopy = [baseTitle copy] ?: @"";
     NSSize thumbnailSize = [self thumbnailPreviewSize];
     __weak typeof(self) weakSelf = self;
     __weak NSMenuItem *weakMenuItem = menuItem;
@@ -880,7 +973,10 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
                 return;
             }
 
-            strongMenuItem.image = resizedImage;
+            [strongSelf applyMenuItemTitleForItem:strongMenuItem
+                                     numberPrefix:numberPrefixCopy
+                                        baseTitle:baseTitleCopy
+                                            image:resizedImage];
         });
     });
 }

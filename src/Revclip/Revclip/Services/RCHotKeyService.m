@@ -1,8 +1,8 @@
 //
 //  RCHotKeyService.m
-//  Revclip
+//  Revpy
 //
-//  Copyright (c) 2024-2026 Revclip. All rights reserved.
+//  Copyright (c) 2024-2026 Revpy. All rights reserved.
 //
 
 #import "RCHotKeyService.h"
@@ -330,7 +330,7 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
         BOOL mainComboExplicitlyUnset = RCIsExplicitlyUnsetKeyComboObject(mainRawValue);
         RCKeyCombo mainCombo = RCKeyComboFromDictionaryObject(mainRawValue);
         if (!mainComboExplicitlyUnset && !RCIsValidKeyCombo(mainCombo)) {
-            mainCombo = RCMakeKeyCombo(kRCKeyCodeV, controlKey | shiftKey);
+            mainCombo = RCMakeKeyCombo(kRCKeyCodeV, cmdKey | shiftKey);
             [RCHotKeyService saveKeyCombo:mainCombo toUserDefaults:kRCHotKeyMainKeyCombo];
         }
         if (RCIsValidKeyCombo(mainCombo)
