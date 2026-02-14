@@ -268,6 +268,24 @@ jobs:
 
           echo "APPCAST_PATH=${APPCAST_PATH}" >> "${GITHUB_ENV}"
 
+      - name: Validate appcast.xml contains EdDSA signature
+        run: |
+          set -euo pipefail
+          if [[ ! -f "${APPCAST_PATH}" ]]; then
+            echo "appcast.xml not found: ${APPCAST_PATH}"
+            exit 1
+          fi
+
+          if ! grep -Eq 'sparkle:edSignature="[^"]+"' "${APPCAST_PATH}"; then
+            echo "ERROR: appcast.xml does not contain a non-empty sparkle:edSignature."
+            echo "This means the Sparkle EdDSA signing failed silently."
+            echo "Check that SPARKLE_PRIVATE_KEY matches the SUPublicEDKey in the app."
+            cat "${APPCAST_PATH}"
+            exit 1
+          fi
+
+          echo "appcast.xml validation passed: EdDSA signature found."
+
       - name: Publish GitHub Release with assets
         uses: softprops/action-gh-release@v2
         with:
