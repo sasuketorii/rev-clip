@@ -55,8 +55,7 @@
 
     NSTrackingAreaOptions options = NSTrackingMouseEnteredAndExited
                                     | NSTrackingInVisibleRect
-                                    | NSTrackingActiveInActiveApp
-                                    | NSTrackingAssumeInside;
+                                    | NSTrackingActiveInActiveApp;
     self.hoverTrackingArea = [[NSTrackingArea alloc] initWithRect:NSZeroRect
                                                            options:options
                                                              owner:self
@@ -116,7 +115,13 @@
 
     self.wantsLayer = YES;
     self.bordered = NO;
-    [self rc_applyLayerStyle];
+}
+
+- (void)viewDidMoveToWindow {
+    [super viewDidMoveToWindow];
+    if (self.window != nil) {
+        [self rc_applyLayerStyle];
+    }
 }
 
 - (void)rc_applyLayerStyle {

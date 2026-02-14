@@ -31,6 +31,10 @@ static BOOL RCIsHexCharactersOnly(NSString *value) {
 }
 
 static CGFloat RCColorComponentFromHexPair(NSString *hexPair) {
+    if (hexPair.length < 2) {
+        return 0.0;
+    }
+
     unsigned int value = 0;
     NSScanner *scanner = [NSScanner scannerWithString:hexPair];
     [scanner scanHexInt:&value];
@@ -96,8 +100,8 @@ static CGFloat RCColorComponentFromHexPair(NSString *hexPair) {
 
 - (NSString *)hexString {
     NSColor *srgbColor = [self colorUsingColorSpace:[NSColorSpace sRGBColorSpace]];
-    if (!srgbColor) {
-        return @"#000000";
+    if (srgbColor == nil) {
+        return nil;
     }
 
     CGFloat red = 0.0;

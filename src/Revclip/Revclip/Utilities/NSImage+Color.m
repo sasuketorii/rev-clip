@@ -16,22 +16,23 @@
 + (NSImage *)imageWithColor:(NSColor *)color size:(NSSize)size cornerRadius:(CGFloat)radius {
     CGFloat width = MAX(size.width, 1.0);
     CGFloat height = MAX(size.height, 1.0);
-    NSRect drawRect = NSMakeRect(0, 0, width, height);
+    NSSize imageSize = NSMakeSize(width, height);
 
-    NSImage *image = [[NSImage alloc] initWithSize:NSMakeSize(width, height)];
-    [image lockFocus];
-    [color setFill];
+    NSImage *image = [NSImage imageWithSize:imageSize flipped:NO drawingHandler:^BOOL(NSRect dstRect) {
+        [color setFill];
 
-    CGFloat maxRadius = MIN(width, height) / 2.0;
-    CGFloat clampedRadius = MAX(0.0, MIN(radius, maxRadius));
-    if (clampedRadius > 0.0) {
-        NSBezierPath *path = [NSBezierPath bezierPathWithRoundedRect:drawRect xRadius:clampedRadius yRadius:clampedRadius];
-        [path fill];
-    } else {
-        NSRectFill(drawRect);
-    }
+        CGFloat maxRadius = MIN(width, height) / 2.0;
+        CGFloat clampedRadius = MAX(0.0, MIN(radius, maxRadius));
+        if (clampedRadius > 0.0) {
+            NSBezierPath *path = [NSBezierPath bezierPathWithRoundedRect:dstRect xRadius:clampedRadius yRadius:clampedRadius];
+            [path fill];
+        } else {
+            NSRectFill(dstRect);
+        }
 
-    [image unlockFocus];
+        return YES;
+    }];
+
     return image;
 }
 

@@ -557,16 +557,16 @@ static UTType *RCSnippetImportExportContentType(void) {
 
 #pragma mark - Actions
 
-- (void)saveButtonClicked:(id)sender {
+- (BOOL)saveButtonClicked:(id)sender {
     (void)sender;
 
     if (self.updatingEditor) {
-        return;
+        return NO;
     }
 
     id selectedItem = [self selectedItem];
     if (selectedItem == nil) {
-        return;
+        return NO;
     }
 
     if ([selectedItem isKindOfClass:[RCSnippetFolderNode class]]) {
@@ -582,7 +582,7 @@ static UTType *RCSnippetImportExportContentType(void) {
         } else {
             NSBeep();
         }
-        return;
+        return updated;
     }
 
     RCSnippetNode *snippetNode = (RCSnippetNode *)selectedItem;
@@ -600,6 +600,7 @@ static UTType *RCSnippetImportExportContentType(void) {
     } else {
         NSBeep();
     }
+    return updated;
 }
 
 - (void)addFolderMenuItemSelected:(id)sender {
@@ -847,6 +848,10 @@ static UTType *RCSnippetImportExportContentType(void) {
         importURL = [self chooseImportFileURLWithDefaultDirectoryURL:[defaultClipyURL URLByDeletingLastPathComponent]];
     }
 
+    [self performImportFromURL:importURL];
+}
+
+- (void)performImportFromURL:(NSURL *)importURL {
     if (importURL == nil) {
         return;
     }
@@ -903,6 +908,18 @@ static UTType *RCSnippetImportExportContentType(void) {
         return;
     }
 
+    NSURL *parentDirectory = [panel.URL URLByDeletingLastPathComponent];
+    if (parentDirectory != nil) {
+        NSFileManager *fileManager = [NSFileManager defaultManager];
+        if (![fileManager fileExistsAtPath:parentDirectory.path]) {
+            NSError *dirError = nil;
+            if (![fileManager createDirectoryAtURL:parentDirectory withIntermediateDirectories:YES attributes:nil error:&dirError]) {
+                [self presentSnippetImportExportError:dirError title:NSLocalizedString(@"Failed to Export Snippets", nil)];
+                return;
+            }
+        }
+    }
+
     NSError *exportError = nil;
     BOOL exported = NO;
     if (exportSelectedOnly) {
@@ -936,12 +953,23 @@ static UTType *RCSnippetImportExportContentType(void) {
 - (id)outlineView:(NSOutlineView *)outlineView child:(NSInteger)index ofItem:(id)item {
     (void)outlineView;
 
+    if (index < 0) {
+        return nil;
+    }
+
     if (item == nil) {
+        if ((NSUInteger)index >= self.folderNodes.count) {
+            return nil;
+        }
         return self.folderNodes[(NSUInteger)index];
     }
 
     if ([item isKindOfClass:[RCSnippetFolderNode class]]) {
-        return ((RCSnippetFolderNode *)item).snippetNodes[(NSUInteger)index];
+        NSArray<RCSnippetNode *> *snippetNodes = ((RCSnippetFolderNode *)item).snippetNodes;
+        if ((NSUInteger)index >= snippetNodes.count) {
+            return nil;
+        }
+        return snippetNodes[(NSUInteger)index];
     }
 
     return nil;
@@ -1294,9 +1322,14 @@ static UTType *RCSnippetImportExportContentType(void) {
     NSString *originalTitle = self.saveButton.title;
     self.saveButton.title = NSLocalizedString(@"Saved!", nil);
     self.saveButton.enabled = NO;
+    __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        self.saveButton.title = originalTitle;
-        self.saveButton.enabled = ([self selectedItem] != nil);
+        typeof(self) strongSelf = weakSelf;
+        if (strongSelf == nil) {
+            return;
+        }
+        strongSelf.saveButton.title = originalTitle;
+        strongSelf.saveButton.enabled = ([strongSelf selectedItem] != nil);
     });
 }
 

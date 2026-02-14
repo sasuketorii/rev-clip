@@ -154,6 +154,11 @@ static NSEventModifierFlags RCRecorderRelevantModifiers(NSEventModifierFlags mod
     NSEventModifierFlags cocoaModifiers = RCRecorderRelevantModifiers(event.modifierFlags);
     UInt32 carbonModifiers = [RCHotKeyService carbonModifiersFromCocoaModifiers:cocoaModifiers];
 
+    if (carbonModifiers == 0) {
+        NSBeep();
+        return;
+    }
+
     if ([self rc_shouldWarnForModifiers:carbonModifiers]) {
         [self rc_showUnsupportedOptionWarning];
         return;
@@ -288,17 +293,17 @@ static NSEventModifierFlags RCRecorderRelevantModifiers(NSEventModifierFlags mod
 - (NSString *)rc_symbolStringFromModifiers:(NSEventModifierFlags)modifiers {
     NSMutableString *result = [NSMutableString string];
 
-    if ((modifiers & NSEventModifierFlagCommand) != 0) {
-        [result appendString:@"⌘"];
-    }
-    if ((modifiers & NSEventModifierFlagShift) != 0) {
-        [result appendString:@"⇧"];
-    }
     if ((modifiers & NSEventModifierFlagControl) != 0) {
         [result appendString:@"⌃"];
     }
     if ((modifiers & NSEventModifierFlagOption) != 0) {
         [result appendString:@"⌥"];
+    }
+    if ((modifiers & NSEventModifierFlagShift) != 0) {
+        [result appendString:@"⇧"];
+    }
+    if ((modifiers & NSEventModifierFlagCommand) != 0) {
+        [result appendString:@"⌘"];
     }
 
     return [result copy];

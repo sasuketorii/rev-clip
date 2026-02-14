@@ -44,8 +44,8 @@
     [self rc_applyLayerStyle];
 }
 
-- (void)setBackgroundColor:(NSColor *)backgroundColor {
-    _backgroundColor = backgroundColor ?: [NSColor clearColor];
+- (void)setViewBackgroundColor:(NSColor *)viewBackgroundColor {
+    _viewBackgroundColor = viewBackgroundColor ?: [NSColor clearColor];
     [self rc_applyLayerStyle];
     [self setNeedsDisplay:YES];
 }
@@ -71,7 +71,7 @@
 #pragma mark - Private
 
 - (void)rc_commonInit {
-    _backgroundColor = [NSColor clearColor];
+    _viewBackgroundColor = [NSColor clearColor];
     _cornerRadius = 0.0;
     _borderColor = [NSColor clearColor];
     _borderWidth = 0.0;
@@ -89,7 +89,7 @@
     CGFloat clampedBorderWidth = MAX(self.borderWidth, 0.0);
     CGFloat cornerRadius = [self rc_clampedCornerRadiusForRect:self.bounds];
 
-    targetLayer.backgroundColor = self.backgroundColor.CGColor;
+    targetLayer.backgroundColor = self.viewBackgroundColor.CGColor;
     targetLayer.cornerRadius = cornerRadius;
     targetLayer.borderWidth = clampedBorderWidth;
     targetLayer.borderColor = self.borderColor.CGColor;

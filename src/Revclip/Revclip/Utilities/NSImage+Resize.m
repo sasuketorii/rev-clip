@@ -17,19 +17,19 @@
         return nil;
     }
 
-    NSImage *resizedImage = [[NSImage alloc] initWithSize:targetSize];
-    [resizedImage lockFocus];
-    [[NSGraphicsContext currentContext] setImageInterpolation:NSImageInterpolationHigh];
+    NSImage *sourceImage = self;
+    NSImage *resizedImage = [NSImage imageWithSize:targetSize flipped:NO drawingHandler:^BOOL(NSRect dstRect) {
+        [[NSGraphicsContext currentContext] setImageInterpolation:NSImageInterpolationHigh];
 
-    NSRect targetRect = NSMakeRect(0, 0, targetSize.width, targetSize.height);
-    NSRect sourceRect = NSMakeRect(0, 0, self.size.width, self.size.height);
-    [self drawInRect:targetRect
-            fromRect:sourceRect
-           operation:NSCompositingOperationCopy
-            fraction:1.0
-      respectFlipped:YES
-               hints:nil];
-    [resizedImage unlockFocus];
+        NSRect sourceRect = NSMakeRect(0, 0, sourceImage.size.width, sourceImage.size.height);
+        [sourceImage drawInRect:dstRect
+                       fromRect:sourceRect
+                      operation:NSCompositingOperationCopy
+                       fraction:1.0
+                 respectFlipped:YES
+                          hints:nil];
+        return YES;
+    }];
 
     resizedImage.template = self.template;
     return resizedImage;
