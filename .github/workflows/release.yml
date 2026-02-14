@@ -149,6 +149,44 @@ jobs:
           ditto "${ARCHIVED_APP_PATH}" "${EXPORTED_APP_PATH}"
           echo "APP_PATH=${EXPORTED_APP_PATH}" >> "${GITHUB_ENV}"
 
+      - name: Re-sign Sparkle framework for notarization
+        run: |
+          set -euo pipefail
+          SPARKLE_FW="${APP_PATH}/Contents/Frameworks/Sparkle.framework"
+          if [[ ! -d "${SPARKLE_FW}" ]]; then
+            echo "Sparkle.framework not found: ${SPARKLE_FW}"
+            exit 1
+          fi
+
+          SIGN_IDENTITY="Developer ID Application: sasuke torii (LLKWV86ZBP)"
+
+          # Sign from inside out: XPC services first, then apps, then framework
+          # XPC Services
+          for xpc in "${SPARKLE_FW}/Versions/B/XPCServices/"*.xpc; do
+            if [[ -d "${xpc}" ]]; then
+              codesign --force --options runtime --timestamp --sign "${SIGN_IDENTITY}" "${xpc}"
+            fi
+          done
+
+          # Updater.app
+          if [[ -d "${SPARKLE_FW}/Versions/B/Updater.app" ]]; then
+            codesign --force --options runtime --timestamp --sign "${SIGN_IDENTITY}" "${SPARKLE_FW}/Versions/B/Updater.app"
+          fi
+
+          # Autoupdate binary
+          if [[ -f "${SPARKLE_FW}/Versions/B/Autoupdate" ]]; then
+            codesign --force --options runtime --timestamp --sign "${SIGN_IDENTITY}" "${SPARKLE_FW}/Versions/B/Autoupdate"
+          fi
+
+          # Sparkle framework itself
+          codesign --force --options runtime --timestamp --sign "${SIGN_IDENTITY}" "${SPARKLE_FW}"
+
+          # Re-sign the main app (since framework signature changed)
+          codesign --force --options runtime --timestamp --sign "${SIGN_IDENTITY}" "${APP_PATH}"
+
+          # Verify
+          codesign --verify --deep --strict "${APP_PATH}"
+
       - name: Package DMG
         run: |
           set -euo pipefail
