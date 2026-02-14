@@ -35,9 +35,6 @@
     }
 
     [self requestAccessibilityPermission];
-    if ([self isAccessibilityEnabled]) {
-        return;
-    }
 
     NSAlert *alert = [[NSAlert alloc] init];
     alert.alertStyle = NSAlertStyleWarning;
@@ -51,7 +48,12 @@
         return;
     }
 
-    NSURL *settingsURL = [NSURL URLWithString:@"x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"];
+    NSURL *settingsURL = nil;
+    if (@available(macOS 13, *)) {
+        settingsURL = [NSURL URLWithString:@"x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Accessibility"];
+    } else {
+        settingsURL = [NSURL URLWithString:@"x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"];
+    }
     if (settingsURL != nil) {
         [[NSWorkspace sharedWorkspace] openURL:settingsURL];
     }

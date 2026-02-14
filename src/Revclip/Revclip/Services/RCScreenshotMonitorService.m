@@ -47,6 +47,9 @@ static NSString * const kRCScreenshotClipDataFileExtension = @"rcclip";
 
 - (void)startMonitoring {
     if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self startMonitoring];
+        });
         return;
     }
 
@@ -91,6 +94,9 @@ static NSString * const kRCScreenshotClipDataFileExtension = @"rcclip";
 
 - (void)stopMonitoring {
     if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self stopMonitoring];
+        });
         return;
     }
 
@@ -113,6 +119,9 @@ static NSString * const kRCScreenshotClipDataFileExtension = @"rcclip";
 
 - (void)handleMetadataQueryUpdate:(NSNotification *)notification {
     if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleMetadataQueryUpdate:notification];
+        });
         return;
     }
 
@@ -136,6 +145,9 @@ static NSString * const kRCScreenshotClipDataFileExtension = @"rcclip";
 
 - (void)handleMetadataQueryGatherComplete:(NSNotification *)notification {
     if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleMetadataQueryGatherComplete:notification];
+        });
         return;
     }
 

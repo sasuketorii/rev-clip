@@ -79,6 +79,13 @@ static NSString * const kRCSparkleFrameworkName = @"Sparkle.framework";
 }
 
 - (void)checkForUpdates {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self checkForUpdates];
+        });
+        return;
+    }
+
     [self setupUpdater];
     if (self.updaterController == nil) {
         NSLog(@"[RCUpdateService] Cannot check for updates: updater not initialized.");

@@ -68,10 +68,13 @@ static NSString * const kRCApplicationsBundlePath = @"/Applications/Revclip.app"
 
 - (BOOL)isRunningFromBuildDirectory {
     NSString *bundlePath = [NSBundle mainBundle].bundlePath;
-    NSArray<NSString *> *buildPaths = @[@"DerivedData", @"Build/Products", @"Xcode"];
-    for (NSString *path in buildPaths) {
-        if ([bundlePath containsString:path]) {
-            return YES;
+    NSArray<NSString *> *pathComponents = [bundlePath pathComponents];
+    NSArray<NSString *> *buildMarkers = @[@"DerivedData", @"Build", @"Xcode"];
+    for (NSString *component in pathComponents) {
+        for (NSString *marker in buildMarkers) {
+            if ([component isEqualToString:marker]) {
+                return YES;
+            }
         }
     }
     return NO;
@@ -115,6 +118,11 @@ static NSString * const kRCApplicationsBundlePath = @"/Applications/Revclip.app"
         }
     }
 
+    // Clean up the original application bundle after successful move
+    if (![sourcePath isEqualToString:kRCApplicationsBundlePath]) {
+        [fileManager removeItemAtPath:sourcePath error:NULL];
+    }
+
     [self relaunchApplicationAtPath:kRCApplicationsBundlePath];
 }
 
@@ -123,25 +131,29 @@ static NSString * const kRCApplicationsBundlePath = @"/Applications/Revclip.app"
     openTask.executableURL = [NSURL fileURLWithPath:@"/usr/bin/open"];
     openTask.arguments = @[@"-n", applicationPath];
 
+    openTask.terminationHandler = ^(NSTask *task) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (task.terminationStatus == 0) {
+                [NSApp terminate:nil];
+                return;
+            }
+
+            NSError *terminationError = [NSError errorWithDomain:@"com.revclip.movetoapplications"
+                                                             code:(NSInteger)task.terminationStatus
+                                                         userInfo:@{
+                                                             NSLocalizedDescriptionKey: NSLocalizedString(@"Failed to relaunch the app from Applications.", nil),
+                                                             NSLocalizedFailureReasonErrorKey: [NSString stringWithFormat:@"open exited with status %d", task.terminationStatus],
+                                                         }];
+            [self showMoveFailedAlertWithError:terminationError];
+        });
+    };
+
     NSError *launchError = nil;
     if (![openTask launchAndReturnError:&launchError]) {
+        openTask.terminationHandler = nil;
         [self showMoveFailedAlertWithError:launchError];
         return;
     }
-
-    [openTask waitUntilExit];
-    if (openTask.terminationStatus == 0) {
-        [NSApp terminate:nil];
-        return;
-    }
-
-    NSError *error = [NSError errorWithDomain:@"com.revclip.movetoapplications"
-                                         code:(NSInteger)openTask.terminationStatus
-                                     userInfo:@{
-                                         NSLocalizedDescriptionKey: NSLocalizedString(@"Failed to relaunch the app from Applications.", nil),
-                                         NSLocalizedFailureReasonErrorKey: [NSString stringWithFormat:@"open exited with status %d", openTask.terminationStatus],
-                                     }];
-    [self showMoveFailedAlertWithError:error];
 }
 
 - (void)showMoveFailedAlertWithError:(NSError *)error {

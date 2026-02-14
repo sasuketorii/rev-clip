@@ -47,7 +47,15 @@ static BOOL RCReadUInt32FromObject(id object, UInt32 *outValue) {
 
     if ([object isKindOfClass:[NSString class]]) {
         NSString *string = (NSString *)object;
-        unsigned long long value = strtoull(string.UTF8String, NULL, 10);
+        const char *cString = string.UTF8String;
+        if (cString == NULL || *cString == '\0') {
+            return NO;
+        }
+        char *endptr = NULL;
+        unsigned long long value = strtoull(cString, &endptr, 10);
+        if (endptr == cString || (endptr != NULL && *endptr != '\0')) {
+            return NO;
+        }
         if (value > UINT32_MAX) {
             return NO;
         }
@@ -486,10 +494,6 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
     for (NSString *identifier in folderIdentifiers) {
         [self unregisterSnippetFolderHotKeyWithoutPersisting:identifier];
     }
-
-    [_snippetFolderHotKeyRefs removeAllObjects];
-    [_snippetFolderHotKeyIdentifiers removeAllObjects];
-    [_snippetFolderIdentifiersByHotKeyID removeAllObjects];
 }
 
 - (BOOL)nextAvailableSnippetFolderHotKeyIdentifier:(UInt32 *)outIdentifier {

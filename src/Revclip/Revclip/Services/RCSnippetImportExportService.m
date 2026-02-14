@@ -188,6 +188,19 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
                         underlyingError:nil];
     }
 
+    // Guard against abnormally large files (50 MB limit)
+    static const unsigned long long kRCMaxImportFileSize = 50ULL * 1024ULL * 1024ULL;
+    NSNumber *fileSize = nil;
+    NSError *attrError = nil;
+    if ([fileURL getResourceValue:&fileSize forKey:NSURLFileSizeKey error:&attrError] && fileSize != nil) {
+        if (fileSize.unsignedLongLongValue > kRCMaxImportFileSize) {
+            return [self assignSnippetError:error
+                                       code:RCSnippetImportExportErrorFileRead
+                                description:@"Import file is too large (exceeds 50 MB limit)."
+                            underlyingError:nil];
+        }
+    }
+
     NSError *readError = nil;
     NSData *data = [NSData dataWithContentsOfURL:fileURL options:NSDataReadingMappedIfSafe error:&readError];
     if (data == nil) {
@@ -216,9 +229,18 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
                         underlyingError:nil];
     }
 
-    NSArray<NSDictionary *> *parsedFolders = [self parseFoldersFromPlistData:data error:nil];
+    NSError *plistParseError = nil;
+    NSArray<NSDictionary *> *parsedFolders = [self parseFoldersFromPlistData:data error:&plistParseError];
     if (parsedFolders == nil) {
-        parsedFolders = [self parseFoldersFromLegacyXMLData:data error:nil];
+        NSError *xmlParseError = nil;
+        parsedFolders = [self parseFoldersFromLegacyXMLData:data error:&xmlParseError];
+        if (parsedFolders == nil && plistParseError != nil) {
+            // Preserve the original parse error for diagnostics
+            return [self assignSnippetError:error
+                                       code:RCSnippetImportExportErrorInvalidXMLFormat
+                                description:@"Unsupported snippets file format."
+                            underlyingError:plistParseError];
+        }
     }
     if (parsedFolders == nil) {
         return [self assignSnippetError:error
@@ -512,12 +534,12 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
     }
 
     for (id object in objects) {
-        if ([self looksLikeFolderObject:object]) {
-            return YES;
+        if (![self looksLikeFolderObject:object]) {
+            return NO;
         }
     }
 
-    return NO;
+    return YES;
 }
 
 - (BOOL)looksLikeSnippetArray:(NSArray *)objects {
@@ -797,6 +819,13 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
     __block NSError *transactionError = nil;
     BOOL persisted = [databaseManager performTransaction:^BOOL(FMDatabase *db, BOOL *rollback) {
         if (!merge) {
+            BOOL deletedSnippets = [db executeUpdate:@"DELETE FROM snippets"];
+            if (!deletedSnippets) {
+                transactionError = [self databaseErrorFromDatabase:db fallbackDescription:@"Failed to delete all snippets."];
+                *rollback = YES;
+                return NO;
+            }
+
             BOOL deleted = [db executeUpdate:@"DELETE FROM snippet_folders"];
             if (!deleted) {
                 transactionError = [self databaseErrorFromDatabase:db fallbackDescription:@"Failed to delete all snippet folders."];

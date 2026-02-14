@@ -44,7 +44,8 @@
         return NO;
     }
 
-    return [[self excludedBundleIdentifiers] containsObject:bundleIdentifier];
+    NSString *normalized = [self normalizedBundleIdentifier:bundleIdentifier];
+    return [[self excludedBundleIdentifiers] containsObject:normalized];
 }
 
 - (NSArray<NSString *> *)excludedBundleIdentifiers {
@@ -145,7 +146,7 @@
     }
 
     NSString *trimmed = [bundleIdentifier stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    return trimmed ?: @"";
+    return [trimmed lowercaseString] ?: @"";
 }
 
 @end
