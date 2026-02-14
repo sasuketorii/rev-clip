@@ -24,17 +24,17 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype)shared;
 
 // Services
-@property (nonatomic, strong, nullable) id clipboardService;       // RCClipboardService
-@property (nonatomic, strong, nullable) id pasteService;           // RCPasteService
-@property (nonatomic, strong, nullable) id hotKeyService;          // RCHotKeyService
-@property (nonatomic, strong, nullable) id accessibilityService;   // RCAccessibilityService
-@property (nonatomic, strong, nullable) id excludeAppService;      // RCExcludeAppService
-@property (nonatomic, strong, nullable) id dataCleanService;       // RCDataCleanService
-@property (nonatomic, strong, nullable) id loginItemService;       // RCLoginItemService
+@property (nonatomic, strong, nullable) RCClipboardService *clipboardService;
+@property (nonatomic, strong, nullable) RCPasteService *pasteService;
+@property (nonatomic, strong, nullable) RCHotKeyService *hotKeyService;
+@property (nonatomic, strong, nullable) RCAccessibilityService *accessibilityService;
+@property (nonatomic, strong, nullable) RCExcludeAppService *excludeAppService;
+@property (nonatomic, strong, nullable) RCDataCleanService *dataCleanService;
+@property (nonatomic, strong, nullable) RCLoginItemService *loginItemService;
 
 // Managers
-@property (nonatomic, strong, nullable) id menuManager;            // RCMenuManager
-@property (nonatomic, strong, nullable) id databaseManager;        // RCDatabaseManager
+@property (nonatomic, strong, nullable) RCMenuManager *menuManager;
+@property (nonatomic, strong, nullable) RCDatabaseManager *databaseManager;
 
 @end
 

@@ -30,8 +30,8 @@ targets:
         CFBundleName: "Revclip"
         CFBundleDisplayName: "Revclip"
         CFBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)"
-        CFBundleVersion: "1"
-        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "6"
+        CFBundleShortVersionString: "0.0.6"
         CFBundleExecutable: "$(EXECUTABLE_NAME)"
         CFBundlePackageType: "APPL"
         CFBundleSignature: "????"
@@ -42,6 +42,7 @@ targets:
         NSHumanReadableCopyright: "Copyright © 2024-2026 Revclip. All rights reserved."
         CFBundleIconName: "AppIcon"
         SUFeedURL: "https://github.com/sasuketorii/rev-clip/releases/latest/download/appcast.xml"
+        NSAccessibilityUsageDescription: "Revclip needs accessibility access to paste clipboard items into other applications."
     sources:
       - path: Revclip
         excludes:

@@ -16,8 +16,8 @@ NSString * const kRCPrefStoreTypesKey = @"kRCPrefStoreTypesKey";
 NSString * const kRCPrefOverwriteSameHistory = @"kRCPrefOverwriteSameHistory";
 NSString * const kRCPrefCopySameHistory = @"kRCPrefCopySameHistory";
 NSString * const kRCCollectCrashReport = @"kRCCollectCrashReport";
-NSString * const loginItem = @"loginItem";
-NSString * const suppressAlertForLoginItem = @"suppressAlertForLoginItem";
+NSString * const kRCLoginItem = @"loginItem";
+NSString * const kRCSuppressAlertForLoginItem = @"suppressAlertForLoginItem";
 
 // Menu
 NSString * const kRCPrefNumberOfItemsPlaceInlineKey = @"kRCPrefNumberOfItemsPlaceInlineKey";

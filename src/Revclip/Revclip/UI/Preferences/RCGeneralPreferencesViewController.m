@@ -54,14 +54,13 @@ static const NSInteger RCShowStatusItemDefault = 1;
     BOOL enabled = (self.loginAtStartupButton.state == NSControlStateValueOn);
     BOOL success = [[RCLoginItemService shared] setLoginItemEnabled:enabled];
     if (success) {
-        // TODO: Wave 3 Group G で loginItem → kRCLoginItem に定数名を変更予定
-        [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:loginItem];
+        [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:kRCLoginItem];
     } else {
         // Revert checkbox to previous state
         self.loginAtStartupButton.state = enabled ? NSControlStateValueOff : NSControlStateValueOn;
 
         // Show alert to inform user of login item registration failure
-        BOOL suppressAlert = [[NSUserDefaults standardUserDefaults] boolForKey:suppressAlertForLoginItem];
+        BOOL suppressAlert = [[NSUserDefaults standardUserDefaults] boolForKey:kRCSuppressAlertForLoginItem];
         if (!suppressAlert) {
             NSAlert *alert = [[NSAlert alloc] init];
             alert.alertStyle = NSAlertStyleWarning;
@@ -76,13 +75,13 @@ static const NSInteger RCShowStatusItemDefault = 1;
                 [alert beginSheetModalForWindow:window completionHandler:^(NSModalResponse returnCode) {
                     (void)returnCode;
                     if (alert.suppressionButton.state == NSControlStateValueOn) {
-                        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:suppressAlertForLoginItem];
+                        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:kRCSuppressAlertForLoginItem];
                     }
                 }];
             } else {
                 [alert runModal];
                 if (alert.suppressionButton.state == NSControlStateValueOn) {
-                    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:suppressAlertForLoginItem];
+                    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:kRCSuppressAlertForLoginItem];
                 }
             }
         }
@@ -143,8 +142,7 @@ static const NSInteger RCShowStatusItemDefault = 1;
                                              defaultValue:RCMaxHistorySizeDefault]
                     persist:NO];
 
-    // TODO: Wave 3 Group G で loginItem → kRCLoginItem, suppressAlertForLoginItem → kRCSuppressAlertForLoginItem に定数名を変更予定
-    self.loginAtStartupButton.state = [self boolPreferenceForKey:loginItem defaultValue:NO]
+    self.loginAtStartupButton.state = [self boolPreferenceForKey:kRCLoginItem defaultValue:NO]
         ? NSControlStateValueOn
         : NSControlStateValueOff;
 

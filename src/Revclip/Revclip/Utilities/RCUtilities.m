@@ -29,8 +29,8 @@
         kRCPrefOverwriteSameHistory: @YES,
         kRCPrefCopySameHistory: @YES,
         kRCCollectCrashReport: @YES,
-        loginItem: @YES,
-        suppressAlertForLoginItem: @NO,
+        kRCLoginItem: @YES,
+        kRCSuppressAlertForLoginItem: @NO,
         kRCPrefNumberOfItemsPlaceInlineKey: @0,
         kRCPrefNumberOfItemsPlaceInsideFolderKey: @10,
         kRCPrefMaxMenuItemTitleLengthKey: @20,
@@ -56,6 +56,7 @@
         kRCBetaPasteAndDeleteHistory: @NO,
         kRCBetaPasteAndDeleteHistoryModifier: @0,
         kRCBetaObserveScreenshot: @NO,
+        kRCSuppressAlertForDeleteSnippet: @NO,
     };
 
     [[NSUserDefaults standardUserDefaults] registerDefaults:defaultSettings];

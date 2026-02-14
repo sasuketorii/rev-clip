@@ -12,6 +12,7 @@
 #import "RCDataCleanService.h"
 #import "RCConstants.h"
 #import "RCEnvironment.h"
+#import "RCExcludeAppService.h"
 #import "RCDatabaseManager.h"
 #import "RCHotKeyService.h"
 #import "RCLoginItemService.h"
@@ -59,6 +60,8 @@ static UTType *RCSnippetImportExportContentType(void) {
     RCHotKeyService *hotKeyService = [RCHotKeyService shared];
     RCAccessibilityService *accessibilityService = [RCAccessibilityService shared];
     RCDataCleanService *dataCleanService = [RCDataCleanService shared];
+    RCExcludeAppService *excludeAppService = [RCExcludeAppService shared];
+    RCLoginItemService *loginItemService = [RCLoginItemService shared];
 
     // 4. Environment
     RCEnvironment *environment = [RCEnvironment shared];
@@ -69,6 +72,8 @@ static UTType *RCSnippetImportExportContentType(void) {
     environment.hotKeyService = hotKeyService;
     environment.accessibilityService = accessibilityService;
     environment.dataCleanService = dataCleanService;
+    environment.excludeAppService = excludeAppService;
+    environment.loginItemService = loginItemService;
 
     // 5. UI & Services setup
     [menuManager setupStatusItem];
@@ -87,7 +92,7 @@ static UTType *RCSnippetImportExportContentType(void) {
     [[RCScreenshotMonitorService shared] startMonitoring];
 
     // 9. Login item registration
-    BOOL loginItemEnabled = [[NSUserDefaults standardUserDefaults] boolForKey:loginItem];
+    BOOL loginItemEnabled = [[NSUserDefaults standardUserDefaults] boolForKey:kRCLoginItem];
     if (loginItemEnabled) {
         [[RCLoginItemService shared] setLoginItemEnabled:YES];
     }
@@ -101,6 +106,18 @@ static UTType *RCSnippetImportExportContentType(void) {
     [[RCDataCleanService shared] stopCleanupTimer];
     [[RCClipboardService shared] stopMonitoring];
     [[RCHotKeyService shared] unregisterAllHotKeys];
+
+    // Nil out environment properties to break retain cycles
+    RCEnvironment *environment = [RCEnvironment shared];
+    environment.clipboardService = nil;
+    environment.pasteService = nil;
+    environment.hotKeyService = nil;
+    environment.accessibilityService = nil;
+    environment.excludeAppService = nil;
+    environment.dataCleanService = nil;
+    environment.loginItemService = nil;
+    environment.menuManager = nil;
+    environment.databaseManager = nil;
 }
 
 - (IBAction)showPreferencesWindow:(id)sender {
