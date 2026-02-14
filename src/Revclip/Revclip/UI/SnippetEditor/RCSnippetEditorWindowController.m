@@ -276,6 +276,7 @@ static UTType *RCSnippetImportExportContentType(void) {
     self.contentTextView.maxSize = NSMakeSize(CGFLOAT_MAX, CGFLOAT_MAX);
     self.contentTextView.verticallyResizable = YES;
     self.contentTextView.horizontallyResizable = NO;
+    self.contentTextView.autoresizingMask = NSViewWidthSizable;
     self.contentTextView.usesFindBar = YES;
     self.contentTextView.richText = NO;
     self.contentTextView.allowsUndo = YES;
@@ -285,7 +286,7 @@ static UTType *RCSnippetImportExportContentType(void) {
     self.contentScrollView.hasVerticalScroller = YES;
     self.contentScrollView.hasHorizontalScroller = NO;
     self.contentScrollView.borderType = NSBezelBorder;
-    self.contentTextView.textContainer.containerSize = NSMakeSize(0.0, CGFLOAT_MAX);
+    self.contentTextView.textContainer.containerSize = NSMakeSize(FLT_MAX, CGFLOAT_MAX);
     self.contentTextView.textContainer.widthTracksTextView = YES;
     self.contentScrollView.documentView = self.contentTextView;
     [rightPane addSubview:self.contentScrollView];
@@ -689,7 +690,7 @@ static UTType *RCSnippetImportExportContentType(void) {
 
     RCSnippetNode *snippetNode = (RCSnippetNode *)selectedItem;
     NSString *title = [self normalizedTitleFromField:self.titleField fallback:NSLocalizedString(@"Untitled Snippet", nil)];
-    NSString *content = self.contentTextView.string ?: @"";
+    NSString *content = [self.contentTextView.string copy] ?: @"";
     NSString *folderIdentifier = [self stringValueFromDictionary:snippetNode.parentFolder.folderDictionary
                                                              key:@"identifier"
                                                     defaultValue:@""];

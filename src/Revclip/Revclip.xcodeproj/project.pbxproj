@@ -109,6 +109,7 @@
 		23BCF5000D494C483DABC121 /* RCPasteService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCPasteService.h; sourceTree = "<group>"; };
 		24F3BF24A239AA69518650DA /* RCGeneralPreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCGeneralPreferencesViewController.m; sourceTree = "<group>"; };
 		25A85028708E20A4E991CDE7 /* RCSnippetImportExportService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCSnippetImportExportService.m; sourceTree = "<group>"; };
+		27E9CE1DA500A65DF3C502FA /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		29EFACD3596BD52D03777F8F /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = Revclip/Vendor/Sparkle/Sparkle.framework; sourceTree = "<group>"; };
 		2A9310A1E237473A4079CFAD /* RCGeneralPreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCGeneralPreferencesView.xib; sourceTree = "<group>"; };
 		2BBFB32B6E958167DCDC53B5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -429,6 +430,7 @@
 		CCA2D308134D582162FDAD06 /* RevclipTests */ = {
 			isa = PBXGroup;
 			children = (
+				27E9CE1DA500A65DF3C502FA /* .gitkeep */,
 			);
 			path = RevclipTests;
 			sourceTree = "<group>";

@@ -19,15 +19,17 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.0.7</string>
+	<string>0.0.9</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>7</string>
+	<string>9</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSAccessibilityUsageDescription</key>
+	<string>Revclip needs accessibility access to paste clipboard items into other applications.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2024-2026 Revclip. All rights reserved.</string>
 	<key>NSMainNibFile</key>
@@ -38,7 +40,5 @@
 	<string>https://github.com/sasuketorii/rev-clip/releases/latest/download/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>jW5CH5/B8IApRFYiwOGot/VUmo0uqvE1LawgUG1igUk=</string>
-	<key>NSAccessibilityUsageDescription</key>
-	<string>Revclip needs accessibility access to paste clipboard items into other applications.</string>
 </dict>
 </plist>
