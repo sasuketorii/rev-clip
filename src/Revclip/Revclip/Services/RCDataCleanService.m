@@ -80,9 +80,13 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
 
         self.cleanupTimer = timer;
         dispatch_resume(timer);
-    }
 
-    [self performCleanup];
+        // G3-012: 初期 cleanup を @synchronized ブロック内で dispatch して
+        // タイマー設定と初期クリーンアップの間に競合が発生しないようにする。
+        dispatch_async(self.cleanupQueue, ^{
+            [self performCleanupOnCleanupQueue];
+        });
+    }
 }
 
 - (void)stopCleanupTimer {

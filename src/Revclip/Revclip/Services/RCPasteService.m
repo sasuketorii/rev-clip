@@ -10,6 +10,7 @@
 #import <ApplicationServices/ApplicationServices.h>
 
 #import "RCAccessibilityService.h"
+#import "RCClipboardService.h"
 #import "RCClipData.h"
 #import "RCConstants.h"
 
@@ -42,6 +43,17 @@ static NSTimeInterval const kRCPasteActivationDelay = 0.05;
         return;
     }
 
+    // G3-013: メインスレッド保証。メインスレッド以外から呼ばれた場合は dispatch_async で回す。
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self pasteClipData:clipData];
+        });
+        return;
+    }
+
+    // G3-004: 内部ペースト操作中フラグをセット（ClipboardService のポーリングで重複登録を防ぐ）
+    [RCClipboardService shared].isPastingInternally = YES;
+
     BOOL shouldSendPasteCommand = [self boolPreferenceForKey:kRCPrefInputPasteCommandKey defaultValue:YES];
     BOOL pastePlainTextEnabled = [self boolPreferenceForKey:kRCBetaPastePlainText defaultValue:YES];
     NSInteger plainTextModifier = [self integerPreferenceForKey:kRCBetaPastePlainTextModifier defaultValue:0];
@@ -50,6 +62,7 @@ static NSTimeInterval const kRCPasteActivationDelay = 0.05;
         && [self isPressedModifier:plainTextModifier]) {
         [self writePlainTextToPasteboard:clipData.stringValue];
         if (!shouldSendPasteCommand) {
+            [self clearPastingInternallyFlagAfterDelay];
             return;
         }
         NSRunningApplication *activeApplication = [NSWorkspace sharedWorkspace].frontmostApplication;
@@ -63,6 +76,7 @@ static NSTimeInterval const kRCPasteActivationDelay = 0.05;
     [clipData writeToPasteboard:[NSPasteboard generalPasteboard]];
 
     if (!shouldSendPasteCommand) {
+        [self clearPastingInternallyFlagAfterDelay];
         return;
     }
 
@@ -74,11 +88,23 @@ static NSTimeInterval const kRCPasteActivationDelay = 0.05;
 }
 
 - (void)pastePlainText:(NSString *)text {
+    // G3-013: メインスレッド保証
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self pastePlainText:text];
+        });
+        return;
+    }
+
+    // G3-004: 内部ペースト操作中フラグをセット
+    [RCClipboardService shared].isPastingInternally = YES;
+
     BOOL shouldSendPasteCommand = [self boolPreferenceForKey:kRCPrefInputPasteCommandKey defaultValue:YES];
 
     [self writePlainTextToPasteboard:text];
 
     if (!shouldSendPasteCommand) {
+        [self clearPastingInternallyFlagAfterDelay];
         return;
     }
 
@@ -111,14 +137,21 @@ static NSTimeInterval const kRCPasteActivationDelay = 0.05;
     CGEventRef keyDown = CGEventCreateKeyboardEvent(source, (CGKeyCode)9, true);
     CGEventRef keyUp = CGEventCreateKeyboardEvent(source, (CGKeyCode)9, false);
 
-    if (keyDown != NULL) {
+    // G3-005: 両方のイベント作成が成功した場合のみ post する。
+    // 片方だけ post するとキー入力が不完全になる。
+    if (keyDown != NULL && keyUp != NULL) {
         CGEventSetFlags(keyDown, kCGEventFlagMaskCommand);
+        CGEventSetFlags(keyUp, kCGEventFlagMaskCommand);
         CGEventPost(kCGAnnotatedSessionEventTap, keyDown);
+        CGEventPost(kCGAnnotatedSessionEventTap, keyUp);
+    } else {
+        NSLog(@"[RCPasteService] Failed to create keyboard events for paste keystroke.");
+    }
+
+    if (keyDown != NULL) {
         CFRelease(keyDown);
     }
     if (keyUp != NULL) {
-        CGEventSetFlags(keyUp, kCGEventFlagMaskCommand);
-        CGEventPost(kCGAnnotatedSessionEventTap, keyUp);
         CFRelease(keyUp);
     }
 
@@ -131,18 +164,28 @@ static NSTimeInterval const kRCPasteActivationDelay = 0.05;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kRCPasteMenuCloseDelay * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
         if (application != nil && !application.terminated) {
-            if (@available(macOS 14.0, *)) {
-                [application activate];
-            } else {
-                [application activateWithOptions:0];
-            }
+            [application activateWithOptions:0];
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kRCPasteActivationDelay * NSEC_PER_SEC)),
                            dispatch_get_main_queue(), ^{
                 [self sendPasteKeyStroke];
+                // G3-004: ペースト操作完了後にフラグをクリア
+                [self clearPastingInternallyFlagAfterDelay];
             });
         } else {
             [self sendPasteKeyStroke];
+            // G3-004: ペースト操作完了後にフラグをクリア
+            [self clearPastingInternallyFlagAfterDelay];
         }
+    });
+}
+
+// G3-004: ペースト操作完了後に isPastingInternally フラグをクリアする。
+// ClipboardService のポーリング間隔 (0.5s) より長い遅延で解除して
+// ポーリングが確実にスキップされるようにする。
+- (void)clearPastingInternallyFlagAfterDelay {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        [RCClipboardService shared].isPastingInternally = NO;
     });
 }
 

@@ -20,8 +20,11 @@ typedef NS_ENUM(NSInteger, RCClipboardAccessState) {
 
 + (instancetype)shared;
 
-// 現在のクリップボードアクセス状態を取得
+// 現在のクリップボードアクセス状態を取得（副作用なし）
 - (RCClipboardAccessState)clipboardAccessState;
+
+// クリップボードアクセス状態をリフレッシュし、変更があれば通知を送信
+- (void)refreshClipboardAccessState;
 
 // クリップボードアクセスが可能かチェック
 - (BOOL)canAccessClipboard;

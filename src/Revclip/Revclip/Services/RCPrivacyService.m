@@ -43,15 +43,25 @@ typedef NS_ENUM(NSInteger, RCPrivacyServiceErrorCode) {
 
 #pragma mark - Public
 
+// G3-010: getter から通知ロジックを分離。
+// clipboardAccessState は純粋な getter として副作用を持たない。
+// 状態変更の通知が必要な場合は refreshClipboardAccessState を呼ぶこと。
 - (RCClipboardAccessState)clipboardAccessState {
+    return [self resolvedClipboardAccessState];
+}
+
+- (void)refreshClipboardAccessState {
     RCClipboardAccessState state = [self resolvedClipboardAccessState];
     [self postClipboardAccessStateDidChangeIfNeeded:state];
-    return state;
 }
 
 - (BOOL)canAccessClipboard {
+    // G3-009: Granted の場合のみ true を返す。
+    // Unknown の場合はまだ確定していないため、安全側に倒して false とする。
+    // ただし macOS 15 以前（プライバシー API が存在しない環境）では
+    // resolvedClipboardAccessState が Granted を返すため常に true になる。
     RCClipboardAccessState state = [self clipboardAccessState];
-    return (state == RCClipboardAccessStateGranted || state == RCClipboardAccessStateUnknown);
+    return (state == RCClipboardAccessStateGranted);
 }
 
 - (BOOL)isClipboardPrivacyAPIAvailable {
@@ -117,6 +127,15 @@ typedef NS_ENUM(NSInteger, RCPrivacyServiceErrorCode) {
         }
 
         NSWorkspace *workspace = [NSWorkspace sharedWorkspace];
+
+        // G3-015: macOS 16+ では新形式のシステム設定 URL を優先して使用
+        if (@available(macOS 16, *)) {
+            NSURL *macOS16ClipboardURL = [NSURL URLWithString:@"x-apple.systempreferences:com.apple.preference.security?Privacy_Pasteboard"];
+            if (macOS16ClipboardURL != nil && [workspace openURL:macOS16ClipboardURL]) {
+                return;
+            }
+        }
+
         NSURL *clipboardSettingsURL = [NSURL URLWithString:@"x-apple.systempreferences:com.apple.preference.security?Privacy_Clipboard"];
         if (clipboardSettingsURL != nil && [workspace openURL:clipboardSettingsURL]) {
             return;
@@ -164,6 +183,10 @@ typedef NS_ENUM(NSInteger, RCPrivacyServiceErrorCode) {
 
             case NSPasteboardAccessBehaviorAlwaysDeny:
                 return RCClipboardAccessStateDenied;
+
+            // G3-008: 将来の列挙値追加に備えた防御的コーディング
+            default:
+                return RCClipboardAccessStateUnknown;
         }
     }
 

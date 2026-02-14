@@ -16,7 +16,10 @@ NS_ASSUME_NONNULL_BEGIN
 // 監視の開始・停止
 - (void)startMonitoring;
 - (void)stopMonitoring;
-@property (nonatomic, readonly) BOOL isMonitoring;
+@property (atomic, readonly) BOOL isMonitoring;
+
+// 内部ペースト操作中フラグ（RCPasteService がペースト中にクリップボード変更検知を抑制する）
+@property (atomic, assign) BOOL isPastingInternally;
 
 // 手動での最新クリップ取得
 - (void)captureCurrentClipboard;

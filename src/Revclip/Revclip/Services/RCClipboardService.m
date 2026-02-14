@@ -7,13 +7,14 @@
 
 #import "RCClipboardService.h"
 
+#import <ImageIO/ImageIO.h>
+
 #import "RCConstants.h"
 #import "RCExcludeAppService.h"
 #import "RCDatabaseManager.h"
 #import "RCClipData.h"
 #import "RCClipItem.h"
 #import "NSColor+HexString.h"
-#import "NSImage+Resize.h"
 #import "RCUtilities.h"
 
 NSString * const RCClipboardDidChangeNotification = @"RCClipboardDidChangeNotification";
@@ -30,7 +31,7 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
 
 @interface RCClipboardService ()
 
-@property (nonatomic, readwrite, assign) BOOL isMonitoring;
+@property (atomic, readwrite, assign) BOOL isMonitoring;
 @property (nonatomic, strong, nullable) dispatch_source_t monitorTimer;
 @property (nonatomic, strong) dispatch_queue_t monitoringQueue;
 @property (nonatomic, strong) dispatch_queue_t fileOperationQueue;
@@ -61,7 +62,15 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
 }
 
 - (void)dealloc {
-    [self stopMonitoring];
+    // G3-016: dealloc ではタイマー invalidate のみ直接実行。
+    // stopMonitoring は @synchronized 等の副作用があるため、
+    // dealloc 内ではタイマーのキャンセルだけ行う。
+    dispatch_source_t timer = _monitorTimer;
+    _monitorTimer = nil;
+    _isMonitoring = NO;
+    if (timer != nil) {
+        dispatch_source_cancel(timer);
+    }
 }
 
 #pragma mark - Public
@@ -120,10 +129,9 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
 }
 
 - (void)captureCurrentClipboard {
-    if ([[RCExcludeAppService shared] shouldExcludeCurrentApp]) {
-        return;
-    }
-
+    // G3-003: 冗長な early excluded app チェックを削除。
+    // saveClipFromPasteboardOnMonitoringQueue: 内の shouldSkipCurrentApplication で
+    // 同じチェックが行われるため、ここでは不要。
     dispatch_async(self.monitoringQueue, ^{
         [self captureCurrentClipboardOnMonitoringQueue];
     });
@@ -132,28 +140,46 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
 #pragma mark - Private: Monitor / Capture
 
 - (void)pollPasteboardOnMonitoringQueue {
-    NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-    NSInteger currentChangeCount = pasteboard.changeCount;
-    if (currentChangeCount == self.cachedChangeCount) {
+    // G3-004: 内部ペースト操作中はポーリングをスキップして重複登録を防ぐ
+    if (self.isPastingInternally) {
         return;
     }
 
+    // G3-001: NSPasteboard の読み取りをメインキューで実行
+    __block NSInteger currentChangeCount = 0;
+    __block RCClipData *clipData = nil;
+    dispatch_sync(dispatch_get_main_queue(), ^{
+        NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
+        currentChangeCount = pasteboard.changeCount;
+    });
+    if (currentChangeCount == self.cachedChangeCount) {
+        return;
+    }
     self.cachedChangeCount = currentChangeCount;
-    [self saveClipFromPasteboardOnMonitoringQueue:pasteboard];
+
+    dispatch_sync(dispatch_get_main_queue(), ^{
+        NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
+        clipData = [RCClipData clipDataFromPasteboard:pasteboard];
+    });
+    [self processClipDataOnMonitoringQueue:clipData];
 }
 
 - (void)captureCurrentClipboardOnMonitoringQueue {
-    NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-    self.cachedChangeCount = pasteboard.changeCount;
-    [self saveClipFromPasteboardOnMonitoringQueue:pasteboard];
+    // G3-001: NSPasteboard の読み取りをメインキューで実行
+    __block RCClipData *clipData = nil;
+    dispatch_sync(dispatch_get_main_queue(), ^{
+        NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
+        self.cachedChangeCount = pasteboard.changeCount;
+        clipData = [RCClipData clipDataFromPasteboard:pasteboard];
+    });
+    [self processClipDataOnMonitoringQueue:clipData];
 }
 
-- (void)saveClipFromPasteboardOnMonitoringQueue:(NSPasteboard *)pasteboard {
+- (void)processClipDataOnMonitoringQueue:(RCClipData *)clipData {
     if ([self shouldSkipCurrentApplication]) {
         return;
     }
 
-    RCClipData *clipData = [RCClipData clipDataFromPasteboard:pasteboard];
     if (![self hasClipContent:clipData]) {
         return;
     }
@@ -219,10 +245,24 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
     }
 
     RCClipItem *clipItem = [[RCClipItem alloc] initWithDictionary:clipDictionary];
-    [self trimHistoryIfNeededWithDatabaseManager:databaseManager];
+    // G3-006: トリミングロジックは RCDataCleanService に一本化。
+    // ここでは重複して trimHistoryIfNeeded を呼ばない。
     [self postClipboardDidChangeNotificationWithClipItem:clipItem];
 }
 
+/// G3-014: shouldOverwrite / shouldReorder セマンティクス
+///
+/// shouldOverwrite (kRCPrefOverwriteSameHistory):
+///   YES — 同一ハッシュのクリップが再度コピーされた場合、既存レコードの
+///          update_time を更新して最新位置に移動（"上書き"）する。
+///   NO  — 既存レコードを更新しない。
+///
+/// shouldReorder (kRCPrefReorderClipsAfterPasting):
+///   YES — ペースト後に同一クリップを再利用した場合にも update_time を更新して
+///          リストの先頭に並べ替える。
+///   NO  — 並べ替えを行わない。
+///
+/// 両方が NO の場合、既存クリップに対しては一切の更新を行わずスキップする。
 - (void)handleExistingClipWithHash:(NSString *)dataHash
                       existingDict:(NSDictionary *)existingClipDict
                         updateTime:(NSInteger)updateTime
@@ -332,6 +372,9 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
 
 #pragma mark - Private: File / Thumbnail
 
+// G3-002: dispatch_sync は monitoringQueue → fileOperationQueue への呼び出しであり、
+// 同一キューへの sync ではないためデッドロックの危険はない。
+// 戻り値が必要なため dispatch_sync を使用している。
 - (BOOL)saveClipData:(RCClipData *)clipData toPath:(NSString *)path {
     if (path.length == 0) {
         return NO;
@@ -344,6 +387,7 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
     return saved;
 }
 
+// G3-011: CGImageSource でサムネイル生成。大きな画像でもメモリ効率が良い。
 - (NSString *)generateThumbnailPathForClipData:(RCClipData *)clipData
                                      identifier:(NSString *)identifier
                                   directoryPath:(NSString *)directoryPath {
@@ -351,21 +395,39 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
         return @"";
     }
 
-    NSImage *image = [[NSImage alloc] initWithData:clipData.TIFFData];
-    if (image == nil) {
-        return @"";
-    }
-
     NSSize targetSize = [self thumbnailTargetSize];
-    NSImage *thumbnailImage = [image resizedImageToFitSize:targetSize];
-    if (thumbnailImage == nil) {
-        thumbnailImage = [image resizedImageToSize:targetSize];
-    }
-    if (thumbnailImage == nil) {
+    CGFloat maxDimension = MAX(targetSize.width, targetSize.height);
+    if (maxDimension <= 0.0) {
         return @"";
     }
 
-    NSData *thumbnailData = [thumbnailImage TIFFRepresentation];
+    CGImageSourceRef imageSource = CGImageSourceCreateWithData((__bridge CFDataRef)clipData.TIFFData, NULL);
+    if (imageSource == NULL) {
+        return @"";
+    }
+
+    NSDictionary *thumbnailOptions = @{
+        (__bridge NSString *)kCGImageSourceCreateThumbnailFromImageAlways: @YES,
+        (__bridge NSString *)kCGImageSourceThumbnailMaxPixelSize: @((NSInteger)maxDimension),
+        (__bridge NSString *)kCGImageSourceCreateThumbnailWithTransform: @YES,
+    };
+
+    CGImageRef thumbnailRef = CGImageSourceCreateThumbnailAtIndex(imageSource, 0,
+                                                                   (__bridge CFDictionaryRef)thumbnailOptions);
+    CFRelease(imageSource);
+
+    if (thumbnailRef == NULL) {
+        return @"";
+    }
+
+    NSBitmapImageRep *bitmapRep = [[NSBitmapImageRep alloc] initWithCGImage:thumbnailRef];
+    CGImageRelease(thumbnailRef);
+
+    if (bitmapRep == nil) {
+        return @"";
+    }
+
+    NSData *thumbnailData = [bitmapRep TIFFRepresentation];
     if (thumbnailData.length == 0) {
         return @"";
     }
@@ -373,6 +435,7 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
     NSString *thumbnailFileName = [NSString stringWithFormat:@"%@.thumbnail.tiff", identifier];
     NSString *thumbnailPath = [directoryPath stringByAppendingPathComponent:thumbnailFileName];
 
+    // G3-002: dispatch_sync は monitoringQueue → fileOperationQueue であり安全
     __block BOOL wrote = NO;
     dispatch_sync(self.fileOperationQueue, ^{
         NSError *error = nil;
@@ -424,33 +487,7 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
 
 #pragma mark - Private: Cleanup / Notification
 
-- (void)trimHistoryIfNeededWithDatabaseManager:(RCDatabaseManager *)databaseManager {
-    NSInteger maxHistorySize = [self integerPreferenceForKey:kRCPrefMaxHistorySizeKey defaultValue:30];
-    if (maxHistorySize <= 0) {
-        return;
-    }
-
-    NSInteger count = [databaseManager clipItemCount];
-    if (count <= maxHistorySize) {
-        return;
-    }
-
-    NSArray<NSDictionary *> *clipDictionaries = [databaseManager fetchClipItemsWithLimit:count];
-    if (clipDictionaries.count <= (NSUInteger)maxHistorySize) {
-        return;
-    }
-
-    for (NSUInteger index = (NSUInteger)maxHistorySize; index < clipDictionaries.count; index++) {
-        RCClipItem *oldItem = [[RCClipItem alloc] initWithDictionary:clipDictionaries[index]];
-        if (oldItem.dataHash.length == 0) {
-            continue;
-        }
-
-        if ([databaseManager deleteClipItemWithDataHash:oldItem.dataHash]) {
-            [self deleteFilesForClipItem:oldItem];
-        }
-    }
-}
+// G3-006: trimHistoryIfNeeded は RCDataCleanService に一本化されたため削除。
 
 - (NSInteger)currentTimestamp {
     return (NSInteger)([[NSDate date] timeIntervalSince1970] * 1000.0);
