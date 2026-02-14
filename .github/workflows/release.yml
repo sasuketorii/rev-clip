@@ -138,13 +138,13 @@ jobs:
       - name: Extract .app from archive
         run: |
           set -euo pipefail
-          ARCHIVED_APP_PATH="${ARCHIVE_PATH}/Products/Applications/Revclip.app"
+          ARCHIVED_APP_PATH="${ARCHIVE_PATH}/Products/Applications/Revpy.app"
           if [[ ! -d "${ARCHIVED_APP_PATH}" ]]; then
             echo "Archived app not found: ${ARCHIVED_APP_PATH}"
             exit 1
           fi
 
-          EXPORTED_APP_PATH="${RELEASE_DIR}/Revclip.app"
+          EXPORTED_APP_PATH="${RELEASE_DIR}/Revpy.app"
           rm -rf "${EXPORTED_APP_PATH}"
           ditto "${ARCHIVED_APP_PATH}" "${EXPORTED_APP_PATH}"
           echo "APP_PATH=${EXPORTED_APP_PATH}" >> "${GITHUB_ENV}"
@@ -195,15 +195,15 @@ jobs:
             exit 1
           fi
 
-          DMG_PATH="${RELEASE_DIR}/Revclip-${GITHUB_REF_NAME}.dmg"
+          DMG_PATH="${RELEASE_DIR}/Revpy-${GITHUB_REF_NAME}.dmg"
           STAGING_DIR="${RUNNER_TEMP}/dmg-staging"
           rm -rf "${STAGING_DIR}"
           mkdir -p "${STAGING_DIR}"
-          ditto "${APP_PATH}" "${STAGING_DIR}/Revclip.app"
+          ditto "${APP_PATH}" "${STAGING_DIR}/Revpy.app"
           ln -s /Applications "${STAGING_DIR}/Applications"
 
           hdiutil create \
-            -volname "Revclip" \
+            -volname "Revpy" \
             -srcfolder "${STAGING_DIR}" \
             -format UDZO \
             -ov \
