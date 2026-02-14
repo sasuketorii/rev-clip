@@ -26,6 +26,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
 @property (nonatomic, strong, nullable) NSStatusItem *statusItem;
 @property (nonatomic, strong) NSMenu *statusMenu;
+@property (nonatomic, strong, nullable) dispatch_block_t defaultsChangeDebounceBlock;
 
 @end
 
@@ -107,7 +108,18 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
 - (void)handleUserDefaultsDidChange:(NSNotification *)notification {
     (void)notification;
-    [self setupStatusItem];
+
+    if (self.defaultsChangeDebounceBlock != nil) {
+        dispatch_block_cancel(self.defaultsChangeDebounceBlock);
+    }
+
+    dispatch_block_t debounceBlock = dispatch_block_create(0, ^{
+        [self setupStatusItem];
+    });
+    self.defaultsChangeDebounceBlock = debounceBlock;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(),
+                   debounceBlock);
 }
 
 - (void)handleHotKeyMainTriggered:(NSNotification *)notification {
@@ -195,13 +207,16 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 - (void)popUpStatusMenuFromHotKey {
     [self performOnMainThread:^{
         [self applyStatusItemPreference];
-        if (self.statusItem == nil) {
-            return;
-        }
 
-        [self rebuildMenuInternal];
-        NSPoint mouseLocation = [NSEvent mouseLocation];
-        [self.statusMenu popUpMenuPositioningItem:nil atLocation:mouseLocation inView:nil];
+        if (self.statusItem != nil) {
+            [self rebuildMenuInternal];
+            NSPoint mouseLocation = [NSEvent mouseLocation];
+            [self.statusMenu popUpMenuPositioningItem:nil atLocation:mouseLocation inView:nil];
+        } else {
+            NSMenu *fallbackMenu = [self buildStandaloneMenu];
+            NSPoint mouseLocation = [NSEvent mouseLocation];
+            [fallbackMenu popUpMenuPositioningItem:nil atLocation:mouseLocation inView:nil];
+        }
     }];
 }
 
@@ -306,12 +321,35 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
     self.statusItem.menu = self.statusMenu;
 }
 
+- (NSMenu *)buildStandaloneMenu {
+    NSMenu *menu = [self menuWithTitle:@"Revclip"];
+    [self appendClipHistorySectionToMenu:menu];
+    [menu addItem:[NSMenuItem separatorItem]];
+    [self appendSnippetSectionToMenu:menu];
+
+    BOOL addClearHistory = [self boolPreferenceForKey:kRCPrefAddClearHistoryMenuItemKey defaultValue:YES];
+    if (addClearHistory) {
+        [menu addItem:[NSMenuItem separatorItem]];
+
+        NSMenuItem *clearHistoryItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Clear History", nil)
+                                                                   action:@selector(clearHistoryMenuItemSelected:)
+                                                            keyEquivalent:@""];
+        clearHistoryItem.target = self;
+        [menu addItem:clearHistoryItem];
+    }
+
+    [menu addItem:[NSMenuItem separatorItem]];
+    [self appendApplicationSectionToMenu:menu];
+    return menu;
+}
+
 - (void)appendClipHistorySectionToMenu:(NSMenu *)menu {
     RCDatabaseManager *databaseManager = [RCDatabaseManager shared];
-    NSInteger clipCount = [databaseManager clipItemCount];
+    NSInteger maxHistorySize = [self integerPreferenceForKey:kRCPrefMaxHistorySizeKey defaultValue:30];
+    NSInteger limit = MAX(1, maxHistorySize);
     NSArray<NSDictionary *> *clipRows = @[];
-    if (clipCount > 0) {
-        clipRows = [databaseManager fetchClipItemsWithLimit:clipCount];
+    if ([databaseManager clipItemCount] > 0) {
+        clipRows = [databaseManager fetchClipItemsWithLimit:limit];
     }
 
     if (clipRows.count == 0) {
@@ -717,9 +755,10 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
         return resizedImage;
     }
 
-    typeImage.size = iconSize;
-    typeImage.template = YES;
-    return typeImage;
+    NSImage *iconCopy = [typeImage copy];
+    iconCopy.size = iconSize;
+    iconCopy.template = YES;
+    return iconCopy;
 }
 
 - (NSImage *)primaryTypeIconForType:(NSString *)primaryType {
@@ -823,23 +862,15 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
     @try {
         RCDatabaseManager *databaseManager = [RCDatabaseManager shared];
-        NSInteger clipCount = [databaseManager clipItemCount];
-        NSArray<NSDictionary *> *clipRows = @[];
-        if (clipCount > 0) {
-            clipRows = [databaseManager fetchClipItemsWithLimit:clipCount];
-        }
 
         if (![databaseManager deleteAllClipItems]) {
             return;
         }
 
-        for (NSDictionary *row in clipRows) {
-            RCClipItem *item = [[RCClipItem alloc] initWithDictionary:row];
-            [self removeFileAtPath:item.dataPath];
-            [self removeFileAtPath:item.thumbnailPath];
-        }
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            [self removeAllClipDataFilesFromDisk];
+        });
 
-        [self removeAllClipDataFilesFromDisk];
         [self rebuildMenu];
     } @finally {
         if (wasMonitoring) {
@@ -918,11 +949,23 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
     if (maxLength <= 3) {
         NSRange safeRange = [string rangeOfComposedCharacterSequencesForRange:NSMakeRange(0, (NSUInteger)maxLength)];
+        if (safeRange.length > (NSUInteger)maxLength) {
+            safeRange.length = MAX(1, (NSUInteger)maxLength - 1);
+            safeRange = [string rangeOfComposedCharacterSequencesForRange:safeRange];
+        }
         return [string substringWithRange:safeRange];
     }
 
     NSUInteger bodyLength = (NSUInteger)(maxLength - 3);
     NSRange safeRange = [string rangeOfComposedCharacterSequencesForRange:NSMakeRange(0, bodyLength)];
+    if (safeRange.length > bodyLength) {
+        if (bodyLength > 0) {
+            safeRange.length = bodyLength - 1;
+            safeRange = [string rangeOfComposedCharacterSequencesForRange:safeRange];
+        } else {
+            safeRange.length = 0;
+        }
+    }
     NSString *truncated = [string substringWithRange:safeRange];
     return [truncated stringByAppendingString:@"..."];
 }
