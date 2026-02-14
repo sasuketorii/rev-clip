@@ -24,7 +24,7 @@ extern NSString * const kRCSuppressAlertForLoginItem;              // Default: N
 // Menu
 extern NSString * const kRCPrefNumberOfItemsPlaceInlineKey;        // Default: 0
 extern NSString * const kRCPrefNumberOfItemsPlaceInsideFolderKey;  // Default: 10
-extern NSString * const kRCPrefMaxMenuItemTitleLengthKey;          // Default: 20
+extern NSString * const kRCPrefMaxMenuItemTitleLengthKey;          // Default: 40
 extern NSString * const kRCPrefMenuIconSizeKey;                    // Default: 16
 extern NSString * const kRCPrefShowIconInTheMenuKey;               // Default: YES
 extern NSString * const kRCMenuItemsAreMarkedWithNumbersKey;       // Default: YES

@@ -693,7 +693,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.revclip.RevclipTests;
 				SDKROOT = macosx;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Revclip.app/Contents/MacOS/Revclip";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Revpy.app/Contents/MacOS/Revpy";
 			};
 			name = Debug;
 		};
@@ -724,6 +724,7 @@
 					"-lsqlite3",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.revclip.Revclip;
+				PRODUCT_NAME = Revpy;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -859,7 +860,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.revclip.RevclipTests;
 				SDKROOT = macosx;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Revclip.app/Contents/MacOS/Revclip";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Revpy.app/Contents/MacOS/Revpy";
 			};
 			name = Release;
 		};
@@ -890,6 +891,7 @@
 					"-lsqlite3",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.revclip.Revclip;
+				PRODUCT_NAME = Revpy;
 				SDKROOT = macosx;
 			};
 			name = Release;

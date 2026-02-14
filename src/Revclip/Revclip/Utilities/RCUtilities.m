@@ -33,7 +33,7 @@
         kRCSuppressAlertForLoginItem: @NO,
         kRCPrefNumberOfItemsPlaceInlineKey: @0,
         kRCPrefNumberOfItemsPlaceInsideFolderKey: @10,
-        kRCPrefMaxMenuItemTitleLengthKey: @20,
+        kRCPrefMaxMenuItemTitleLengthKey: @40,
         kRCPrefMenuIconSizeKey: @16,
         kRCPrefShowIconInTheMenuKey: @YES,
         kRCMenuItemsAreMarkedWithNumbersKey: @YES,

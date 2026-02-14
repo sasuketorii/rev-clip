@@ -511,6 +511,9 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
                                                               action:@selector(selectSnippetMenuItem:)
                                                        keyEquivalent:@""];
         snippetItem.target = self;
+        if (snippetContent.length > 0) {
+            snippetItem.toolTip = [self truncatedString:snippetContent maxLength:200];
+        }
         snippetItem.representedObject = @{
             kRCSnippetMenuFolderIdentifierKey: folderIdentifier,
             kRCSnippetMenuSnippetIdentifierKey: snippetIdentifier,
@@ -713,7 +716,7 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
         title = [self fallbackTitleForPrimaryType:clipItem.primaryType];
     }
 
-    NSInteger maxLength = [self integerPreferenceForKey:kRCPrefMaxMenuItemTitleLengthKey defaultValue:20];
+    NSInteger maxLength = [self integerPreferenceForKey:kRCPrefMaxMenuItemTitleLengthKey defaultValue:40];
     return [self truncatedString:title maxLength:MAX(1, maxLength)];
 }
 

@@ -30,8 +30,8 @@ targets:
         CFBundleName: "Revpy"
         CFBundleDisplayName: "Revpy"
         CFBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)"
-        CFBundleVersion: "13"
-        CFBundleShortVersionString: "0.0.13"
+        CFBundleVersion: "14"
+        CFBundleShortVersionString: "0.0.14"
         CFBundleExecutable: "$(EXECUTABLE_NAME)"
         CFBundlePackageType: "APPL"
         CFBundleSignature: "????"
@@ -50,6 +50,7 @@ targets:
           - "Vendor/Sparkle/**"
     settings:
       base:
+        PRODUCT_NAME: Revpy
         PRODUCT_BUNDLE_IDENTIFIER: com.revclip.Revclip
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         ARCHS: "arm64 x86_64"
@@ -87,5 +88,5 @@ targets:
       - target: Revclip
     settings:
       base:
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Revclip.app/Contents/MacOS/Revclip"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Revpy.app/Contents/MacOS/Revpy"
         BUNDLE_LOADER: "$(TEST_HOST)"
