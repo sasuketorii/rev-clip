@@ -8,6 +8,14 @@
 #import "RCAccessibilityService.h"
 #import <ApplicationServices/ApplicationServices.h>
 
+@interface RCAccessibilityService ()
+
+- (void)showAccessibilityAlert;
+- (NSArray<NSURL *> *)accessibilitySettingsCandidateURLs;
+- (void)openAccessibilitySettingsWithFallback;
+
+@end
+
 @implementation RCAccessibilityService
 
 + (instancetype)shared {
@@ -35,6 +43,16 @@
     }
 
     [self requestAccessibilityPermission];
+    [self showAccessibilityAlert];
+}
+
+- (void)showAccessibilityAlert {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self showAccessibilityAlert];
+        });
+        return;
+    }
 
     NSAlert *alert = [[NSAlert alloc] init];
     alert.alertStyle = NSAlertStyleWarning;
@@ -48,14 +66,63 @@
         return;
     }
 
-    NSURL *settingsURL = nil;
-    if (@available(macOS 13, *)) {
-        settingsURL = [NSURL URLWithString:@"x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Accessibility"];
-    } else {
-        settingsURL = [NSURL URLWithString:@"x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"];
+    [self openAccessibilitySettingsWithFallback];
+}
+
+- (NSArray<NSURL *> *)accessibilitySettingsCandidateURLs {
+    NSMutableArray<NSURL *> *candidateURLs = [NSMutableArray array];
+
+    if (@available(macOS 13.0, *)) {
+        NSURL *modernURL = [NSURL URLWithString:@"x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Accessibility"];
+        if (modernURL != nil) {
+            [candidateURLs addObject:modernURL];
+        }
     }
-    if (settingsURL != nil) {
-        [[NSWorkspace sharedWorkspace] openURL:settingsURL];
+
+    NSURL *legacyAccessibilityURL = [NSURL URLWithString:@"x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"];
+    if (legacyAccessibilityURL != nil) {
+        [candidateURLs addObject:legacyAccessibilityURL];
+    }
+
+    NSURL *legacySecurityPaneURL = [NSURL URLWithString:@"x-apple.systempreferences:com.apple.preference.security"];
+    if (legacySecurityPaneURL != nil) {
+        [candidateURLs addObject:legacySecurityPaneURL];
+    }
+
+    return [candidateURLs copy];
+}
+
+- (void)openAccessibilitySettingsWithFallback {
+    NSWorkspace *workspace = [NSWorkspace sharedWorkspace];
+
+    for (NSURL *candidateURL in [self accessibilitySettingsCandidateURLs]) {
+        if ([workspace openURL:candidateURL]) {
+            return;
+        }
+    }
+
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSArray<NSString *> *settingsAppPaths = @[
+        @"/System/Applications/System Settings.app",
+        @"/System/Applications/System Preferences.app",
+    ];
+
+    for (NSString *appPath in settingsAppPaths) {
+        if (![fileManager fileExistsAtPath:appPath]) {
+            continue;
+        }
+        if ([workspace openURL:[NSURL fileURLWithPath:appPath]]) {
+            return;
+        }
+    }
+
+    if ([workspace launchApplication:@"System Settings"]) {
+        return;
+    }
+    if ([workspace launchApplication:@"System Preferences"]) {
+        return;
+    } else {
+        NSLog(@"[RCAccessibilityService] Failed to open Accessibility settings via URL and app fallbacks.");
     }
 }
 

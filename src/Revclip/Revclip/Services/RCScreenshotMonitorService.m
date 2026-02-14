@@ -21,11 +21,22 @@ static NSString * const kRCMetadataItemIsScreenCapture = @"kMDItemIsScreenCaptur
 static NSString * const kRCMetadataItemFSCreationDate = @"kMDItemFSCreationDate";
 static NSString * const kRCMetadataItemPath = @"kMDItemPath";
 static NSString * const kRCScreenshotClipDataFileExtension = @"rcclip";
+static NSString * const kRCScreenCaptureDefaultsDomain = @"com.apple.screencapture";
+static NSString * const kRCScreenCaptureLocationKey = @"location";
 
 @interface RCScreenshotMonitorService ()
 @property (nonatomic, strong, nullable) NSMetadataQuery *metadataQuery;
 @property (nonatomic, assign, getter=isMonitoring) BOOL monitoring;
 @property (nonatomic, strong, nullable) NSDate *monitoringStartDate;
+@property (nonatomic, strong) dispatch_queue_t screenshotImportQueue;
+
+- (NSArray<NSString *> *)extractProcessableScreenshotPathsFromMetadataItems:(NSArray<NSMetadataItem *> *)items
+                                                           monitoringStartDate:(nullable NSDate *)monitoringStartDate;
+- (void)enqueueScreenshotImportsForPaths:(NSArray<NSString *> *)filePaths;
+- (BOOL)shouldHandleCreationDate:(nullable NSDate *)creationDate monitoringStartDate:(nullable NSDate *)monitoringStartDate;
+- (BOOL)isSupportedScreenshotPath:(NSString *)filePath;
+- (NSString *)defaultDesktopDirectoryPath;
+- (NSString *)screenshotDirectoryPath;
 @end
 
 @implementation RCScreenshotMonitorService
@@ -39,7 +50,22 @@ static NSString * const kRCScreenshotClipDataFileExtension = @"rcclip";
     return sharedService;
 }
 
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _screenshotImportQueue = dispatch_queue_create("com.revclip.screenshot-import", DISPATCH_QUEUE_SERIAL);
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(handleUserDefaultsDidChange:)
+                                                     name:NSUserDefaultsDidChangeNotification
+                                                   object:[NSUserDefaults standardUserDefaults]];
+    }
+    return self;
+}
+
 - (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:NSUserDefaultsDidChangeNotification
+                                                  object:[NSUserDefaults standardUserDefaults]];
     [self stopMonitoring];
 }
 
@@ -63,7 +89,10 @@ static NSString * const kRCScreenshotClipDataFileExtension = @"rcclip";
 
     NSMetadataQuery *query = [[NSMetadataQuery alloc] init];
     query.predicate = [NSPredicate predicateWithFormat:@"%K == 1", kRCMetadataItemIsScreenCapture];
-    query.searchScopes = @[NSMetadataQueryUserHomeScope];
+    NSString *screenshotDirectoryPath = [self screenshotDirectoryPath];
+    query.searchScopes = screenshotDirectoryPath.length > 0
+        ? @[screenshotDirectoryPath]
+        : @[[self defaultDesktopDirectoryPath]];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(handleMetadataQueryUpdate:)
@@ -117,6 +146,22 @@ static NSString * const kRCScreenshotClipDataFileExtension = @"rcclip";
 
 #pragma mark - Private
 
+- (void)handleUserDefaultsDidChange:(NSNotification *)notification {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleUserDefaultsDidChange:notification];
+        });
+        return;
+    }
+
+    BOOL shouldObserveScreenshot = [[NSUserDefaults standardUserDefaults] boolForKey:kRCBetaObserveScreenshot];
+    if (shouldObserveScreenshot) {
+        [self startMonitoring];
+    } else {
+        [self stopMonitoring];
+    }
+}
+
 - (void)handleMetadataQueryUpdate:(NSNotification *)notification {
     if (![NSThread isMainThread]) {
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -137,7 +182,10 @@ static NSString * const kRCScreenshotClipDataFileExtension = @"rcclip";
             return;
         }
 
-        [self processMetadataItems:addedItems];
+        NSDate *monitoringStartDate = self.monitoringStartDate;
+        NSArray<NSString *> *filePaths = [self extractProcessableScreenshotPathsFromMetadataItems:addedItems
+                                                                                 monitoringStartDate:monitoringStartDate];
+        [self enqueueScreenshotImportsForPaths:filePaths];
     } @finally {
         [self.metadataQuery enableUpdates];
     }
@@ -168,57 +216,114 @@ static NSString * const kRCScreenshotClipDataFileExtension = @"rcclip";
             [items addObject:(NSMetadataItem *)itemObject];
         }
 
-        [self processMetadataItems:items];
+        NSDate *monitoringStartDate = self.monitoringStartDate;
+        NSArray<NSString *> *filePaths = [self extractProcessableScreenshotPathsFromMetadataItems:items
+                                                                                 monitoringStartDate:monitoringStartDate];
+        [self enqueueScreenshotImportsForPaths:filePaths];
     } @finally {
         [self.metadataQuery enableUpdates];
     }
 }
 
-- (void)processMetadataItems:(NSArray<NSMetadataItem *> *)items {
+- (NSArray<NSString *> *)extractProcessableScreenshotPathsFromMetadataItems:(NSArray<NSMetadataItem *> *)items
+                                                           monitoringStartDate:(nullable NSDate *)monitoringStartDate {
+    NSMutableArray<NSString *> *filePaths = [NSMutableArray arrayWithCapacity:items.count];
+
     for (id itemObject in items) {
         if (![itemObject isKindOfClass:[NSMetadataItem class]]) {
             continue;
         }
 
-        [self processScreenshotItem:(NSMetadataItem *)itemObject];
+        NSMetadataItem *item = (NSMetadataItem *)itemObject;
+        NSDate *creationDate = [item valueForAttribute:kRCMetadataItemFSCreationDate];
+        if (![self shouldHandleCreationDate:creationDate monitoringStartDate:monitoringStartDate]) {
+            continue;
+        }
+
+        NSString *filePath = [item valueForAttribute:kRCMetadataItemPath];
+        if (![filePath isKindOfClass:[NSString class]] || filePath.length == 0) {
+            continue;
+        }
+        if (![self isSupportedScreenshotPath:filePath]) {
+            continue;
+        }
+        [filePaths addObject:filePath];
     }
+
+    return [filePaths copy];
 }
 
-- (void)processScreenshotItem:(NSMetadataItem *)item {
-    if (![self shouldHandleMetadataItem:item]) {
+- (void)enqueueScreenshotImportsForPaths:(NSArray<NSString *> *)filePaths {
+    if (filePaths.count == 0) {
         return;
     }
 
-    NSString *filePath = [item valueForAttribute:kRCMetadataItemPath];
-    if (![filePath isKindOfClass:[NSString class]] || filePath.length == 0) {
-        return;
-    }
-
-    if (![self isSupportedScreenshotPath:filePath]) {
-        return;
-    }
-
-    [self saveScreenshotToClipHistory:filePath];
+    dispatch_async(self.screenshotImportQueue, ^{
+        for (NSString *filePath in filePaths) {
+            [self saveScreenshotToClipHistory:filePath];
+        }
+    });
 }
 
-- (BOOL)shouldHandleMetadataItem:(NSMetadataItem *)item {
-    NSDate *creationDate = [item valueForAttribute:kRCMetadataItemFSCreationDate];
+- (BOOL)shouldHandleCreationDate:(nullable NSDate *)creationDate monitoringStartDate:(nullable NSDate *)monitoringStartDate {
     if (![creationDate isKindOfClass:[NSDate class]]) {
         return NO;
     }
 
-    if (self.monitoringStartDate == nil) {
+    if (![monitoringStartDate isKindOfClass:[NSDate class]]) {
         return NO;
     }
 
-    return [creationDate compare:self.monitoringStartDate] == NSOrderedDescending;
+    return [creationDate compare:monitoringStartDate] == NSOrderedDescending;
 }
 
 - (BOOL)isSupportedScreenshotPath:(NSString *)filePath {
     NSString *fileExtension = filePath.pathExtension.lowercaseString;
     return [fileExtension isEqualToString:@"png"]
+        || [fileExtension isEqualToString:@"jpg"]
+        || [fileExtension isEqualToString:@"jpeg"]
+        || [fileExtension isEqualToString:@"heic"]
+        || [fileExtension isEqualToString:@"pdf"]
         || [fileExtension isEqualToString:@"tiff"]
         || [fileExtension isEqualToString:@"tif"];
+}
+
+- (NSString *)defaultDesktopDirectoryPath {
+    NSArray<NSString *> *desktopPaths = NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES);
+    NSString *desktopPath = desktopPaths.firstObject;
+    if (![desktopPath isKindOfClass:[NSString class]] || desktopPath.length == 0) {
+        desktopPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Desktop"];
+    }
+
+    return [desktopPath stringByStandardizingPath];
+}
+
+- (NSString *)screenshotDirectoryPath {
+    NSString *desktopPath = [self defaultDesktopDirectoryPath];
+
+    CFPropertyListRef locationValue = CFPreferencesCopyAppValue((__bridge CFStringRef)kRCScreenCaptureLocationKey,
+                                                                (__bridge CFStringRef)kRCScreenCaptureDefaultsDomain);
+    if (locationValue == NULL) {
+        return desktopPath;
+    }
+
+    NSString *configuredPath = @"";
+    if (CFGetTypeID(locationValue) == CFStringGetTypeID()) {
+        configuredPath = [(__bridge NSString *)locationValue copy];
+    }
+    CFRelease(locationValue);
+
+    configuredPath = [configuredPath stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (configuredPath.length == 0) {
+        return desktopPath;
+    }
+
+    NSString *expandedPath = [configuredPath stringByExpandingTildeInPath];
+    if (![expandedPath isAbsolutePath]) {
+        expandedPath = [NSHomeDirectory() stringByAppendingPathComponent:expandedPath];
+    }
+
+    return [expandedPath stringByStandardizingPath];
 }
 
 /// Saves the screenshot at the given path directly into clip history

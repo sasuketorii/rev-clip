@@ -36,7 +36,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)title;
 
 // NSPasteboardへの書き戻し
-- (void)writeToPasteboard:(NSPasteboard *)pasteboard;
+- (BOOL)writeToPasteboard:(NSPasteboard *)pasteboard;
 
 // ファイル保存・読み込み
 - (BOOL)saveToPath:(NSString *)path;

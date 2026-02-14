@@ -20,25 +20,48 @@
     return sharedService;
 }
 
+- (RCLoginItemStatus)loginItemStatus {
+    SMAppServiceStatus status = [SMAppService mainAppService].status;
+    switch (status) {
+        case SMAppServiceStatusEnabled:
+            return RCLoginItemStatusEnabled;
+        case SMAppServiceStatusRequiresApproval:
+            return RCLoginItemStatusRequiresApproval;
+        case SMAppServiceStatusNotFound:
+            return RCLoginItemStatusNotFound;
+        case SMAppServiceStatusNotRegistered:
+        default:
+            return RCLoginItemStatusNotRegistered;
+    }
+}
+
 - (BOOL)isLoginItemEnabled {
-    return ([SMAppService mainAppService].status == SMAppServiceStatusEnabled);
+    return (self.loginItemStatus == RCLoginItemStatusEnabled);
 }
 
 - (BOOL)setLoginItemEnabled:(BOOL)enabled {
+    return [self setLoginItemEnabled:enabled error:nil];
+}
+
+- (BOOL)setLoginItemEnabled:(BOOL)enabled error:(NSError * _Nullable * _Nullable)error {
     SMAppService *service = [SMAppService mainAppService];
-    NSError *error = nil;
+    NSError *operationError = nil;
     BOOL success = NO;
 
     if (enabled) {
-        success = [service registerAndReturnError:&error];
+        success = [service registerAndReturnError:&operationError];
     } else {
-        success = [service unregisterAndReturnError:&error];
+        success = [service unregisterAndReturnError:&operationError];
+    }
+
+    if (error != NULL) {
+        *error = operationError;
     }
 
     if (!success) {
         NSLog(@"[RCLoginItemService] Failed to %@ login item: %@",
               enabled ? @"enable" : @"disable",
-              error.localizedDescription ?: @"Unknown error");
+              operationError.localizedDescription ?: @"Unknown error");
     }
 
     return success;

@@ -9,6 +9,7 @@
 
 #import "RCConstants.h"
 #import "RCDatabaseManager.h"
+#import "FMDB.h"
 #import "RCHotKeyRecorderView.h"
 #import "RCHotKeyService.h"
 #import "RCMenuManager.h"
@@ -29,6 +30,37 @@ static CGFloat const kRCSnippetEditorBottomBarHeight = 44.0;
 static CGFloat const kRCSnippetEditorLeftPaneWidth = 220.0;
 
 static NSString * const kRCSnippetImportExportExtensionRevclip = @"revclipsnippets";
+static UInt32 const kRCSnippetFolderHotKeyAllowedModifiers = (cmdKey | shiftKey | controlKey | optionKey);
+
+static BOOL RCParseUInt32FromObjectWithUpperBound(id object, UInt32 upperBound, UInt32 *outValue) {
+    if (outValue == NULL) {
+        return NO;
+    }
+
+    unsigned long long rawValue = 0;
+    if ([object isKindOfClass:[NSNumber class]]) {
+        rawValue = [(NSNumber *)object unsignedLongLongValue];
+    } else if ([object isKindOfClass:[NSString class]]) {
+        NSString *stringValue = [(NSString *)object stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (stringValue.length == 0) {
+            return NO;
+        }
+
+        NSScanner *scanner = [NSScanner scannerWithString:stringValue];
+        if (![scanner scanUnsignedLongLong:&rawValue] || !scanner.isAtEnd) {
+            return NO;
+        }
+    } else {
+        return NO;
+    }
+
+    if (rawValue > upperBound) {
+        return NO;
+    }
+
+    *outValue = (UInt32)rawValue;
+    return YES;
+}
 
 static UTType *RCSnippetImportExportContentType(void) {
     UTType *contentType = [UTType typeWithFilenameExtension:kRCSnippetImportExportExtensionRevclip];
@@ -81,6 +113,10 @@ static UTType *RCSnippetImportExportContentType(void) {
 @property (nonatomic, assign) BOOL uiBuilt;
 @property (nonatomic, assign) BOOL centeredOnFirstShow;
 @property (nonatomic, assign) BOOL updatingEditor;
+
+- (NSArray<NSDictionary *> *)fetchAllSnippetRows;
+- (NSDictionary<NSString *, NSArray<NSDictionary *> *> *)snippetRowsGroupedByFolderIdentifier:(NSArray<NSDictionary *> *)snippetRows;
+- (void)persistHotKeyCombo:(RCKeyCombo)keyCombo forFolderIdentifier:(NSString *)folderIdentifier;
 
 @end
 
@@ -408,6 +444,9 @@ static UTType *RCSnippetImportExportContentType(void) {
 - (void)reloadOutlineSelectingFolderIdentifier:(NSString *)folderIdentifier snippetIdentifier:(NSString *)snippetIdentifier {
     [self.folderNodes removeAllObjects];
 
+    NSArray<NSDictionary *> *allSnippetRows = [self fetchAllSnippetRows];
+    NSDictionary<NSString *, NSArray<NSDictionary *> *> *snippetRowsByFolderIdentifier = [self snippetRowsGroupedByFolderIdentifier:allSnippetRows];
+
     NSArray<NSDictionary *> *folders = [[RCDatabaseManager shared] fetchAllSnippetFolders];
     for (NSDictionary *folder in folders) {
         RCSnippetFolderNode *folderNode = [[RCSnippetFolderNode alloc] init];
@@ -418,8 +457,8 @@ static UTType *RCSnippetImportExportContentType(void) {
                                                            key:@"identifier"
                                                   defaultValue:@""];
         if (identifier.length > 0) {
-            NSArray<NSDictionary *> *snippets = [[RCDatabaseManager shared] fetchSnippetsForFolder:identifier];
-            for (NSDictionary *snippet in snippets) {
+            NSArray<NSDictionary *> *snippetRows = snippetRowsByFolderIdentifier[identifier];
+            for (NSDictionary *snippet in snippetRows) {
                 RCSnippetNode *node = [[RCSnippetNode alloc] init];
                 node.parentFolder = folderNode;
                 node.snippetDictionary = [snippet mutableCopy];
@@ -446,6 +485,63 @@ static UTType *RCSnippetImportExportContentType(void) {
 
     [self selectItem:itemToSelect];
     [self refreshEditorForSelection];
+}
+
+- (NSArray<NSDictionary *> *)fetchAllSnippetRows {
+    RCDatabaseManager *databaseManager = [RCDatabaseManager shared];
+    NSMutableArray<NSDictionary *> *rows = [NSMutableArray array];
+
+    [databaseManager performTransaction:^BOOL(FMDatabase *db, BOOL *rollback) {
+        (void)rollback;
+
+        FMResultSet *resultSet = [db executeQuery:@"SELECT id, identifier, folder_id, snippet_index, enabled, title, content FROM snippets ORDER BY folder_id ASC, snippet_index ASC, id ASC"];
+        if (resultSet == nil) {
+            NSLog(@"[Revclip] Failed to fetch snippets in a single query for snippet editor reload.");
+            return YES;
+        }
+
+        while ([resultSet next]) {
+            [rows addObject:@{
+                @"id": @([resultSet longLongIntForColumn:@"id"]),
+                @"identifier": [resultSet stringForColumn:@"identifier"] ?: @"",
+                @"folder_id": [resultSet stringForColumn:@"folder_id"] ?: @"",
+                @"snippet_index": @([resultSet longLongIntForColumn:@"snippet_index"]),
+                @"enabled": @([resultSet boolForColumn:@"enabled"]),
+                @"title": [resultSet stringForColumn:@"title"] ?: @"",
+                @"content": [resultSet stringForColumn:@"content"] ?: @"",
+            }];
+        }
+
+        [resultSet close];
+        return YES;
+    }];
+
+    return [rows copy];
+}
+
+- (NSDictionary<NSString *, NSArray<NSDictionary *> *> *)snippetRowsGroupedByFolderIdentifier:(NSArray<NSDictionary *> *)snippetRows {
+    NSMutableDictionary<NSString *, NSMutableArray<NSDictionary *> *> *groupedRows = [NSMutableDictionary dictionary];
+
+    for (NSDictionary *row in snippetRows) {
+        NSString *folderIdentifier = [self stringValueFromDictionary:row key:@"folder_id" defaultValue:@""];
+        if (folderIdentifier.length == 0) {
+            continue;
+        }
+
+        NSMutableArray<NSDictionary *> *rowsForFolder = groupedRows[folderIdentifier];
+        if (rowsForFolder == nil) {
+            rowsForFolder = [NSMutableArray array];
+            groupedRows[folderIdentifier] = rowsForFolder;
+        }
+
+        [rowsForFolder addObject:row];
+    }
+
+    NSMutableDictionary<NSString *, NSArray<NSDictionary *> *> *result = [NSMutableDictionary dictionaryWithCapacity:groupedRows.count];
+    for (NSString *folderIdentifier in groupedRows) {
+        result[folderIdentifier] = [groupedRows[folderIdentifier] copy];
+    }
+    return [result copy];
 }
 
 - (void)expandAllFolders {
@@ -572,14 +668,20 @@ static UTType *RCSnippetImportExportContentType(void) {
     if ([selectedItem isKindOfClass:[RCSnippetFolderNode class]]) {
         RCSnippetFolderNode *folderNode = (RCSnippetFolderNode *)selectedItem;
         NSString *title = [self normalizedTitleFromField:self.titleField fallback:NSLocalizedString(@"Untitled Folder", nil)];
+        NSString *folderIdentifier = [self stringValueFromDictionary:folderNode.folderDictionary
+                                                                 key:@"identifier"
+                                                        defaultValue:@""];
 
-        folderNode.folderDictionary[@"title"] = title;
-        BOOL updated = [[RCDatabaseManager shared] updateSnippetFolder:folderNode.folderDictionary];
+        NSMutableDictionary *updatedFolderDictionary = [folderNode.folderDictionary mutableCopy];
+        updatedFolderDictionary[@"title"] = title;
+        BOOL updated = [[RCDatabaseManager shared] updateSnippetFolder:updatedFolderDictionary];
         if (updated) {
+            folderNode.folderDictionary = updatedFolderDictionary;
             [self.outlineView reloadItem:folderNode reloadChildren:NO];
             [[RCMenuManager shared] rebuildMenu];
             [self flashSaveSuccess];
         } else {
+            [self reloadOutlineSelectingFolderIdentifier:folderIdentifier snippetIdentifier:nil];
             NSBeep();
         }
         return updated;
@@ -588,16 +690,25 @@ static UTType *RCSnippetImportExportContentType(void) {
     RCSnippetNode *snippetNode = (RCSnippetNode *)selectedItem;
     NSString *title = [self normalizedTitleFromField:self.titleField fallback:NSLocalizedString(@"Untitled Snippet", nil)];
     NSString *content = self.contentTextView.string ?: @"";
+    NSString *folderIdentifier = [self stringValueFromDictionary:snippetNode.parentFolder.folderDictionary
+                                                             key:@"identifier"
+                                                    defaultValue:@""];
+    NSString *snippetIdentifier = [self stringValueFromDictionary:snippetNode.snippetDictionary
+                                                              key:@"identifier"
+                                                     defaultValue:@""];
 
-    snippetNode.snippetDictionary[@"title"] = title;
-    snippetNode.snippetDictionary[@"content"] = content;
+    NSMutableDictionary *updatedSnippetDictionary = [snippetNode.snippetDictionary mutableCopy];
+    updatedSnippetDictionary[@"title"] = title;
+    updatedSnippetDictionary[@"content"] = content;
 
-    BOOL updated = [[RCDatabaseManager shared] updateSnippet:snippetNode.snippetDictionary];
+    BOOL updated = [[RCDatabaseManager shared] updateSnippet:updatedSnippetDictionary];
     if (updated) {
+        snippetNode.snippetDictionary = updatedSnippetDictionary;
         [self.outlineView reloadItem:snippetNode reloadChildren:NO];
         [[RCMenuManager shared] rebuildMenu];
         [self flashSaveSuccess];
     } else {
+        [self reloadOutlineSelectingFolderIdentifier:folderIdentifier snippetIdentifier:snippetIdentifier];
         NSBeep();
     }
     return updated;
@@ -708,7 +819,10 @@ static UTType *RCSnippetImportExportContentType(void) {
 
             [[RCHotKeyService shared] unregisterSnippetFolderHotKey:identifier];
             [self reloadOutlineSelectingFolderIdentifier:nil snippetIdentifier:nil];
-            [self persistFolderOrderFromCurrentTree];
+            if (![self persistFolderOrderFromCurrentTree]) {
+                NSLog(@"[Revclip] Failed to persist folder order after folder deletion. folderIdentifier=%@",
+                      identifier);
+            }
             [[RCMenuManager shared] rebuildMenu];
         };
     } else if ([selectedItem isKindOfClass:[RCSnippetNode class]]) {
@@ -739,7 +853,10 @@ static UTType *RCSnippetImportExportContentType(void) {
             [self reloadOutlineSelectingFolderIdentifier:folderIdentifier snippetIdentifier:nil];
             RCSnippetFolderNode *folderNode = [self folderNodeForIdentifier:folderIdentifier];
             if (folderNode != nil) {
-                [self persistSnippetOrderForFolder:folderNode];
+                if (![self persistSnippetOrderForFolder:folderNode]) {
+                    NSLog(@"[Revclip] Failed to persist snippet order after snippet deletion. folderIdentifier=%@",
+                          folderIdentifier);
+                }
             }
             [[RCMenuManager shared] rebuildMenu];
         };
@@ -1228,8 +1345,6 @@ static UTType *RCSnippetImportExportContentType(void) {
 #pragma mark - HotKey Recorder Delegate
 
 - (void)hotKeyRecorderView:(RCHotKeyRecorderView *)recorderView didRecordKeyCombo:(RCKeyCombo)keyCombo {
-    (void)recorderView;
-
     if (self.updatingEditor) {
         return;
     }
@@ -1247,7 +1362,33 @@ static UTType *RCSnippetImportExportContentType(void) {
         return;
     }
 
-    [[RCHotKeyService shared] registerSnippetFolderHotKey:keyCombo forFolderIdentifier:folderIdentifier];
+    BOOL folderEnabled = [self boolValueFromDictionary:folderNode.folderDictionary key:@"enabled" defaultValue:YES];
+    if (!folderEnabled) {
+        [self persistHotKeyCombo:keyCombo forFolderIdentifier:folderIdentifier];
+        return;
+    }
+
+    RCKeyCombo previousKeyCombo = [self storedHotKeyComboForFolderIdentifier:folderIdentifier];
+    BOOL registered = [[RCHotKeyService shared] registerSnippetFolderHotKey:keyCombo
+                                                         forFolderIdentifier:folderIdentifier];
+    if (registered) {
+        return;
+    }
+
+    self.updatingEditor = YES;
+    recorderView.keyCombo = previousKeyCombo;
+    self.updatingEditor = NO;
+
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.alertStyle = NSAlertStyleWarning;
+    alert.messageText = NSLocalizedString(@"Failed to register shortcut. The key combination may conflict with another shortcut.", nil);
+    [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
+
+    if (self.window != nil) {
+        [alert beginSheetModalForWindow:self.window completionHandler:nil];
+    } else {
+        [alert runModal];
+    }
 }
 
 - (void)hotKeyRecorderViewDidClearKeyCombo:(RCHotKeyRecorderView *)recorderView {
@@ -1601,6 +1742,35 @@ static UTType *RCSnippetImportExportContentType(void) {
     return YES;
 }
 
+- (void)persistHotKeyCombo:(RCKeyCombo)keyCombo forFolderIdentifier:(NSString *)folderIdentifier {
+    if (folderIdentifier.length == 0) {
+        return;
+    }
+
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSMutableDictionary<NSString *, NSDictionary *> *mutableCombos = [NSMutableDictionary dictionary];
+    id rawCombos = [defaults objectForKey:kRCFolderKeyCombos];
+    if ([rawCombos isKindOfClass:[NSDictionary class]]) {
+        [mutableCombos addEntriesFromDictionary:(NSDictionary<NSString *, NSDictionary *> *)rawCombos];
+    }
+
+    if (RCIsValidKeyCombo(keyCombo)) {
+        mutableCombos[folderIdentifier] = @{
+            @"keyCode": @(keyCombo.keyCode),
+            @"modifiers": @(keyCombo.modifiers),
+        };
+    } else {
+        [mutableCombos removeObjectForKey:folderIdentifier];
+    }
+
+    if (mutableCombos.count == 0) {
+        [defaults removeObjectForKey:kRCFolderKeyCombos];
+        return;
+    }
+
+    [defaults setObject:[mutableCombos copy] forKey:kRCFolderKeyCombos];
+}
+
 - (RCKeyCombo)storedHotKeyComboForFolderIdentifier:(NSString *)folderIdentifier {
     if (folderIdentifier.length == 0) {
         return RCInvalidKeyCombo();
@@ -1620,12 +1790,21 @@ static UTType *RCSnippetImportExportContentType(void) {
     NSDictionary *comboDictionary = (NSDictionary *)comboObject;
     id keyCodeObject = comboDictionary[@"keyCode"];
     id modifiersObject = comboDictionary[@"modifiers"];
-    if (![keyCodeObject respondsToSelector:@selector(unsignedIntValue)]
-        || ![modifiersObject respondsToSelector:@selector(unsignedIntValue)]) {
+    UInt32 keyCode = 0;
+    UInt32 modifiers = 0;
+
+    BOOL hasValidKeyCode = RCParseUInt32FromObjectWithUpperBound(keyCodeObject, UINT16_MAX, &keyCode);
+    BOOL hasValidModifiers = RCParseUInt32FromObjectWithUpperBound(modifiersObject, UINT32_MAX, &modifiers);
+
+    if (!hasValidKeyCode || !hasValidModifiers) {
         return RCInvalidKeyCombo();
     }
 
-    return RCMakeKeyCombo([keyCodeObject unsignedIntValue], [modifiersObject unsignedIntValue]);
+    if ((modifiers & ~kRCSnippetFolderHotKeyAllowedModifiers) != 0 || modifiers == 0) {
+        return RCInvalidKeyCombo();
+    }
+
+    return RCMakeKeyCombo(keyCode, modifiers);
 }
 
 - (NSString *)normalizedTitleFromField:(NSTextField *)field fallback:(NSString *)fallback {

@@ -25,11 +25,23 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
 @implementation RCUpdatesPreferencesViewController
 
 - (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:RCUpdateServiceDidFailNotification object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:RCUpdateServiceSparkleUnavailableNotification object:nil];
     [self cancelCheckCompletionTimer];
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+
+    NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
+    [notificationCenter addObserver:self
+                           selector:@selector(handleUpdateServiceFailureNotification:)
+                               name:RCUpdateServiceDidFailNotification
+                             object:nil];
+    [notificationCenter addObserver:self
+                           selector:@selector(handleUpdateServiceFailureNotification:)
+                               name:RCUpdateServiceSparkleUnavailableNotification
+                             object:nil];
 
     [self loadUpdateSettings];
     [self updateVersionInfo];
@@ -161,6 +173,32 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
 
     self.checkCompletionTimer = timer;
     dispatch_resume(timer);
+}
+
+- (void)handleUpdateServiceFailureNotification:(NSNotification *)notification {
+    id errorObject = notification.userInfo[RCUpdateServiceErrorUserInfoKey];
+    id reasonObject = notification.userInfo[RCUpdateServiceFailureReasonUserInfoKey];
+    NSString *errorDescription = nil;
+    if ([errorObject isKindOfClass:[NSError class]]) {
+        errorDescription = ((NSError *)errorObject).localizedDescription;
+    }
+    NSString *failureReason = [reasonObject isKindOfClass:NSString.class] ? (NSString *)reasonObject : @"";
+    NSLog(@"[RCUpdatesPreferencesViewController] Update service failure: %@ (reason: %@)",
+          errorDescription.length > 0 ? errorDescription : @"Unknown error",
+          failureReason.length > 0 ? failureReason : @"No reason");
+
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.alertStyle = NSAlertStyleWarning;
+    alert.messageText = NSLocalizedString(@"アップデートの確認に失敗しました", nil);
+    alert.informativeText = NSLocalizedString(@"アップデート機能の初期化に失敗しました。しばらくしてからもう一度お試しください。", nil);
+    [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
+
+    NSWindow *window = self.view.window;
+    if (window != nil) {
+        [alert beginSheetModalForWindow:window completionHandler:nil];
+    } else {
+        [alert runModal];
+    }
 }
 
 @end

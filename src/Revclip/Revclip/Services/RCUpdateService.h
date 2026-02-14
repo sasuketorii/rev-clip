@@ -9,6 +9,12 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+extern NSNotificationName const RCUpdateServiceDidFailNotification;
+extern NSNotificationName const RCUpdateServiceSparkleUnavailableNotification;
+
+extern NSString * const RCUpdateServiceErrorUserInfoKey;
+extern NSString * const RCUpdateServiceFailureReasonUserInfoKey;
+
 @interface RCUpdateService : NSObject
 
 + (instancetype)shared;
@@ -27,6 +33,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// アップデート間隔（秒）
 @property (nonatomic, assign) NSTimeInterval updateCheckInterval;
+
+/// 直近のアップデート関連エラー
+@property (nonatomic, strong, nullable, readonly) NSError *lastError;
 
 @end
 

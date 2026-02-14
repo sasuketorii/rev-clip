@@ -108,11 +108,28 @@ static BOOL RCBoolValueForKeys(NSDictionary *dictionary, NSArray<NSString *> *ke
         return NO;
     }
     RCClipItem *other = (RCClipItem *)object;
-    return self.itemId == other.itemId;
+    BOOL selfPersisted = (self.itemId > 0);
+    BOOL otherPersisted = (other.itemId > 0);
+
+    if (selfPersisted || otherPersisted) {
+        return selfPersisted && otherPersisted && self.itemId == other.itemId;
+    }
+
+    if (self.dataHash.length == 0 || other.dataHash.length == 0) {
+        return NO;
+    }
+
+    return [self.dataHash isEqualToString:other.dataHash];
 }
 
 - (NSUInteger)hash {
-    return (NSUInteger)self.itemId;
+    if (self.itemId > 0) {
+        return (NSUInteger)self.itemId;
+    }
+    if (self.dataHash.length > 0) {
+        return self.dataHash.hash;
+    }
+    return [super hash];
 }
 
 - (NSDictionary *)toDictionary {

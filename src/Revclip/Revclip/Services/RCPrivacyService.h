@@ -29,7 +29,7 @@ typedef NS_ENUM(NSInteger, RCClipboardAccessState) {
 // クリップボードアクセスが可能かチェック
 - (BOOL)canAccessClipboard;
 
-// macOS 16+ のプライバシーAPIが利用可能か
+// macOS 15.4+ のプライバシーAPIが利用可能か
 - (BOOL)isClipboardPrivacyAPIAvailable;
 
 // クリップボードの内容パターンを検出（読み取りなし）

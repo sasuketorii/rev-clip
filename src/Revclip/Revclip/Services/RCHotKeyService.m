@@ -19,6 +19,12 @@ NSString * const RCHotKeySnippetTriggeredNotification = @"RCHotKeySnippetTrigger
 NSString * const RCHotKeyClearHistoryTriggeredNotification = @"RCHotKeyClearHistoryTriggeredNotification";
 NSString * const RCHotKeySnippetFolderTriggeredNotification = @"RCHotKeySnippetFolderTriggeredNotification";
 NSString * const RCHotKeyFolderIdentifierUserInfoKey = @"folderIdentifier";
+NSString * const RCHotKeyRegistrationDidFailNotification = @"RCHotKeyRegistrationDidFailNotification";
+NSString * const RCHotKeyRegistrationFailureIdentifierUserInfoKey = @"identifier";
+NSString * const RCHotKeyRegistrationFailureKeyCodeUserInfoKey = @"keyCode";
+NSString * const RCHotKeyRegistrationFailureModifiersUserInfoKey = @"modifiers";
+NSString * const RCHotKeyRegistrationFailureStatusUserInfoKey = @"status";
+NSString * const RCHotKeyRegistrationFailureFolderIdentifierUserInfoKey = @"folderIdentifier";
 
 static OSType const kRCHotKeySignature = 'RCHK';
 
@@ -66,6 +72,24 @@ static BOOL RCReadUInt32FromObject(id object, UInt32 *outValue) {
     return NO;
 }
 
+static BOOL RCIsExplicitlyUnsetKeyComboObject(id object) {
+    if (![object isKindOfClass:[NSDictionary class]]) {
+        return NO;
+    }
+
+    NSDictionary *dictionary = (NSDictionary *)object;
+    UInt32 keyCode = 0;
+    UInt32 modifiers = 0;
+    if (!RCReadUInt32FromObject(dictionary[@"keyCode"], &keyCode)) {
+        return NO;
+    }
+    if (!RCReadUInt32FromObject(dictionary[@"modifiers"], &modifiers)) {
+        return NO;
+    }
+
+    return RCIsUnsetKeyCombo(RCMakeKeyCombo(keyCode, modifiers));
+}
+
 static RCKeyCombo RCKeyComboFromDictionaryObject(id object) {
     if (![object isKindOfClass:[NSDictionary class]]) {
         return RCInvalidKeyCombo();
@@ -81,7 +105,16 @@ static RCKeyCombo RCKeyComboFromDictionaryObject(id object) {
         return RCInvalidKeyCombo();
     }
 
-    return RCMakeKeyCombo(keyCode, modifiers);
+    RCKeyCombo combo = RCMakeKeyCombo(keyCode, modifiers);
+    if (!RCIsValidKeyCombo(combo)) {
+        return RCInvalidKeyCombo();
+    }
+
+    return combo;
+}
+
+static NSString *RCStringFromKeyCombo(RCKeyCombo combo) {
+    return [NSString stringWithFormat:@"%u:%u", (unsigned int)combo.keyCode, (unsigned int)combo.modifiers];
 }
 
 static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef event, void *userData);
@@ -98,11 +131,11 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
 }
 
 - (void)installHotKeyEventHandlerIfNeeded;
-- (void)registerHotKeyWithCombo:(RCKeyCombo)combo
+- (BOOL)registerHotKeyWithCombo:(RCKeyCombo)combo
                      identifier:(UInt32)identifier
                        storeRef:(EventHotKeyRef *)hotKeyRef;
 - (void)unregisterHotKeyRef:(EventHotKeyRef *)hotKeyRef;
-- (void)registerSnippetFolderHotKeyWithoutPersisting:(RCKeyCombo)combo
+- (BOOL)registerSnippetFolderHotKeyWithoutPersisting:(RCKeyCombo)combo
                                   forFolderIdentifier:(NSString *)identifier;
 - (void)unregisterSnippetFolderHotKeyWithoutPersisting:(NSString *)identifier;
 - (void)unregisterAllSnippetFolderHotKeys;
@@ -110,6 +143,16 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
 - (NSDictionary<NSString *, NSDictionary *> *)folderHotKeyCombosFromDefaults;
 - (void)persistSnippetFolderHotKeyCombo:(RCKeyCombo)combo forFolderIdentifier:(NSString *)identifier;
 - (void)removePersistedSnippetFolderHotKeyForIdentifier:(NSString *)identifier;
+- (void)postRegistrationFailureNotificationWithIdentifier:(UInt32)identifier
+                                                     combo:(RCKeyCombo)combo
+                                                    status:(OSStatus)status
+                                          folderIdentifier:(nullable NSString *)folderIdentifier;
+- (BOOL)isDuplicateHotKeyCombo:(RCKeyCombo)combo
+                        context:(NSString *)context
+                       registry:(NSDictionary<NSString *, NSString *> *)registry;
+- (void)recordHotKeyCombo:(RCKeyCombo)combo
+                  context:(NSString *)context
+                 registry:(NSMutableDictionary<NSString *, NSString *> *)registry;
 - (void)postNotificationForHotKeyIdentifier:(UInt32)identifier;
 - (void)performOnMainThreadSync:(dispatch_block_t)block;
 
@@ -152,47 +195,66 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
 
 #pragma mark - Public
 
-- (void)registerMainHotKey:(RCKeyCombo)combo {
+- (BOOL)registerMainHotKey:(RCKeyCombo)combo {
+    __block BOOL success = NO;
     [self performOnMainThreadSync:^{
-        [self registerHotKeyWithCombo:combo
-                           identifier:kRCHotKeyIdentifierMain
-                             storeRef:&_mainHotKeyRef];
+        success = [self registerHotKeyWithCombo:combo
+                                      identifier:kRCHotKeyIdentifierMain
+                                        storeRef:&_mainHotKeyRef];
     }];
+    return success;
 }
 
-- (void)registerHistoryHotKey:(RCKeyCombo)combo {
+- (BOOL)registerHistoryHotKey:(RCKeyCombo)combo {
+    __block BOOL success = NO;
     [self performOnMainThreadSync:^{
-        [self registerHotKeyWithCombo:combo
-                           identifier:kRCHotKeyIdentifierHistory
-                             storeRef:&_historyHotKeyRef];
+        success = [self registerHotKeyWithCombo:combo
+                                      identifier:kRCHotKeyIdentifierHistory
+                                        storeRef:&_historyHotKeyRef];
     }];
+    return success;
 }
 
-- (void)registerSnippetHotKey:(RCKeyCombo)combo {
+- (BOOL)registerSnippetHotKey:(RCKeyCombo)combo {
+    __block BOOL success = NO;
     [self performOnMainThreadSync:^{
-        [self registerHotKeyWithCombo:combo
-                           identifier:kRCHotKeyIdentifierSnippet
-                             storeRef:&_snippetHotKeyRef];
+        success = [self registerHotKeyWithCombo:combo
+                                      identifier:kRCHotKeyIdentifierSnippet
+                                        storeRef:&_snippetHotKeyRef];
     }];
+    return success;
 }
 
-- (void)registerClearHistoryHotKey:(RCKeyCombo)combo {
+- (BOOL)registerClearHistoryHotKey:(RCKeyCombo)combo {
+    __block BOOL success = NO;
     [self performOnMainThreadSync:^{
-        [self registerHotKeyWithCombo:combo
-                           identifier:kRCHotKeyIdentifierClearHistory
-                             storeRef:&_clearHistoryHotKeyRef];
+        success = [self registerHotKeyWithCombo:combo
+                                      identifier:kRCHotKeyIdentifierClearHistory
+                                        storeRef:&_clearHistoryHotKeyRef];
     }];
+    return success;
 }
 
-- (void)registerSnippetFolderHotKey:(RCKeyCombo)combo forFolderIdentifier:(NSString *)identifier {
+- (BOOL)registerSnippetFolderHotKey:(RCKeyCombo)combo forFolderIdentifier:(NSString *)identifier {
     if (identifier.length == 0) {
-        return;
+        return NO;
     }
 
+    __block BOOL success = NO;
     [self performOnMainThreadSync:^{
-        [self persistSnippetFolderHotKeyCombo:combo forFolderIdentifier:identifier];
-        [self registerSnippetFolderHotKeyWithoutPersisting:combo forFolderIdentifier:identifier];
+        if (!RCIsValidKeyCombo(combo)) {
+            [self unregisterSnippetFolderHotKeyWithoutPersisting:identifier];
+            [self persistSnippetFolderHotKeyCombo:combo forFolderIdentifier:identifier];
+            success = YES;
+            return;
+        }
+
+        success = [self registerSnippetFolderHotKeyWithoutPersisting:combo forFolderIdentifier:identifier];
+        if (success) {
+            [self persistSnippetFolderHotKeyCombo:combo forFolderIdentifier:identifier];
+        }
     }];
+    return success;
 }
 
 - (void)unregisterSnippetFolderHotKey:(NSString *)identifier {
@@ -255,35 +317,102 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
 
 - (void)loadAndRegisterHotKeysFromDefaults {
     [self performOnMainThreadSync:^{
-        RCKeyCombo mainCombo = [RCHotKeyService keyComboFromUserDefaults:kRCHotKeyMainKeyCombo];
-        if (!RCIsValidKeyCombo(mainCombo)) {
+        [self unregisterHotKeyRef:&_mainHotKeyRef];
+        [self unregisterHotKeyRef:&_historyHotKeyRef];
+        [self unregisterHotKeyRef:&_snippetHotKeyRef];
+        [self unregisterHotKeyRef:&_clearHistoryHotKeyRef];
+        [self unregisterAllSnippetFolderHotKeys];
+
+        NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+        NSMutableDictionary<NSString *, NSString *> *registeredCombos = [NSMutableDictionary dictionary];
+
+        id mainRawValue = [userDefaults objectForKey:kRCHotKeyMainKeyCombo];
+        BOOL mainComboExplicitlyUnset = RCIsExplicitlyUnsetKeyComboObject(mainRawValue);
+        RCKeyCombo mainCombo = RCKeyComboFromDictionaryObject(mainRawValue);
+        if (!mainComboExplicitlyUnset && !RCIsValidKeyCombo(mainCombo)) {
             mainCombo = RCMakeKeyCombo(kRCKeyCodeV, controlKey | shiftKey);
             [RCHotKeyService saveKeyCombo:mainCombo toUserDefaults:kRCHotKeyMainKeyCombo];
         }
-        [self registerMainHotKey:mainCombo];
+        if (RCIsValidKeyCombo(mainCombo)
+            && ![self isDuplicateHotKeyCombo:mainCombo context:@"main hot key" registry:registeredCombos]
+            && [self registerMainHotKey:mainCombo]) {
+            [self recordHotKeyCombo:mainCombo context:@"main hot key" registry:registeredCombos];
+        }
 
-        RCKeyCombo historyCombo = [RCHotKeyService keyComboFromUserDefaults:kRCHotKeyHistoryKeyCombo];
-        if (!RCIsValidKeyCombo(historyCombo)) {
+        id historyRawValue = [userDefaults objectForKey:kRCHotKeyHistoryKeyCombo];
+        BOOL historyComboExplicitlyUnset = RCIsExplicitlyUnsetKeyComboObject(historyRawValue);
+        RCKeyCombo historyCombo = RCKeyComboFromDictionaryObject(historyRawValue);
+        if (!historyComboExplicitlyUnset && !RCIsValidKeyCombo(historyCombo)) {
             historyCombo = RCMakeKeyCombo(kRCKeyCodeV, cmdKey | controlKey);
             [RCHotKeyService saveKeyCombo:historyCombo toUserDefaults:kRCHotKeyHistoryKeyCombo];
         }
-        [self registerHistoryHotKey:historyCombo];
+        if (RCIsValidKeyCombo(historyCombo)
+            && ![self isDuplicateHotKeyCombo:historyCombo context:@"history hot key" registry:registeredCombos]
+            && [self registerHistoryHotKey:historyCombo]) {
+            [self recordHotKeyCombo:historyCombo context:@"history hot key" registry:registeredCombos];
+        }
 
-        RCKeyCombo snippetCombo = [RCHotKeyService keyComboFromUserDefaults:kRCHotKeySnippetKeyCombo];
-        if (!RCIsValidKeyCombo(snippetCombo)) {
+        id snippetRawValue = [userDefaults objectForKey:kRCHotKeySnippetKeyCombo];
+        BOOL snippetComboExplicitlyUnset = RCIsExplicitlyUnsetKeyComboObject(snippetRawValue);
+        RCKeyCombo snippetCombo = RCKeyComboFromDictionaryObject(snippetRawValue);
+        if (!snippetComboExplicitlyUnset && !RCIsValidKeyCombo(snippetCombo)) {
             snippetCombo = RCMakeKeyCombo(kRCKeyCodeB, cmdKey | shiftKey);
             [RCHotKeyService saveKeyCombo:snippetCombo toUserDefaults:kRCHotKeySnippetKeyCombo];
         }
-        [self registerSnippetHotKey:snippetCombo];
+        if (RCIsValidKeyCombo(snippetCombo)
+            && ![self isDuplicateHotKeyCombo:snippetCombo context:@"snippet hot key" registry:registeredCombos]
+            && [self registerSnippetHotKey:snippetCombo]) {
+            [self recordHotKeyCombo:snippetCombo context:@"snippet hot key" registry:registeredCombos];
+        }
 
-        RCKeyCombo clearHistoryCombo = [RCHotKeyService keyComboFromUserDefaults:kRCClearHistoryKeyCombo];
+        RCKeyCombo clearHistoryCombo = RCKeyComboFromDictionaryObject([userDefaults objectForKey:kRCClearHistoryKeyCombo]);
         if (RCIsValidKeyCombo(clearHistoryCombo)) {
-            [self registerClearHistoryHotKey:clearHistoryCombo];
+            if (![self isDuplicateHotKeyCombo:clearHistoryCombo context:@"clear history hot key" registry:registeredCombos]
+                && [self registerClearHistoryHotKey:clearHistoryCombo]) {
+                [self recordHotKeyCombo:clearHistoryCombo context:@"clear history hot key" registry:registeredCombos];
+            }
         } else {
             [self unregisterHotKeyRef:&_clearHistoryHotKeyRef];
         }
 
-        [self reloadFolderHotKeys];
+        [self unregisterAllSnippetFolderHotKeys];
+        NSDictionary<NSString *, NSDictionary *> *storedCombos = [self folderHotKeyCombosFromDefaults];
+        if (storedCombos.count == 0) {
+            return;
+        }
+
+        NSArray<NSDictionary *> *folders = [[RCDatabaseManager shared] fetchAllSnippetFolders];
+        for (NSDictionary *folder in folders) {
+            NSString *identifier = [folder[@"identifier"] respondsToSelector:@selector(stringValue)]
+                                 ? [folder[@"identifier"] stringValue]
+                                 : @"";
+            if (identifier.length == 0) {
+                continue;
+            }
+
+            id enabledValue = folder[@"enabled"];
+            BOOL isEnabled = YES;
+            if ([enabledValue respondsToSelector:@selector(boolValue)]) {
+                isEnabled = [enabledValue boolValue];
+            }
+            if (!isEnabled) {
+                continue;
+            }
+
+            RCKeyCombo combo = RCKeyComboFromDictionaryObject(storedCombos[identifier]);
+            if (!RCIsValidKeyCombo(combo)) {
+                continue;
+            }
+
+            NSString *context = [NSString stringWithFormat:@"snippet folder hot key (%@)", identifier];
+            if ([self isDuplicateHotKeyCombo:combo context:context registry:registeredCombos]) {
+                continue;
+            }
+
+            if ([self registerSnippetFolderHotKeyWithoutPersisting:combo forFolderIdentifier:identifier]) {
+                [self recordHotKeyCombo:combo context:context registry:registeredCombos];
+            }
+        }
     }];
 }
 
@@ -374,18 +503,18 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
     }
 }
 
-- (void)registerHotKeyWithCombo:(RCKeyCombo)combo
+- (BOOL)registerHotKeyWithCombo:(RCKeyCombo)combo
                      identifier:(UInt32)identifier
                        storeRef:(EventHotKeyRef *)hotKeyRef {
     if (hotKeyRef == NULL) {
-        return;
+        return NO;
     }
 
     [self installHotKeyEventHandlerIfNeeded];
     [self unregisterHotKeyRef:hotKeyRef];
 
     if (!RCIsValidKeyCombo(combo)) {
-        return;
+        return YES;
     }
 
     EventHotKeyID hotKeyID;
@@ -403,10 +532,15 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
         NSLog(@"[RCHotKeyService] Failed to register hot key (id: %u, status: %d).",
               (unsigned int)identifier,
               (int)status);
-        return;
+        [self postRegistrationFailureNotificationWithIdentifier:identifier
+                                                          combo:combo
+                                                         status:status
+                                               folderIdentifier:nil];
+        return NO;
     }
 
     *hotKeyRef = registeredRef;
+    return YES;
 }
 
 - (void)unregisterHotKeyRef:(EventHotKeyRef *)hotKeyRef {
@@ -421,23 +555,23 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
     *hotKeyRef = NULL;
 }
 
-- (void)registerSnippetFolderHotKeyWithoutPersisting:(RCKeyCombo)combo
+- (BOOL)registerSnippetFolderHotKeyWithoutPersisting:(RCKeyCombo)combo
                                   forFolderIdentifier:(NSString *)identifier {
     if (identifier.length == 0) {
-        return;
+        return NO;
     }
 
     [self installHotKeyEventHandlerIfNeeded];
     [self unregisterSnippetFolderHotKeyWithoutPersisting:identifier];
 
     if (!RCIsValidKeyCombo(combo)) {
-        return;
+        return YES;
     }
 
     UInt32 hotKeyIdentifier = 0;
     if (![self nextAvailableSnippetFolderHotKeyIdentifier:&hotKeyIdentifier]) {
         NSLog(@"[RCHotKeyService] Cannot register snippet folder hot key for '%@': no available identifier.", identifier);
-        return;
+        return NO;
     }
 
     EventHotKeyID hotKeyID;
@@ -456,13 +590,18 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
               identifier,
               (unsigned int)hotKeyIdentifier,
               (int)status);
-        return;
+        [self postRegistrationFailureNotificationWithIdentifier:hotKeyIdentifier
+                                                          combo:combo
+                                                         status:status
+                                               folderIdentifier:identifier];
+        return NO;
     }
 
     NSNumber *hotKeyNumber = @(hotKeyIdentifier);
     _snippetFolderHotKeyRefs[identifier] = [NSValue valueWithPointer:registeredRef];
     _snippetFolderHotKeyIdentifiers[identifier] = hotKeyNumber;
     _snippetFolderIdentifiersByHotKeyID[hotKeyNumber] = identifier;
+    return YES;
 }
 
 - (void)unregisterSnippetFolderHotKeyWithoutPersisting:(NSString *)identifier {
@@ -578,6 +717,60 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
     }
 
     [userDefaults setObject:[mutableCombos copy] forKey:kRCFolderKeyCombos];
+}
+
+- (void)postRegistrationFailureNotificationWithIdentifier:(UInt32)identifier
+                                                     combo:(RCKeyCombo)combo
+                                                    status:(OSStatus)status
+                                          folderIdentifier:(nullable NSString *)folderIdentifier {
+    NSMutableDictionary<NSString *, id> *userInfo = [NSMutableDictionary dictionary];
+    userInfo[RCHotKeyRegistrationFailureIdentifierUserInfoKey] = @(identifier);
+    userInfo[RCHotKeyRegistrationFailureKeyCodeUserInfoKey] = @(combo.keyCode);
+    userInfo[RCHotKeyRegistrationFailureModifiersUserInfoKey] = @(combo.modifiers);
+    userInfo[RCHotKeyRegistrationFailureStatusUserInfoKey] = @(status);
+    if (folderIdentifier.length > 0) {
+        userInfo[RCHotKeyRegistrationFailureFolderIdentifierUserInfoKey] = folderIdentifier;
+    }
+
+    dispatch_block_t postBlock = ^{
+        [[NSNotificationCenter defaultCenter] postNotificationName:RCHotKeyRegistrationDidFailNotification
+                                                            object:self
+                                                          userInfo:[userInfo copy]];
+    };
+
+    if ([NSThread isMainThread]) {
+        postBlock();
+    } else {
+        dispatch_async(dispatch_get_main_queue(), postBlock);
+    }
+}
+
+- (BOOL)isDuplicateHotKeyCombo:(RCKeyCombo)combo
+                        context:(NSString *)context
+                       registry:(NSDictionary<NSString *, NSString *> *)registry {
+    if (!RCIsValidKeyCombo(combo) || registry.count == 0) {
+        return NO;
+    }
+
+    NSString *comboKey = RCStringFromKeyCombo(combo);
+    NSString *existingContext = registry[comboKey];
+    if (existingContext.length == 0) {
+        return NO;
+    }
+
+    NSLog(@"[RCHotKeyService] Duplicate hot key combo skipped for %@. Already used by %@.",
+          context.length > 0 ? context : @"unknown context",
+          existingContext);
+    return YES;
+}
+
+- (void)recordHotKeyCombo:(RCKeyCombo)combo
+                  context:(NSString *)context
+                 registry:(NSMutableDictionary<NSString *, NSString *> *)registry {
+    if (!RCIsValidKeyCombo(combo) || registry == nil) {
+        return;
+    }
+    registry[RCStringFromKeyCombo(combo)] = context.length > 0 ? context : @"unknown context";
 }
 
 - (void)postNotificationForHotKeyIdentifier:(UInt32)identifier {

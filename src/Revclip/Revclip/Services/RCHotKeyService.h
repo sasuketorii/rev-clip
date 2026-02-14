@@ -28,8 +28,12 @@ NS_INLINE RCKeyCombo RCInvalidKeyCombo(void) {
     return RCMakeKeyCombo(UINT32_MAX, 0);
 }
 
+NS_INLINE BOOL RCIsUnsetKeyCombo(RCKeyCombo combo) {
+    return combo.keyCode == 0 && combo.modifiers == 0;
+}
+
 NS_INLINE BOOL RCIsValidKeyCombo(RCKeyCombo combo) {
-    return combo.keyCode != UINT32_MAX;
+    return combo.keyCode != UINT32_MAX && !RCIsUnsetKeyCombo(combo);
 }
 
 @interface RCHotKeyService : NSObject
@@ -37,15 +41,15 @@ NS_INLINE BOOL RCIsValidKeyCombo(RCKeyCombo combo) {
 + (instancetype)shared;
 
 // メインホットキー登録（メニュー表示）
-- (void)registerMainHotKey:(RCKeyCombo)combo;
+- (BOOL)registerMainHotKey:(RCKeyCombo)combo;
 // 履歴ホットキー登録（履歴メニュー表示）
-- (void)registerHistoryHotKey:(RCKeyCombo)combo;
+- (BOOL)registerHistoryHotKey:(RCKeyCombo)combo;
 // スニペットホットキー登録（スニペットメニュー表示）
-- (void)registerSnippetHotKey:(RCKeyCombo)combo;
+- (BOOL)registerSnippetHotKey:(RCKeyCombo)combo;
 // 履歴クリアホットキー登録
-- (void)registerClearHistoryHotKey:(RCKeyCombo)combo;
+- (BOOL)registerClearHistoryHotKey:(RCKeyCombo)combo;
 // フォルダ個別ホットキー登録
-- (void)registerSnippetFolderHotKey:(RCKeyCombo)combo forFolderIdentifier:(NSString *)identifier;
+- (BOOL)registerSnippetFolderHotKey:(RCKeyCombo)combo forFolderIdentifier:(NSString *)identifier;
 // フォルダ個別ホットキー解除
 - (void)unregisterSnippetFolderHotKey:(NSString *)identifier;
 // 全フォルダホットキーの再読み込み
@@ -73,5 +77,11 @@ extern NSString * const RCHotKeySnippetTriggeredNotification;
 extern NSString * const RCHotKeyClearHistoryTriggeredNotification;
 extern NSString * const RCHotKeySnippetFolderTriggeredNotification;
 extern NSString * const RCHotKeyFolderIdentifierUserInfoKey;
+extern NSString * const RCHotKeyRegistrationDidFailNotification;
+extern NSString * const RCHotKeyRegistrationFailureIdentifierUserInfoKey;
+extern NSString * const RCHotKeyRegistrationFailureKeyCodeUserInfoKey;
+extern NSString * const RCHotKeyRegistrationFailureModifiersUserInfoKey;
+extern NSString * const RCHotKeyRegistrationFailureStatusUserInfoKey;
+extern NSString * const RCHotKeyRegistrationFailureFolderIdentifierUserInfoKey;
 
 NS_ASSUME_NONNULL_END

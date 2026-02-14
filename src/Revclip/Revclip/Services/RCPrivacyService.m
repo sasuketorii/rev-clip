@@ -20,6 +20,8 @@ typedef NS_ENUM(NSInteger, RCPrivacyServiceErrorCode) {
 
 @property (nonatomic, assign) RCClipboardAccessState cachedClipboardAccessState;
 
+- (void)handleApplicationDidBecomeActive:(NSNotification *)notification;
+
 @end
 
 @implementation RCPrivacyService
@@ -37,8 +39,17 @@ typedef NS_ENUM(NSInteger, RCPrivacyServiceErrorCode) {
     self = [super init];
     if (self) {
         _cachedClipboardAccessState = RCClipboardAccessStateUnknown;
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(handleApplicationDidBecomeActive:)
+                                                     name:NSApplicationDidBecomeActiveNotification
+                                                   object:nil];
+        [self refreshClipboardAccessState];
     }
     return self;
+}
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 #pragma mark - Public
@@ -65,17 +76,26 @@ typedef NS_ENUM(NSInteger, RCPrivacyServiceErrorCode) {
 }
 
 - (BOOL)isClipboardPrivacyAPIAvailable {
-    if (![self isMacOS16OrLater]) {
+    if (![self isMacOS154OrLater]) {
         return NO;
     }
 
-    if (@available(macOS 16.0, *)) {
-        NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-        return [pasteboard respondsToSelector:@selector(accessBehavior)]
-            && [pasteboard respondsToSelector:@selector(detectPatternsForPatterns:completionHandler:)];
+    __block BOOL isAvailable = NO;
+    dispatch_block_t resolveBlock = ^{
+        if (@available(macOS 15.4, *)) {
+            NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
+            isAvailable = [pasteboard respondsToSelector:@selector(accessBehavior)]
+                && [pasteboard respondsToSelector:@selector(detectPatternsForPatterns:completionHandler:)];
+        }
+    };
+
+    if ([NSThread isMainThread]) {
+        resolveBlock();
+    } else {
+        dispatch_sync(dispatch_get_main_queue(), resolveBlock);
     }
 
-    return NO;
+    return isAvailable;
 }
 
 - (void)detectClipboardPatternsWithCompletion:(void (^)(NSSet<NSString *> * _Nullable patterns, NSError * _Nullable error))completion {
@@ -88,28 +108,36 @@ typedef NS_ENUM(NSInteger, RCPrivacyServiceErrorCode) {
         return;
     }
 
-    if (@available(macOS 16.0, *)) {
-        NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-        if (![pasteboard respondsToSelector:@selector(detectPatternsForPatterns:completionHandler:)]) {
-            completion(nil, [self detectionUnavailableError]);
+    dispatch_block_t detectBlock = ^{
+        if (@available(macOS 15.4, *)) {
+            NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
+            if (![pasteboard respondsToSelector:@selector(detectPatternsForPatterns:completionHandler:)]) {
+                completion(nil, [self detectionUnavailableError]);
+                return;
+            }
+
+            NSSet<NSPasteboardDetectionPattern> *patterns = [self supportedDetectionPatterns];
+            if (patterns.count == 0) {
+                completion([NSSet set], nil);
+                return;
+            }
+
+            [pasteboard detectPatternsForPatterns:patterns
+                                completionHandler:^(NSSet<NSPasteboardDetectionPattern> * _Nullable detectedPatterns,
+                                                    NSError * _Nullable error) {
+                completion((NSSet<NSString *> *)detectedPatterns, error);
+            }];
             return;
         }
 
-        NSSet<NSPasteboardDetectionPattern> *patterns = [self supportedDetectionPatterns];
-        if (patterns.count == 0) {
-            completion([NSSet set], nil);
-            return;
-        }
+        completion(nil, [self apiUnavailableError]);
+    };
 
-        [pasteboard detectPatternsForPatterns:patterns
-                            completionHandler:^(NSSet<NSPasteboardDetectionPattern> * _Nullable detectedPatterns,
-                                                NSError * _Nullable error) {
-            completion((NSSet<NSString *> *)detectedPatterns, error);
-        }];
-        return;
+    if ([NSThread isMainThread]) {
+        detectBlock();
+    } else {
+        dispatch_async(dispatch_get_main_queue(), detectBlock);
     }
-
-    completion(nil, [self apiUnavailableError]);
 }
 
 - (void)showClipboardAccessGuidance {
@@ -156,41 +184,55 @@ typedef NS_ENUM(NSInteger, RCPrivacyServiceErrorCode) {
 
 #pragma mark - Private
 
-- (BOOL)isMacOS16OrLater {
-    NSOperatingSystemVersion osVersion = [NSProcessInfo processInfo].operatingSystemVersion;
-    return (osVersion.majorVersion >= 16);
+- (BOOL)isMacOS154OrLater {
+    NSOperatingSystemVersion minimumVersion = (NSOperatingSystemVersion){.majorVersion = 15, .minorVersion = 4, .patchVersion = 0};
+    return [[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:minimumVersion];
 }
 
 - (RCClipboardAccessState)resolvedClipboardAccessState {
-    if (![self isMacOS16OrLater]) {
+    if (![self isMacOS154OrLater]) {
         return RCClipboardAccessStateGranted;
     }
 
-    if (@available(macOS 16.0, *)) {
-        NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-        if (![pasteboard respondsToSelector:@selector(accessBehavior)]) {
-            return RCClipboardAccessStateGranted;
+    __block RCClipboardAccessState state = RCClipboardAccessStateUnknown;
+    dispatch_block_t resolveBlock = ^{
+        if (@available(macOS 15.4, *)) {
+            NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
+            if (![pasteboard respondsToSelector:@selector(accessBehavior)]) {
+                state = RCClipboardAccessStateGranted;
+                return;
+            }
+
+            NSPasteboardAccessBehavior behavior = pasteboard.accessBehavior;
+            switch (behavior) {
+                case NSPasteboardAccessBehaviorDefault:
+                case NSPasteboardAccessBehaviorAsk:
+                    state = RCClipboardAccessStateNotDetermined;
+                    break;
+
+                case NSPasteboardAccessBehaviorAlwaysAllow:
+                    state = RCClipboardAccessStateGranted;
+                    break;
+
+                case NSPasteboardAccessBehaviorAlwaysDeny:
+                    state = RCClipboardAccessStateDenied;
+                    break;
+
+                // G3-008: 将来の列挙値追加に備えた防御的コーディング
+                default:
+                    state = RCClipboardAccessStateUnknown;
+                    break;
+            }
         }
+    };
 
-        NSPasteboardAccessBehavior behavior = pasteboard.accessBehavior;
-        switch (behavior) {
-            case NSPasteboardAccessBehaviorDefault:
-            case NSPasteboardAccessBehaviorAsk:
-                return RCClipboardAccessStateNotDetermined;
-
-            case NSPasteboardAccessBehaviorAlwaysAllow:
-                return RCClipboardAccessStateGranted;
-
-            case NSPasteboardAccessBehaviorAlwaysDeny:
-                return RCClipboardAccessStateDenied;
-
-            // G3-008: 将来の列挙値追加に備えた防御的コーディング
-            default:
-                return RCClipboardAccessStateUnknown;
-        }
+    if ([NSThread isMainThread]) {
+        resolveBlock();
+    } else {
+        dispatch_sync(dispatch_get_main_queue(), resolveBlock);
     }
 
-    return RCClipboardAccessStateUnknown;
+    return state;
 }
 
 - (NSSet<NSPasteboardDetectionPattern> *)supportedDetectionPatterns API_AVAILABLE(macos(15.4)) {
@@ -273,6 +315,11 @@ typedef NS_ENUM(NSInteger, RCPrivacyServiceErrorCode) {
                            userInfo:@{
                                NSLocalizedDescriptionKey: @"Pattern detection is not available for this pasteboard.",
                            }];
+}
+
+- (void)handleApplicationDidBecomeActive:(NSNotification *)notification {
+    (void)notification;
+    [self refreshClipboardAccessState];
 }
 
 @end

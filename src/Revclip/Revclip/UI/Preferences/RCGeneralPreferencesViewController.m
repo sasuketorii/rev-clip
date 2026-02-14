@@ -8,6 +8,7 @@
 #import "RCGeneralPreferencesViewController.h"
 
 #import "RCConstants.h"
+#import "RCDataCleanService.h"
 #import "RCLoginItemService.h"
 
 static const NSInteger RCMaxHistorySizeMinimum = 1;
@@ -26,6 +27,8 @@ static const NSInteger RCShowStatusItemDefault = 1;
 @property (nonatomic, weak) IBOutlet NSButton *overwriteSameHistoryButton;
 @property (nonatomic, weak) IBOutlet NSButton *sameHistoryCopyButton;
 
+- (void)refreshLoginAtStartupButtonState;
+
 @end
 
 @implementation RCGeneralPreferencesViewController
@@ -35,6 +38,11 @@ static const NSInteger RCShowStatusItemDefault = 1;
 
     [self configureControls];
     [self applyPreferenceValues];
+}
+
+- (void)viewWillAppear {
+    [super viewWillAppear];
+    [self refreshLoginAtStartupButtonState];
 }
 
 #pragma mark - Actions
@@ -142,9 +150,7 @@ static const NSInteger RCShowStatusItemDefault = 1;
                                              defaultValue:RCMaxHistorySizeDefault]
                     persist:NO];
 
-    self.loginAtStartupButton.state = [self boolPreferenceForKey:kRCLoginItem defaultValue:NO]
-        ? NSControlStateValueOn
-        : NSControlStateValueOff;
+    [self refreshLoginAtStartupButtonState];
 
     NSInteger statusItemValue = [self integerPreferenceForKey:kRCPrefShowStatusItemKey
                                                  defaultValue:RCShowStatusItemDefault];
@@ -171,8 +177,19 @@ static const NSInteger RCShowStatusItemDefault = 1;
     self.maxHistorySizeStepper.integerValue = clampedValue;
 
     if (persist) {
-        [[NSUserDefaults standardUserDefaults] setInteger:clampedValue forKey:kRCPrefMaxHistorySizeKey];
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        NSInteger previousValue = [self integerPreferenceForKey:kRCPrefMaxHistorySizeKey
+                                                   defaultValue:RCMaxHistorySizeDefault];
+        [defaults setInteger:clampedValue forKey:kRCPrefMaxHistorySizeKey];
+        if (clampedValue < previousValue) {
+            [[RCDataCleanService shared] performCleanup];
+        }
     }
+}
+
+- (void)refreshLoginAtStartupButtonState {
+    BOOL loginItemEnabled = [RCLoginItemService shared].loginItemEnabled;
+    self.loginAtStartupButton.state = loginItemEnabled ? NSControlStateValueOn : NSControlStateValueOff;
 }
 
 - (NSInteger)clampedMaxHistorySize:(NSInteger)value {

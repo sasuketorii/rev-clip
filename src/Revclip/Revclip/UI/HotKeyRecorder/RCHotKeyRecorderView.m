@@ -39,6 +39,7 @@ static NSEventModifierFlags RCRecorderRelevantModifiers(NSEventModifierFlags mod
 - (NSString *)rc_symbolStringFromModifiers:(NSEventModifierFlags)modifiers;
 - (NSString *)rc_stringForKeyCode:(UInt16)keyCode modifiers:(NSEventModifierFlags)modifiers;
 - (NSString *)rc_translatedStringForKeyCode:(UInt16)keyCode modifiers:(NSEventModifierFlags)modifiers;
+- (void)processKeyEvent:(NSEvent *)event;
 
 @end
 
@@ -140,18 +141,37 @@ static NSEventModifierFlags RCRecorderRelevantModifiers(NSEventModifierFlags mod
         return;
     }
 
+    [self processKeyEvent:event];
+}
+
+- (BOOL)performKeyEquivalent:(NSEvent *)event {
+    if (self.isRecording) {
+        [self processKeyEvent:event];
+        return YES;
+    }
+
+    return [super performKeyEquivalent:event];
+}
+
+- (void)processKeyEvent:(NSEvent *)event {
+    if (event == nil) {
+        return;
+    }
+
     UInt16 keyCode = (UInt16)event.keyCode;
+    NSEventModifierFlags cocoaModifiers = RCRecorderRelevantModifiers(event.modifierFlags);
+
     if (keyCode == kVK_Escape) {
         [self stopRecording];
         return;
     }
 
-    if (keyCode == kVK_Delete || keyCode == kVK_ForwardDelete) {
+    BOOL isDeleteKey = (keyCode == kVK_Delete || keyCode == kVK_ForwardDelete);
+    if (isDeleteKey && cocoaModifiers == 0) {
         [self clearKeyCombo];
         return;
     }
 
-    NSEventModifierFlags cocoaModifiers = RCRecorderRelevantModifiers(event.modifierFlags);
     UInt32 carbonModifiers = [RCHotKeyService carbonModifiersFromCocoaModifiers:cocoaModifiers];
 
     if (carbonModifiers == 0) {
@@ -241,11 +261,15 @@ static NSEventModifierFlags RCRecorderRelevantModifiers(NSEventModifierFlags mod
 }
 
 - (BOOL)rc_shouldWarnForModifiers:(UInt32)modifiers {
-    BOOL hasOption = (modifiers & optionKey) != 0;
-    BOOL hasCommand = (modifiers & cmdKey) != 0;
-    BOOL hasControl = (modifiers & controlKey) != 0;
+    if (@available(macOS 15.0, *)) {
+        BOOL hasOption = (modifiers & optionKey) != 0;
+        BOOL hasCommand = (modifiers & cmdKey) != 0;
+        BOOL hasControl = (modifiers & controlKey) != 0;
 
-    return hasOption && !hasCommand && !hasControl;
+        return hasOption && !hasCommand && !hasControl;
+    }
+
+    return NO;
 }
 
 - (void)rc_showUnsupportedOptionWarning {

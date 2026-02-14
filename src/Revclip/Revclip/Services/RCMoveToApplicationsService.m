@@ -8,13 +8,17 @@
 #import "RCMoveToApplicationsService.h"
 #import <Cocoa/Cocoa.h>
 
-static NSString * const kRCApplicationsBundlePath = @"/Applications/Revclip.app";
+static NSString * const kRCMoveToApplicationsErrorDomain = @"com.revclip.movetoapplications";
 
 @interface RCMoveToApplicationsService ()
 
 - (BOOL)isRunningFromBuildDirectory;
+- (NSString *)applicationsBundlePath;
+- (NSString *)bundleVersionAtPath:(NSString *)bundlePath;
+- (NSComparisonResult)compareBundleVersion:(NSString *)leftVersion toBundleVersion:(NSString *)rightVersion;
 - (void)moveApplicationToApplicationsFromPath:(NSString *)sourcePath;
 - (void)showMoveFailedAlertWithError:(NSError *)error;
+- (void)showDowngradePreventedAlertFromVersion:(NSString *)installedVersion toVersion:(NSString *)candidateVersion;
 - (void)relaunchApplicationAtPath:(NSString *)applicationPath;
 
 @end
@@ -82,10 +86,26 @@ static NSString * const kRCApplicationsBundlePath = @"/Applications/Revclip.app"
 
 - (void)moveApplicationToApplicationsFromPath:(NSString *)sourcePath {
     NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSURL *destinationURL = [NSURL fileURLWithPath:kRCApplicationsBundlePath];
-    NSString *applicationsDirectoryPath = [kRCApplicationsBundlePath stringByDeletingLastPathComponent];
-    NSString *temporaryBundlePath = [applicationsDirectoryPath stringByAppendingPathComponent:[NSString stringWithFormat:@".Revclip_installing_%@.app", [NSUUID UUID].UUIDString]];
+    NSString *destinationPath = [self applicationsBundlePath];
+    NSURL *destinationURL = [NSURL fileURLWithPath:destinationPath];
+    NSString *applicationsDirectoryPath = destinationPath.stringByDeletingLastPathComponent;
+    NSString *bundleBaseName = destinationPath.lastPathComponent.stringByDeletingPathExtension;
+    if (bundleBaseName.length == 0) {
+        bundleBaseName = @"Revclip";
+    }
+    NSString *temporaryBundlePath = [applicationsDirectoryPath stringByAppendingPathComponent:[NSString stringWithFormat:@".%@_installing_%@.app", bundleBaseName, [NSUUID UUID].UUIDString]];
     NSURL *temporaryBundleURL = [NSURL fileURLWithPath:temporaryBundlePath];
+
+    if ([fileManager fileExistsAtPath:destinationPath]) {
+        NSString *sourceVersion = [self bundleVersionAtPath:sourcePath];
+        NSString *installedVersion = [self bundleVersionAtPath:destinationPath];
+        if (sourceVersion.length > 0
+            && installedVersion.length > 0
+            && [self compareBundleVersion:installedVersion toBundleVersion:sourceVersion] == NSOrderedDescending) {
+            [self showDowngradePreventedAlertFromVersion:installedVersion toVersion:sourceVersion];
+            return;
+        }
+    }
 
     [fileManager removeItemAtPath:temporaryBundlePath error:NULL];
 
@@ -96,7 +116,7 @@ static NSString * const kRCApplicationsBundlePath = @"/Applications/Revclip.app"
     }
 
     NSError *replaceError = nil;
-    if ([fileManager fileExistsAtPath:kRCApplicationsBundlePath]) {
+    if ([fileManager fileExistsAtPath:destinationPath]) {
         NSURL *resultingURL = nil;
         if (![fileManager replaceItemAtURL:destinationURL
                                withItemAtURL:temporaryBundleURL
@@ -110,7 +130,7 @@ static NSString * const kRCApplicationsBundlePath = @"/Applications/Revclip.app"
         }
     } else {
         if (![fileManager moveItemAtPath:temporaryBundlePath
-                                  toPath:kRCApplicationsBundlePath
+                                  toPath:destinationPath
                                    error:&replaceError]) {
             [fileManager removeItemAtURL:temporaryBundleURL error:NULL];
             [self showMoveFailedAlertWithError:replaceError];
@@ -119,11 +139,11 @@ static NSString * const kRCApplicationsBundlePath = @"/Applications/Revclip.app"
     }
 
     // Clean up the original application bundle after successful move
-    if (![sourcePath isEqualToString:kRCApplicationsBundlePath]) {
+    if (![sourcePath isEqualToString:destinationPath]) {
         [fileManager removeItemAtPath:sourcePath error:NULL];
     }
 
-    [self relaunchApplicationAtPath:kRCApplicationsBundlePath];
+    [self relaunchApplicationAtPath:destinationPath];
 }
 
 - (void)relaunchApplicationAtPath:(NSString *)applicationPath {
@@ -138,7 +158,7 @@ static NSString * const kRCApplicationsBundlePath = @"/Applications/Revclip.app"
                 return;
             }
 
-            NSError *terminationError = [NSError errorWithDomain:@"com.revclip.movetoapplications"
+            NSError *terminationError = [NSError errorWithDomain:kRCMoveToApplicationsErrorDomain
                                                              code:(NSInteger)task.terminationStatus
                                                          userInfo:@{
                                                              NSLocalizedDescriptionKey: NSLocalizedString(@"Failed to relaunch the app from Applications.", nil),
@@ -168,6 +188,64 @@ static NSString * const kRCApplicationsBundlePath = @"/Applications/Revclip.app"
     alert.alertStyle = NSAlertStyleCritical;
     alert.messageText = NSLocalizedString(@"Could not move Revclip to Applications folder", nil);
     alert.informativeText = error.localizedDescription ?: NSLocalizedString(@"An unknown error occurred while moving Revclip.", nil);
+    [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
+    [alert runModal];
+}
+
+- (NSString *)applicationsBundlePath {
+    NSString *bundleName = NSBundle.mainBundle.bundlePath.lastPathComponent;
+    if (bundleName.length == 0) {
+        bundleName = @"Revclip.app";
+    }
+    return [@"/Applications" stringByAppendingPathComponent:bundleName];
+}
+
+- (NSString *)bundleVersionAtPath:(NSString *)bundlePath {
+    if (bundlePath.length == 0) {
+        return @"";
+    }
+
+    NSBundle *bundle = [NSBundle bundleWithPath:bundlePath];
+    NSDictionary *info = bundle.infoDictionary;
+    id bundleVersionValue = info[@"CFBundleVersion"];
+    NSString *bundleVersion = [bundleVersionValue isKindOfClass:[NSString class]] ? bundleVersionValue : [bundleVersionValue respondsToSelector:@selector(stringValue)] ? [bundleVersionValue stringValue] : @"";
+    if (bundleVersion.length > 0) {
+        return [bundleVersion stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    }
+
+    id shortVersionValue = info[@"CFBundleShortVersionString"];
+    NSString *shortVersion = [shortVersionValue isKindOfClass:[NSString class]] ? shortVersionValue : [shortVersionValue respondsToSelector:@selector(stringValue)] ? [shortVersionValue stringValue] : @"";
+    return [shortVersion stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+}
+
+- (NSComparisonResult)compareBundleVersion:(NSString *)leftVersion toBundleVersion:(NSString *)rightVersion {
+    if (leftVersion.length == 0 && rightVersion.length == 0) {
+        return NSOrderedSame;
+    }
+    if (leftVersion.length == 0) {
+        return NSOrderedAscending;
+    }
+    if (rightVersion.length == 0) {
+        return NSOrderedDescending;
+    }
+
+    return [leftVersion compare:rightVersion options:NSNumericSearch];
+}
+
+- (void)showDowngradePreventedAlertFromVersion:(NSString *)installedVersion toVersion:(NSString *)candidateVersion {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self showDowngradePreventedAlertFromVersion:installedVersion toVersion:candidateVersion];
+        });
+        return;
+    }
+
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.alertStyle = NSAlertStyleWarning;
+    alert.messageText = NSLocalizedString(@"A newer version is already installed in Applications.", nil);
+    alert.informativeText = [NSString stringWithFormat:NSLocalizedString(@"Installed version (%@) is newer than this app (%@). Move was canceled to prevent a downgrade.", nil),
+                              installedVersion.length > 0 ? installedVersion : @"-",
+                              candidateVersion.length > 0 ? candidateVersion : @"-"];
     [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
     [alert runModal];
 }

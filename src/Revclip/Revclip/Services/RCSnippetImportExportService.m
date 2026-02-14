@@ -30,6 +30,8 @@ static NSString * const kRCRevclipPlistFormatValue = @"revclip.snippets";
 static NSString * const kRCRevclipPlistVersionKey = @"version";
 static NSString * const kRCRevclipPlistFoldersKey = @"folders";
 static NSString * const kRCRevclipPlistExportedAtKey = @"exported_at";
+static NSInteger const kRCRevclipSupportedPlistVersion = 1;
+static unsigned long long const kRCMaxImportFileSize = 50ULL * 1024ULL * 1024ULL;
 
 static NSString * const kRCFolderTitleFallback = @"untitled folder";
 static NSString * const kRCSnippetTitleFallback = @"untitled snippet";
@@ -42,6 +44,8 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
 
 - (nullable NSArray<NSDictionary *> *)parseFoldersFromPlistData:(NSData *)data error:(NSError **)error;
 - (nullable NSArray<NSDictionary *> *)parseFoldersFromPlistRootObject:(id)rootObject error:(NSError **)error;
+- (BOOL)validateRevclipPlistMetadataFromRootObject:(id)rootObject error:(NSError **)error;
+- (nullable NSNumber *)plistVersionNumberFromValue:(id)value;
 - (nullable NSDictionary *)parseFolderDictionaryFromPlistObject:(id)object;
 - (nullable NSDictionary *)parseSnippetDictionaryFromPlistObject:(id)object;
 - (BOOL)looksLikeFolderObject:(id)object;
@@ -157,7 +161,7 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
     NSArray<NSDictionary *> *normalizedFolders = [self normalizedFolderDictionariesForExport:folders ?: @[]];
     NSDictionary *plistRoot = @{
         kRCRevclipPlistFormatKey: kRCRevclipPlistFormatValue,
-        kRCRevclipPlistVersionKey: @1,
+        kRCRevclipPlistVersionKey: @(kRCRevclipSupportedPlistVersion),
         kRCRevclipPlistExportedAtKey: [self iso8601TimestampString],
         kRCRevclipPlistFoldersKey: normalizedFolders,
     };
@@ -189,7 +193,6 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
     }
 
     // Guard against abnormally large files (50 MB limit)
-    static const unsigned long long kRCMaxImportFileSize = 50ULL * 1024ULL * 1024ULL;
     NSNumber *fileSize = nil;
     NSError *attrError = nil;
     if ([fileURL getResourceValue:&fileSize forKey:NSURLFileSizeKey error:&attrError] && fileSize != nil) {
@@ -220,6 +223,12 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
                             description:@"Snippets data is empty."
                         underlyingError:nil];
     }
+    if ((unsigned long long)data.length > kRCMaxImportFileSize) {
+        return [self assignSnippetError:error
+                                   code:RCSnippetImportExportErrorFileRead
+                            description:@"Import file is too large (exceeds 50 MB limit)."
+                        underlyingError:nil];
+    }
 
     RCDatabaseManager *databaseManager = [RCDatabaseManager shared];
     if (![databaseManager setupDatabase]) {
@@ -231,6 +240,14 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
 
     NSError *plistParseError = nil;
     NSArray<NSDictionary *> *parsedFolders = [self parseFoldersFromPlistData:data error:&plistParseError];
+    if (parsedFolders == nil
+        && plistParseError != nil
+        && [plistParseError.domain isEqualToString:RCSnippetImportExportErrorDomain]) {
+        if (error != NULL) {
+            *error = plistParseError;
+        }
+        return NO;
+    }
     if (parsedFolders == nil) {
         NSError *xmlParseError = nil;
         parsedFolders = [self parseFoldersFromLegacyXMLData:data error:&xmlParseError];
@@ -389,6 +406,9 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
         }
         return nil;
     }
+    if (![self validateRevclipPlistMetadataFromRootObject:rootObject error:error]) {
+        return nil;
+    }
 
     return [self parseFoldersFromPlistRootObject:rootObject error:error];
 }
@@ -453,6 +473,66 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
     }
 
     return [parsedFolders copy];
+}
+
+- (BOOL)validateRevclipPlistMetadataFromRootObject:(id)rootObject error:(NSError **)error {
+    if (![rootObject isKindOfClass:[NSDictionary class]]) {
+        return [self assignSnippetError:error
+                                   code:RCSnippetImportExportErrorInvalidXMLFormat
+                            description:@"Snippets plist root must be a dictionary."
+                        underlyingError:nil];
+    }
+
+    NSDictionary *rootDictionary = (NSDictionary *)rootObject;
+
+    id formatValue = rootDictionary[kRCRevclipPlistFormatKey];
+    if (![formatValue isKindOfClass:[NSString class]]
+        || ![(NSString *)formatValue isEqualToString:kRCRevclipPlistFormatValue]) {
+        return [self assignSnippetError:error
+                                   code:RCSnippetImportExportErrorMissingRequiredElement
+                            description:@"Snippets format identifier is missing or invalid."
+                        underlyingError:nil];
+    }
+
+    NSNumber *versionNumber = [self plistVersionNumberFromValue:rootDictionary[kRCRevclipPlistVersionKey]];
+    if (versionNumber == nil) {
+        return [self assignSnippetError:error
+                                   code:RCSnippetImportExportErrorMissingRequiredElement
+                            description:@"Snippets format version is missing or invalid."
+                        underlyingError:nil];
+    }
+
+    if (versionNumber.integerValue != kRCRevclipSupportedPlistVersion) {
+        return [self assignSnippetError:error
+                                   code:RCSnippetImportExportErrorInvalidXMLFormat
+                            description:@"Unsupported snippets format version."
+                        underlyingError:nil];
+    }
+
+    return YES;
+}
+
+- (NSNumber *)plistVersionNumberFromValue:(id)value {
+    if ([value isKindOfClass:[NSNumber class]]) {
+        return (NSNumber *)value;
+    }
+
+    if (![value isKindOfClass:[NSString class]]) {
+        return nil;
+    }
+
+    NSString *versionString = [self trimmedString:(NSString *)value];
+    if (versionString.length == 0) {
+        return nil;
+    }
+
+    NSScanner *scanner = [NSScanner scannerWithString:versionString];
+    NSInteger version = 0;
+    if (![scanner scanInteger:&version] || !scanner.isAtEnd) {
+        return nil;
+    }
+
+    return @(version);
 }
 
 - (NSDictionary *)parseFolderDictionaryFromPlistObject:(id)object {
@@ -719,7 +799,8 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
             isExistingFolder = YES;
         }
 
-        if (merge && !isExistingFolder) {
+        // Only allow title-based merge when imported data does not provide an identifier.
+        if (merge && !isExistingFolder && folderIdentifier.length == 0) {
             NSString *normalizedTitle = [self normalizedLookupString:folderTitle];
             NSString *existingFolderIdentifier = existingFolderIdentifierByTitle[normalizedTitle];
             if (existingFolderIdentifier.length > 0) {

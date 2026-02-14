@@ -7,6 +7,7 @@
 
 #import "RCBetaPreferencesViewController.h"
 #import "RCConstants.h"
+#import "RCScreenshotMonitorService.h"
 
 static NSInteger const kRCBetaModifierMinimumIndex = 0;
 static NSInteger const kRCBetaModifierMaximumIndex = 3;
@@ -26,6 +27,7 @@ static NSInteger const kRCBetaModifierMaximumIndex = 3;
 
 - (void)configureModifierPopUpButtons;
 - (void)configureModifierPopUpButton:(NSPopUpButton *)popUpButton;
+- (void)configureUnavailableFeatureControls;
 - (void)loadSettingsFromUserDefaults;
 - (void)applyEnableStateToModifierPopUpButtons;
 - (void)updateModifierPopUpButton:(NSPopUpButton *)popUpButton withStoredValue:(NSInteger)value;
@@ -43,22 +45,33 @@ static NSInteger const kRCBetaModifierMaximumIndex = 3;
 
     [self configureModifierPopUpButtons];
     [self loadSettingsFromUserDefaults];
+    [self configureUnavailableFeatureControls];
 }
 
 #pragma mark - Actions
 
 - (IBAction)handleEnableCheckboxChanged:(id)sender {
     NSButton *button = (NSButton *)sender;
+    if (!button.isEnabled) {
+        return;
+    }
+
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    BOOL isEnabled = [self isButtonChecked:button];
 
     if (button == self.pastePlainTextEnableButton) {
-        [userDefaults setBool:[self isButtonChecked:button] forKey:kRCBetaPastePlainText];
+        [userDefaults setBool:isEnabled forKey:kRCBetaPastePlainText];
     } else if (button == self.deleteHistoryEnableButton) {
-        [userDefaults setBool:[self isButtonChecked:button] forKey:kRCBetaDeleteHistory];
+        [userDefaults setBool:isEnabled forKey:kRCBetaDeleteHistory];
     } else if (button == self.pasteAndDeleteHistoryEnableButton) {
-        [userDefaults setBool:[self isButtonChecked:button] forKey:kRCBetaPasteAndDeleteHistory];
+        [userDefaults setBool:isEnabled forKey:kRCBetaPasteAndDeleteHistory];
     } else if (button == self.observeScreenshotEnableButton) {
-        [userDefaults setBool:[self isButtonChecked:button] forKey:kRCBetaObserveScreenshot];
+        [userDefaults setBool:isEnabled forKey:kRCBetaObserveScreenshot];
+        if (isEnabled) {
+            [[RCScreenshotMonitorService shared] startMonitoring];
+        } else {
+            [[RCScreenshotMonitorService shared] stopMonitoring];
+        }
     }
 
     [self applyEnableStateToModifierPopUpButtons];
@@ -66,6 +79,10 @@ static NSInteger const kRCBetaModifierMaximumIndex = 3;
 
 - (IBAction)handleModifierPopUpChanged:(id)sender {
     NSPopUpButton *popUpButton = (NSPopUpButton *)sender;
+    if (!popUpButton.isEnabled) {
+        return;
+    }
+
     NSInteger selectedIndex = [self sanitizedModifierIndex:popUpButton.indexOfSelectedItem];
     [popUpButton selectItemAtIndex:selectedIndex];
 
@@ -97,6 +114,20 @@ static NSInteger const kRCBetaModifierMaximumIndex = 3;
     ]];
 }
 
+- (void)configureUnavailableFeatureControls {
+    NSString *comingSoonText = NSLocalizedString(@"Coming soon", nil);
+
+    self.deleteHistoryEnableButton.enabled = NO;
+    self.deleteHistoryModifierPopUpButton.enabled = NO;
+    self.pasteAndDeleteHistoryEnableButton.enabled = NO;
+    self.pasteAndDeleteHistoryModifierPopUpButton.enabled = NO;
+
+    self.deleteHistoryEnableButton.toolTip = comingSoonText;
+    self.deleteHistoryModifierPopUpButton.toolTip = comingSoonText;
+    self.pasteAndDeleteHistoryEnableButton.toolTip = comingSoonText;
+    self.pasteAndDeleteHistoryModifierPopUpButton.toolTip = comingSoonText;
+}
+
 - (void)loadSettingsFromUserDefaults {
     self.pastePlainTextEnableButton.state = [self boolPreferenceForKey:kRCBetaPastePlainText defaultValue:YES] ? NSControlStateValueOn : NSControlStateValueOff;
     self.deleteHistoryEnableButton.state = [self boolPreferenceForKey:kRCBetaDeleteHistory defaultValue:NO] ? NSControlStateValueOn : NSControlStateValueOff;
@@ -115,8 +146,8 @@ static NSInteger const kRCBetaModifierMaximumIndex = 3;
 
 - (void)applyEnableStateToModifierPopUpButtons {
     self.pastePlainTextModifierPopUpButton.enabled = [self isButtonChecked:self.pastePlainTextEnableButton];
-    self.deleteHistoryModifierPopUpButton.enabled = [self isButtonChecked:self.deleteHistoryEnableButton];
-    self.pasteAndDeleteHistoryModifierPopUpButton.enabled = [self isButtonChecked:self.pasteAndDeleteHistoryEnableButton];
+    self.deleteHistoryModifierPopUpButton.enabled = NO;
+    self.pasteAndDeleteHistoryModifierPopUpButton.enabled = NO;
 }
 
 - (void)updateModifierPopUpButton:(NSPopUpButton *)popUpButton withStoredValue:(NSInteger)value {

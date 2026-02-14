@@ -25,6 +25,9 @@ static UInt32 const kRCDefaultKeyCodeB = 11;
 - (nullable NSString *)userDefaultsKeyForRecorderView:(RCHotKeyRecorderView *)recorderView;
 - (RCKeyCombo)keyComboForDefaultsKey:(NSString *)defaultsKey;
 - (RCKeyCombo)defaultKeyComboForDefaultsKey:(NSString *)defaultsKey;
+- (BOOL)isUnsetKeyCombo:(RCKeyCombo)combo;
+- (void)saveUnsetKeyComboForDefaultsKey:(NSString *)defaultsKey;
+- (void)applyExplicitlyClearedHotKeys;
 - (void)reloadHotKeysAndRecorders;
 - (void)resetHotKeysToDefaults;
 
@@ -93,7 +96,7 @@ static UInt32 const kRCDefaultKeyCodeB = 11;
         return;
     }
 
-    [[NSUserDefaults standardUserDefaults] removeObjectForKey:defaultsKey];
+    [self saveUnsetKeyComboForDefaultsKey:defaultsKey];
     [self reloadHotKeysAndRecorders];
 }
 
@@ -123,11 +126,21 @@ static UInt32 const kRCDefaultKeyCodeB = 11;
 }
 
 - (RCKeyCombo)keyComboForDefaultsKey:(NSString *)defaultsKey {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ([defaults objectForKey:defaultsKey] == nil) {
+        return [self defaultKeyComboForDefaultsKey:defaultsKey];
+    }
+
     RCKeyCombo combo = [RCHotKeyService keyComboFromUserDefaults:defaultsKey];
+    if ([self isUnsetKeyCombo:combo]) {
+        return RCInvalidKeyCombo();
+    }
+
     if (RCIsValidKeyCombo(combo)) {
         return combo;
     }
-    return [self defaultKeyComboForDefaultsKey:defaultsKey];
+
+    return RCInvalidKeyCombo();
 }
 
 - (RCKeyCombo)defaultKeyComboForDefaultsKey:(NSString *)defaultsKey {
@@ -145,6 +158,7 @@ static UInt32 const kRCDefaultKeyCodeB = 11;
 
 - (void)reloadHotKeysAndRecorders {
     [[RCHotKeyService shared] loadAndRegisterHotKeysFromDefaults];
+    [self applyExplicitlyClearedHotKeys];
     [self reloadRecordersFromDefaults];
 }
 
@@ -158,6 +172,40 @@ static UInt32 const kRCDefaultKeyCodeB = 11;
     [[NSUserDefaults standardUserDefaults] removeObjectForKey:kRCClearHistoryKeyCombo];
 
     [self reloadHotKeysAndRecorders];
+}
+
+- (BOOL)isUnsetKeyCombo:(RCKeyCombo)combo {
+    return combo.keyCode == 0 && combo.modifiers == 0;
+}
+
+- (void)saveUnsetKeyComboForDefaultsKey:(NSString *)defaultsKey {
+    if (defaultsKey.length == 0) {
+        return;
+    }
+
+    NSDictionary *unsetCombo = @{
+        @"keyCode": @0,
+        @"modifiers": @0,
+    };
+    [[NSUserDefaults standardUserDefaults] setObject:unsetCombo forKey:defaultsKey];
+}
+
+- (void)applyExplicitlyClearedHotKeys {
+    RCHotKeyService *hotKeyService = [RCHotKeyService shared];
+    RCKeyCombo invalidCombo = RCInvalidKeyCombo();
+
+    if ([self isUnsetKeyCombo:[RCHotKeyService keyComboFromUserDefaults:kRCHotKeyMainKeyCombo]]) {
+        [hotKeyService registerMainHotKey:invalidCombo];
+    }
+    if ([self isUnsetKeyCombo:[RCHotKeyService keyComboFromUserDefaults:kRCHotKeyHistoryKeyCombo]]) {
+        [hotKeyService registerHistoryHotKey:invalidCombo];
+    }
+    if ([self isUnsetKeyCombo:[RCHotKeyService keyComboFromUserDefaults:kRCHotKeySnippetKeyCombo]]) {
+        [hotKeyService registerSnippetHotKey:invalidCombo];
+    }
+    if ([self isUnsetKeyCombo:[RCHotKeyService keyComboFromUserDefaults:kRCClearHistoryKeyCombo]]) {
+        [hotKeyService registerClearHistoryHotKey:invalidCombo];
+    }
 }
 
 @end

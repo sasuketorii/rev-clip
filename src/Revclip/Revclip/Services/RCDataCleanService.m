@@ -341,6 +341,13 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
         return;
     }
 
+    NSString *canonicalPath = [self canonicalPath:standardizedPath];
+    NSString *canonicalClipDataDirectoryPath = [self canonicalPath:[RCUtilities clipDataDirectoryPath]];
+    if (![self isPath:canonicalPath withinDirectory:canonicalClipDataDirectoryPath]) {
+        NSLog(@"[RCDataCleanService] Refusing to delete path outside clip data directory: '%@'", canonicalPath);
+        return;
+    }
+
     NSFileManager *fileManager = [NSFileManager defaultManager];
     BOOL isDirectory = NO;
     if (![fileManager fileExistsAtPath:standardizedPath isDirectory:&isDirectory] || isDirectory) {
@@ -372,6 +379,30 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
         return @"";
     }
     return [[path stringByExpandingTildeInPath] stringByStandardizingPath];
+}
+
+- (NSString *)canonicalPath:(NSString *)path {
+    NSString *standardizedPath = [self standardizedPath:path];
+    if (standardizedPath.length == 0) {
+        return @"";
+    }
+
+    return [standardizedPath stringByResolvingSymlinksInPath];
+}
+
+- (BOOL)isPath:(NSString *)path withinDirectory:(NSString *)directoryPath {
+    if (path.length == 0 || directoryPath.length == 0) {
+        return NO;
+    }
+
+    if ([path isEqualToString:directoryPath]) {
+        return YES;
+    }
+
+    NSString *directoryPrefix = [directoryPath hasSuffix:@"/"]
+        ? directoryPath
+        : [directoryPath stringByAppendingString:@"/"];
+    return [path hasPrefix:directoryPrefix];
 }
 
 @end

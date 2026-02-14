@@ -124,6 +124,11 @@
     }
 }
 
+- (void)viewDidChangeEffectiveAppearance {
+    [super viewDidChangeEffectiveAppearance];
+    [self rc_applyLayerStyle];
+}
+
 - (void)rc_applyLayerStyle {
     CALayer *targetLayer = self.layer;
     if (targetLayer == nil) {

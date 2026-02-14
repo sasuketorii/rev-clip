@@ -22,9 +22,9 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
 
 @interface RCClipData ()
 
-+ (NSString *)sha256HexForData:(NSData *)data;
-+ (void)appendData:(nullable NSData *)source toBuffer:(NSMutableData *)buffer;
-+ (void)appendString:(nullable NSString *)string toBuffer:(NSMutableData *)buffer;
++ (NSString *)sha256HexForDigest:(const unsigned char *)digest;
++ (BOOL)updateHashContext:(CC_SHA256_CTX *)context withData:(nullable NSData *)source;
++ (BOOL)updateHashContext:(CC_SHA256_CTX *)context withString:(nullable NSString *)string;
 + (NSString *)truncateString:(NSString *)string length:(NSUInteger)length;
 
 @end
@@ -122,27 +122,32 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
 #pragma mark - Hash / Title
 
 - (NSString *)dataHash {
-    NSMutableData *buffer = [NSMutableData data];
-    [[self class] appendString:self.stringValue toBuffer:buffer];
-    [[self class] appendData:self.RTFData toBuffer:buffer];
-    [[self class] appendData:self.RTFDData toBuffer:buffer];
-    [[self class] appendData:self.PDFData toBuffer:buffer];
-    [[self class] appendData:self.TIFFData toBuffer:buffer];
+    CC_SHA256_CTX context;
+    CC_SHA256_Init(&context);
+
+    BOOL didUpdate = NO;
+    didUpdate = didUpdate || [[self class] updateHashContext:&context withString:self.stringValue];
+    didUpdate = didUpdate || [[self class] updateHashContext:&context withData:self.RTFData];
+    didUpdate = didUpdate || [[self class] updateHashContext:&context withData:self.RTFDData];
+    didUpdate = didUpdate || [[self class] updateHashContext:&context withData:self.PDFData];
+    didUpdate = didUpdate || [[self class] updateHashContext:&context withData:self.TIFFData];
     for (NSString *fileName in self.fileNames) {
-        [[self class] appendString:fileName toBuffer:buffer];
+        didUpdate = didUpdate || [[self class] updateHashContext:&context withString:fileName];
     }
     for (NSURL *fileURL in self.fileURLs) {
-        [[self class] appendString:fileURL.absoluteString toBuffer:buffer];
+        didUpdate = didUpdate || [[self class] updateHashContext:&context withString:fileURL.absoluteString];
     }
-    [[self class] appendString:self.URLString toBuffer:buffer];
+    didUpdate = didUpdate || [[self class] updateHashContext:&context withString:self.URLString];
     // Include primaryType in hash to differentiate items with identical data but different primary types
-    [[self class] appendString:self.primaryType toBuffer:buffer];
+    didUpdate = didUpdate || [[self class] updateHashContext:&context withString:self.primaryType];
 
-    if (buffer.length == 0) {
+    if (!didUpdate) {
         return @"";
     }
 
-    return [[self class] sha256HexForData:buffer];
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256_Final(digest, &context);
+    return [[self class] sha256HexForDigest:digest];
 }
 
 - (NSString *)title {
@@ -198,45 +203,67 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
 
 #pragma mark - Write
 
-- (void)writeToPasteboard:(NSPasteboard *)pasteboard {
+- (BOOL)writeToPasteboard:(NSPasteboard *)pasteboard {
     if (pasteboard == nil) {
-        return;
+        return NO;
     }
 
     [pasteboard clearContents];
+
+    BOOL didAttemptWrite = NO;
+    BOOL didWriteAny = NO;
 
     // File URLs conform to NSPasteboardWriting, so use writeObjects: for them.
     // Other data types (NSData, NSString for specific UTIs) do not conform to
     // NSPasteboardWriting and must be set individually via setData:/setString:.
     // clearContents above ensures the pasteboard is fresh before writing.
     if (self.fileURLs.count > 0) {
-        [pasteboard writeObjects:self.fileURLs];
+        didAttemptWrite = YES;
+        didWriteAny = [pasteboard writeObjects:self.fileURLs] || didWriteAny;
     }
 
     if (self.stringValue != nil) {
-        [pasteboard setString:self.stringValue forType:NSPasteboardTypeString];
+        didAttemptWrite = YES;
+        didWriteAny = [pasteboard setString:self.stringValue forType:NSPasteboardTypeString] || didWriteAny;
     }
     if (self.RTFData != nil) {
-        [pasteboard setData:self.RTFData forType:NSPasteboardTypeRTF];
+        didAttemptWrite = YES;
+        didWriteAny = [pasteboard setData:self.RTFData forType:NSPasteboardTypeRTF] || didWriteAny;
     }
     if (self.RTFDData != nil) {
-        [pasteboard setData:self.RTFDData forType:NSPasteboardTypeRTFD];
+        didAttemptWrite = YES;
+        didWriteAny = [pasteboard setData:self.RTFDData forType:NSPasteboardTypeRTFD] || didWriteAny;
     }
     if (self.PDFData != nil) {
-        [pasteboard setData:self.PDFData forType:NSPasteboardTypePDF];
+        didAttemptWrite = YES;
+        didWriteAny = [pasteboard setData:self.PDFData forType:NSPasteboardTypePDF] || didWriteAny;
     }
     if (self.fileNames.count > 0) {
+        didAttemptWrite = YES;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        [pasteboard setPropertyList:self.fileNames forType:NSFilenamesPboardType];
+        didWriteAny = [pasteboard setPropertyList:self.fileNames forType:NSFilenamesPboardType] || didWriteAny;
 #pragma clang diagnostic pop
     }
     if (self.URLString != nil) {
-        [pasteboard setString:self.URLString forType:NSPasteboardTypeURL];
+        didAttemptWrite = YES;
+        didWriteAny = [pasteboard setString:self.URLString forType:NSPasteboardTypeURL] || didWriteAny;
     }
     if (self.TIFFData != nil) {
-        [pasteboard setData:self.TIFFData forType:NSPasteboardTypeTIFF];
+        didAttemptWrite = YES;
+        didWriteAny = [pasteboard setData:self.TIFFData forType:NSPasteboardTypeTIFF] || didWriteAny;
     }
+
+    if (!didAttemptWrite) {
+        NSLog(@"[RCClipData] No data to write to pasteboard.");
+        return NO;
+    }
+
+    if (!didWriteAny) {
+        NSLog(@"[RCClipData] Failed to write any clipboard payload to pasteboard.");
+    }
+
+    return didWriteAny;
 }
 
 #pragma mark - NSSecureCoding
@@ -313,7 +340,7 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
     return wrote;
 }
 
-+ (instancetype)clipDataFromPath:(NSString *)path {
++ (nullable instancetype)clipDataFromPath:(NSString *)path {
     if (path.length == 0) {
         return nil;
     }
@@ -336,11 +363,7 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
 
 #pragma mark - Helpers
 
-+ (NSString *)sha256HexForData:(NSData *)data {
-    NSAssert(data.length <= UINT32_MAX, @"Data length %lu exceeds CC_LONG (uint32_t) maximum", (unsigned long)data.length);
-    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
-    CC_SHA256(data.bytes, (CC_LONG)data.length, digest);
-
++ (NSString *)sha256HexForDigest:(const unsigned char *)digest {
     NSMutableString *hexString = [NSMutableString stringWithCapacity:CC_SHA256_DIGEST_LENGTH * 2];
     for (NSUInteger index = 0; index < CC_SHA256_DIGEST_LENGTH; index++) {
         [hexString appendFormat:@"%02x", digest[index]];
@@ -348,23 +371,24 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
     return [hexString copy];
 }
 
-+ (void)appendData:(nullable NSData *)source toBuffer:(NSMutableData *)buffer {
++ (BOOL)updateHashContext:(CC_SHA256_CTX *)context withData:(nullable NSData *)source {
     if (source.length == 0) {
-        return;
+        return NO;
     }
 
     NSAssert(source.length <= UINT32_MAX, @"Source data length %lu exceeds uint32_t maximum", (unsigned long)source.length);
     uint32_t length = CFSwapInt32HostToBig((uint32_t)source.length);
-    [buffer appendBytes:&length length:sizeof(length)];
-    [buffer appendData:source];
+    CC_SHA256_Update(context, &length, (CC_LONG)sizeof(length));
+    CC_SHA256_Update(context, source.bytes, (CC_LONG)source.length);
+    return YES;
 }
 
-+ (void)appendString:(nullable NSString *)string toBuffer:(NSMutableData *)buffer {
++ (BOOL)updateHashContext:(CC_SHA256_CTX *)context withString:(nullable NSString *)string {
     if (string.length == 0) {
-        return;
+        return NO;
     }
     NSData *data = [string dataUsingEncoding:NSUTF8StringEncoding];
-    [self appendData:data toBuffer:buffer];
+    return [self updateHashContext:context withData:data];
 }
 
 + (NSString *)truncateString:(NSString *)string length:(NSUInteger)length {

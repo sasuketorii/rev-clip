@@ -21,12 +21,33 @@
 
 static NSString * const kRCStatusBarIconAssetName = @"StatusBarIcon";
 static NSInteger const kRCMaximumNumberedMenuItems = 9;
+static NSString * const kRCMemoryWarningNotificationName = @"NSApplicationDidReceiveMemoryWarningNotification";
+static NSString * const kRCClipDataFileExtension = @"rcclip";
+static NSString * const kRCThumbnailFileExtension = @"thumb";
+static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
+static NSString * const kRCSnippetMenuFolderIdentifierKey = @"folderIdentifier";
+static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier";
 
 @interface RCMenuManager () <NSMenuDelegate>
 
 @property (nonatomic, strong, nullable) NSStatusItem *statusItem;
 @property (nonatomic, strong) NSMenu *statusMenu;
 @property (nonatomic, strong, nullable) dispatch_block_t defaultsChangeDebounceBlock;
+@property (nonatomic, strong) NSCache<NSString *, NSImage *> *thumbnailCache;
+@property (nonatomic, strong) dispatch_queue_t thumbnailGenerationQueue;
+
+- (void)prefetchThumbnailsForClipItems:(NSArray<RCClipItem *> *)clipItems;
+- (NSString *)thumbnailCacheKeyForClipItem:(RCClipItem *)clipItem;
+- (void)loadThumbnailForClipItem:(RCClipItem *)clipItem
+                        cacheKey:(NSString *)cacheKey
+                updatingMenuItem:(NSMenuItem *)menuItem;
+- (nullable NSImage *)resizedThumbnailImageAtPath:(NSString *)thumbnailPath targetSize:(NSSize)targetSize;
+- (NSArray<NSString *> *)clipDataFilePathsSnapshotForCurrentHistoryWithDatabaseManager:(RCDatabaseManager *)databaseManager;
+- (void)removeClipDataFilesAtPaths:(NSArray<NSString *> *)paths;
+- (nullable NSString *)snippetContentForFolderIdentifier:(NSString *)folderIdentifier snippetIdentifier:(NSString *)snippetIdentifier;
+- (void)handleMissingClipDataForClipItem:(RCClipItem *)clipItem reason:(NSString *)reason;
+- (BOOL)isKnownClipDataFileName:(NSString *)fileName;
+- (NSRange)composedSafePrefixRangeForString:(NSString *)string maxLength:(NSUInteger)maxLength;
 
 @end
 
@@ -45,6 +66,8 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
     self = [super init];
     if (self) {
         _statusMenu = [self menuWithTitle:@"Revclip"];
+        _thumbnailCache = [[NSCache alloc] init];
+        _thumbnailGenerationQueue = dispatch_queue_create("com.revclip.menu.thumbnail", DISPATCH_QUEUE_CONCURRENT);
 
         NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
         [notificationCenter addObserver:self
@@ -74,6 +97,10 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
         [notificationCenter addObserver:self
                                selector:@selector(handleHotKeySnippetFolderTriggered:)
                                    name:RCHotKeySnippetFolderTriggeredNotification
+                                 object:nil];
+        [notificationCenter addObserver:self
+                               selector:@selector(handleApplicationDidReceiveMemoryWarning:)
+                                   name:kRCMemoryWarningNotificationName
                                  object:nil];
     }
     return self;
@@ -108,6 +135,8 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
 - (void)handleUserDefaultsDidChange:(NSNotification *)notification {
     (void)notification;
+
+    [self.thumbnailCache removeAllObjects];
 
     if (self.defaultsChangeDebounceBlock != nil) {
         dispatch_block_cancel(self.defaultsChangeDebounceBlock);
@@ -152,6 +181,11 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
     }
 
     [self popUpSnippetFolderMenuFromHotKeyWithIdentifier:identifier];
+}
+
+- (void)handleApplicationDidReceiveMemoryWarning:(NSNotification *)notification {
+    (void)notification;
+    [self.thumbnailCache removeAllObjects];
 }
 
 #pragma mark - Status Item
@@ -365,6 +399,7 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
     for (NSDictionary *row in clipRows) {
         [clipItems addObject:[[RCClipItem alloc] initWithDictionary:row]];
     }
+    [self prefetchThumbnailsForClipItems:clipItems];
 
     NSUInteger inlineLimit = (NSUInteger)MAX(0, [self integerPreferenceForKey:kRCPrefNumberOfItemsPlaceInlineKey defaultValue:0]);
     NSUInteger folderChunkSize = (NSUInteger)MAX(1, [self integerPreferenceForKey:kRCPrefNumberOfItemsPlaceInsideFolderKey defaultValue:10]);
@@ -448,6 +483,11 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
             continue;
         }
 
+        NSString *snippetIdentifier = [self stringValueFromDictionary:snippet key:@"identifier" defaultValue:@""];
+        if (snippetIdentifier.length == 0) {
+            continue;
+        }
+
         NSString *snippetTitle = [self stringValueFromDictionary:snippet key:@"title" defaultValue:@""];
         NSString *snippetContent = [self stringValueFromDictionary:snippet key:@"content" defaultValue:@""];
 
@@ -462,7 +502,10 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
                                                               action:@selector(selectSnippetMenuItem:)
                                                        keyEquivalent:@""];
         snippetItem.target = self;
-        snippetItem.representedObject = snippetContent ?: @"";
+        snippetItem.representedObject = @{
+            kRCSnippetMenuFolderIdentifierKey: folderIdentifier,
+            kRCSnippetMenuSnippetIdentifierKey: snippetIdentifier,
+        };
         [menu addItem:snippetItem];
         hasSnippet = YES;
     }
@@ -573,21 +616,24 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
     BOOL imageSatisfied = NO;
     if (!clipItem.isColorCode) {
-        if (showImagePreview && clipItem.thumbnailPath.length > 0) {
-            NSImage *thumbnailImage = [[NSImage alloc] initWithContentsOfFile:clipItem.thumbnailPath];
-            if (thumbnailImage != nil) {
-                CGFloat thumbnailWidth = (CGFloat)MAX(1, [self integerPreferenceForKey:kRCThumbnailWidthKey defaultValue:100]);
-                CGFloat thumbnailHeight = (CGFloat)MAX(1, [self integerPreferenceForKey:kRCThumbnailHeightKey defaultValue:32]);
-                NSSize thumbnailSize = NSMakeSize(thumbnailWidth, thumbnailHeight);
-                NSImage *resized = [thumbnailImage resizedImageToFitSize:thumbnailSize];
-                if (resized == nil) {
-                    resized = [thumbnailImage resizedImageToSize:thumbnailSize];
+        NSString *thumbnailCacheKey = [self thumbnailCacheKeyForClipItem:clipItem];
+        if (showImagePreview && clipItem.thumbnailPath.length > 0 && thumbnailCacheKey.length > 0) {
+            NSImage *cachedThumbnail = [self.thumbnailCache objectForKey:thumbnailCacheKey];
+            if (cachedThumbnail != nil) {
+                item.image = cachedThumbnail;
+                imageSatisfied = YES;
+            } else {
+                if (showMenuIcon) {
+                    NSImage *placeholderImage = [self typeIconForClipItem:clipItem];
+                    if (placeholderImage != nil) {
+                        item.image = placeholderImage;
+                        imageSatisfied = YES;
+                    }
                 }
-                if (resized != nil) {
-                    resized.template = NO;
-                    item.image = resized;
-                    imageSatisfied = YES;
-                }
+
+                [self loadThumbnailForClipItem:clipItem
+                                      cacheKey:thumbnailCacheKey
+                              updatingMenuItem:item];
             }
         }
 
@@ -740,6 +786,127 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
     return [self typeIconForClipItem:clipItem];
 }
 
+- (NSSize)thumbnailPreviewSize {
+    CGFloat thumbnailWidth = (CGFloat)MAX(1, [self integerPreferenceForKey:kRCThumbnailWidthKey defaultValue:100]);
+    CGFloat thumbnailHeight = (CGFloat)MAX(1, [self integerPreferenceForKey:kRCThumbnailHeightKey defaultValue:32]);
+    return NSMakeSize(thumbnailWidth, thumbnailHeight);
+}
+
+- (NSString *)thumbnailCacheKeyForClipItem:(RCClipItem *)clipItem {
+    NSString *dataPath = clipItem.dataPath ?: @"";
+    if (clipItem.itemId <= 0 && dataPath.length == 0) {
+        return @"";
+    }
+    return [NSString stringWithFormat:@"%ld|%@", (long)clipItem.itemId, dataPath];
+}
+
+- (void)prefetchThumbnailsForClipItems:(NSArray<RCClipItem *> *)clipItems {
+    if (clipItems.count == 0) {
+        return;
+    }
+
+    BOOL showImagePreview = [self boolPreferenceForKey:kRCShowImageInTheMenuKey defaultValue:YES];
+    if (!showImagePreview) {
+        return;
+    }
+
+    NSArray<RCClipItem *> *itemsToPrefetch = [clipItems copy];
+    NSSize thumbnailSize = [self thumbnailPreviewSize];
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(self.thumbnailGenerationQueue, ^{
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (strongSelf == nil) {
+            return;
+        }
+
+        for (RCClipItem *clipItem in itemsToPrefetch) {
+            if (clipItem.isColorCode || clipItem.thumbnailPath.length == 0) {
+                continue;
+            }
+
+            NSString *cacheKey = [strongSelf thumbnailCacheKeyForClipItem:clipItem];
+            if (cacheKey.length == 0 || [strongSelf.thumbnailCache objectForKey:cacheKey] != nil) {
+                continue;
+            }
+
+            NSImage *resizedImage = [strongSelf resizedThumbnailImageAtPath:clipItem.thumbnailPath
+                                                                  targetSize:thumbnailSize];
+            if (resizedImage != nil) {
+                [strongSelf.thumbnailCache setObject:resizedImage forKey:cacheKey];
+            }
+        }
+    });
+}
+
+- (void)loadThumbnailForClipItem:(RCClipItem *)clipItem
+                        cacheKey:(NSString *)cacheKey
+                updatingMenuItem:(NSMenuItem *)menuItem {
+    if (clipItem.thumbnailPath.length == 0 || cacheKey.length == 0 || menuItem == nil) {
+        return;
+    }
+
+    NSString *thumbnailPath = [clipItem.thumbnailPath copy];
+    NSString *expectedDataHash = [clipItem.dataHash copy] ?: @"";
+    NSSize thumbnailSize = [self thumbnailPreviewSize];
+    __weak typeof(self) weakSelf = self;
+    __weak NSMenuItem *weakMenuItem = menuItem;
+    dispatch_async(self.thumbnailGenerationQueue, ^{
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (strongSelf == nil) {
+            return;
+        }
+
+        NSImage *resizedImage = [strongSelf.thumbnailCache objectForKey:cacheKey];
+        if (resizedImage == nil) {
+            resizedImage = [strongSelf resizedThumbnailImageAtPath:thumbnailPath targetSize:thumbnailSize];
+            if (resizedImage != nil) {
+                [strongSelf.thumbnailCache setObject:resizedImage forKey:cacheKey];
+            }
+        }
+
+        if (resizedImage == nil) {
+            return;
+        }
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSMenuItem *strongMenuItem = weakMenuItem;
+            if (strongMenuItem == nil) {
+                return;
+            }
+
+            id representedObject = strongMenuItem.representedObject;
+            if (![representedObject isKindOfClass:[NSString class]]
+                || ![(NSString *)representedObject isEqualToString:expectedDataHash]) {
+                return;
+            }
+
+            strongMenuItem.image = resizedImage;
+        });
+    });
+}
+
+- (nullable NSImage *)resizedThumbnailImageAtPath:(NSString *)thumbnailPath targetSize:(NSSize)targetSize {
+    if (thumbnailPath.length == 0) {
+        return nil;
+    }
+
+    NSImage *thumbnailImage = [[NSImage alloc] initWithContentsOfFile:thumbnailPath];
+    if (thumbnailImage == nil) {
+        return nil;
+    }
+
+    NSImage *resizedImage = [thumbnailImage resizedImageToFitSize:targetSize];
+    if (resizedImage == nil) {
+        resizedImage = [thumbnailImage resizedImageToSize:targetSize];
+    }
+    if (resizedImage == nil) {
+        return nil;
+    }
+
+    resizedImage.template = NO;
+    return resizedImage;
+}
+
 - (nullable NSImage *)typeIconForClipItem:(RCClipItem *)clipItem {
     NSInteger preferredIconSize = [self integerPreferenceForKey:kRCPrefMenuIconSizeKey defaultValue:16];
     CGFloat iconSide = (CGFloat)MAX(8, preferredIconSize);
@@ -813,11 +980,13 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
     RCClipItem *clipItem = [[RCClipItem alloc] initWithDictionary:clipRow];
     if (clipItem.dataPath.length == 0) {
+        [self handleMissingClipDataForClipItem:clipItem reason:@"empty data path"];
         return;
     }
 
     RCClipData *clipData = [RCClipData clipDataFromPath:clipItem.dataPath];
     if (clipData == nil) {
+        [self handleMissingClipDataForClipItem:clipItem reason:@"missing or unreadable clip data file"];
         return;
     }
 
@@ -825,14 +994,25 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 }
 
 - (void)selectSnippetMenuItem:(NSMenuItem *)menuItem {
-    NSString *content = nil;
-    if ([menuItem.representedObject isKindOfClass:[NSString class]]) {
-        content = (NSString *)menuItem.representedObject;
+    NSDictionary *selectionInfo = nil;
+    if ([menuItem.representedObject isKindOfClass:[NSDictionary class]]) {
+        selectionInfo = (NSDictionary *)menuItem.representedObject;
     }
-    if (content.length == 0) {
+
+    NSString *folderIdentifier = [self stringValueFromDictionary:selectionInfo
+                                                             key:kRCSnippetMenuFolderIdentifierKey
+                                                    defaultValue:@""];
+    NSString *snippetIdentifier = [self stringValueFromDictionary:selectionInfo
+                                                              key:kRCSnippetMenuSnippetIdentifierKey
+                                                     defaultValue:@""];
+    if (folderIdentifier.length == 0 || snippetIdentifier.length == 0) {
         return;
     }
 
+    NSString *content = [self snippetContentForFolderIdentifier:folderIdentifier snippetIdentifier:snippetIdentifier];
+    if (content.length == 0) {
+        return;
+    }
     [[RCPasteService shared] pastePlainText:content];
 }
 
@@ -862,13 +1042,16 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
     @try {
         RCDatabaseManager *databaseManager = [RCDatabaseManager shared];
+        NSArray<NSString *> *pathsToDelete = [self clipDataFilePathsSnapshotForCurrentHistoryWithDatabaseManager:databaseManager];
 
         if (![databaseManager deleteAllClipItems]) {
             return;
         }
 
+        [self.thumbnailCache removeAllObjects];
+
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            [self removeAllClipDataFilesFromDisk];
+            [self removeClipDataFilesAtPaths:pathsToDelete];
         });
 
         [self rebuildMenu];
@@ -905,6 +1088,86 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
 
 #pragma mark - Helpers
 
+- (NSArray<NSString *> *)clipDataFilePathsSnapshotForCurrentHistoryWithDatabaseManager:(RCDatabaseManager *)databaseManager {
+    if (databaseManager == nil) {
+        return @[];
+    }
+
+    NSInteger count = [databaseManager clipItemCount];
+    if (count <= 0) {
+        return @[];
+    }
+
+    NSArray<NSDictionary *> *clipRows = [databaseManager fetchClipItemsWithLimit:count];
+    if (clipRows.count == 0) {
+        return @[];
+    }
+
+    NSMutableOrderedSet<NSString *> *paths = [NSMutableOrderedSet orderedSet];
+    for (NSDictionary *clipRow in clipRows) {
+        RCClipItem *clipItem = [[RCClipItem alloc] initWithDictionary:clipRow];
+        if (clipItem.dataPath.length > 0) {
+            [paths addObject:clipItem.dataPath];
+        }
+        if (clipItem.thumbnailPath.length > 0) {
+            [paths addObject:clipItem.thumbnailPath];
+        }
+    }
+
+    return paths.array;
+}
+
+- (void)removeClipDataFilesAtPaths:(NSArray<NSString *> *)paths {
+    for (NSString *path in paths) {
+        [self removeFileAtPath:path];
+    }
+}
+
+- (nullable NSString *)snippetContentForFolderIdentifier:(NSString *)folderIdentifier snippetIdentifier:(NSString *)snippetIdentifier {
+    if (folderIdentifier.length == 0 || snippetIdentifier.length == 0) {
+        return nil;
+    }
+
+    NSArray<NSDictionary *> *snippets = [[RCDatabaseManager shared] fetchSnippetsForFolder:folderIdentifier];
+    for (NSDictionary *snippet in snippets) {
+        NSString *identifier = [self stringValueFromDictionary:snippet key:@"identifier" defaultValue:@""];
+        if (![identifier isEqualToString:snippetIdentifier]) {
+            continue;
+        }
+
+        BOOL enabled = [self boolValueFromDictionary:snippet key:@"enabled" defaultValue:YES];
+        if (!enabled) {
+            return nil;
+        }
+
+        return [self stringValueFromDictionary:snippet key:@"content" defaultValue:@""];
+    }
+
+    return nil;
+}
+
+- (void)handleMissingClipDataForClipItem:(RCClipItem *)clipItem reason:(NSString *)reason {
+    NSString *dataHash = clipItem.dataHash ?: @"";
+    NSString *safeReason = reason.length > 0 ? reason : @"unknown reason";
+
+    if (dataHash.length == 0) {
+        NSLog(@"[RCMenuManager] Clip data recovery skipped: missing data_hash (%@).", safeReason);
+        [self rebuildMenu];
+        return;
+    }
+
+    BOOL deleted = [[RCDatabaseManager shared] deleteClipItemWithDataHash:dataHash];
+    if (!deleted) {
+        NSLog(@"[RCMenuManager] Clip data recovery failed: could not delete orphaned row for data_hash=%@ (%@).", dataHash, safeReason);
+        [self rebuildMenu];
+        return;
+    }
+
+    NSLog(@"[RCMenuManager] Removed orphaned clip row for missing clip data. data_hash=%@ (%@).", dataHash, safeReason);
+    [self.thumbnailCache removeAllObjects];
+    [self rebuildMenu];
+}
+
 - (void)removeAllClipDataFilesFromDisk {
     NSString *clipDirectoryPath = [RCUtilities clipDataDirectoryPath];
     NSString *expandedPath = [[clipDirectoryPath stringByExpandingTildeInPath] stringByStandardizingPath];
@@ -915,9 +1178,30 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSArray<NSString *> *children = [fileManager contentsOfDirectoryAtPath:expandedPath error:nil];
     for (NSString *child in children) {
+        if (![self isKnownClipDataFileName:child]) {
+            continue;
+        }
+
         NSString *itemPath = [expandedPath stringByAppendingPathComponent:child];
+        BOOL isDirectory = NO;
+        if (![fileManager fileExistsAtPath:itemPath isDirectory:&isDirectory] || isDirectory) {
+            continue;
+        }
+
         [self removeFileAtPath:itemPath];
     }
+}
+
+- (BOOL)isKnownClipDataFileName:(NSString *)fileName {
+    if (fileName.length == 0) {
+        return NO;
+    }
+
+    NSString *lowercaseFileName = [fileName lowercaseString];
+    NSString *extension = [[fileName pathExtension] lowercaseString];
+    return [extension isEqualToString:kRCClipDataFileExtension]
+        || [extension isEqualToString:kRCThumbnailFileExtension]
+        || [lowercaseFileName hasSuffix:kRCLegacyThumbnailFileSuffix];
 }
 
 - (void)removeFileAtPath:(NSString *)path {
@@ -930,8 +1214,30 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
         return;
     }
 
+    NSString *clipDirectoryPath = [RCUtilities clipDataDirectoryPath];
+    NSString *standardizedClipDirectoryPath = [[clipDirectoryPath stringByExpandingTildeInPath] stringByStandardizingPath];
+    if (standardizedClipDirectoryPath.length == 0 || ![expandedPath hasPrefix:standardizedClipDirectoryPath]) {
+        return;
+    }
+
+    NSString *clipDirectoryPrefix = [standardizedClipDirectoryPath hasSuffix:@"/"]
+        ? standardizedClipDirectoryPath
+        : [standardizedClipDirectoryPath stringByAppendingString:@"/"];
+    BOOL isExactDirectoryPath = [expandedPath isEqualToString:standardizedClipDirectoryPath];
+    BOOL isNestedPath = [expandedPath hasPrefix:clipDirectoryPrefix];
+    if (!isExactDirectoryPath && !isNestedPath) {
+        return;
+    }
+
     NSFileManager *fileManager = [NSFileManager defaultManager];
-    if (![fileManager fileExistsAtPath:expandedPath]) {
+    BOOL isDirectory = NO;
+    if (![fileManager fileExistsAtPath:expandedPath isDirectory:&isDirectory] || isDirectory) {
+        return;
+    }
+
+    NSDictionary<NSFileAttributeKey, id> *attributes = [fileManager attributesOfItemAtPath:expandedPath error:nil];
+    NSString *fileType = [attributes[NSFileType] isKindOfClass:[NSString class]] ? attributes[NSFileType] : nil;
+    if (![fileType isEqualToString:NSFileTypeRegular]) {
         return;
     }
 
@@ -948,26 +1254,36 @@ static NSInteger const kRCMaximumNumberedMenuItems = 9;
     }
 
     if (maxLength <= 3) {
-        NSRange safeRange = [string rangeOfComposedCharacterSequencesForRange:NSMakeRange(0, (NSUInteger)maxLength)];
-        if (safeRange.length > (NSUInteger)maxLength) {
-            safeRange.length = MAX(1, (NSUInteger)maxLength - 1);
-            safeRange = [string rangeOfComposedCharacterSequencesForRange:safeRange];
-        }
+        NSRange safeRange = [self composedSafePrefixRangeForString:string maxLength:(NSUInteger)maxLength];
         return [string substringWithRange:safeRange];
     }
 
     NSUInteger bodyLength = (NSUInteger)(maxLength - 3);
-    NSRange safeRange = [string rangeOfComposedCharacterSequencesForRange:NSMakeRange(0, bodyLength)];
-    if (safeRange.length > bodyLength) {
-        if (bodyLength > 0) {
-            safeRange.length = bodyLength - 1;
-            safeRange = [string rangeOfComposedCharacterSequencesForRange:safeRange];
-        } else {
-            safeRange.length = 0;
-        }
-    }
+    NSRange safeRange = [self composedSafePrefixRangeForString:string maxLength:bodyLength];
     NSString *truncated = [string substringWithRange:safeRange];
     return [truncated stringByAppendingString:@"..."];
+}
+
+- (NSRange)composedSafePrefixRangeForString:(NSString *)string maxLength:(NSUInteger)maxLength {
+    if (string.length == 0 || maxLength == 0) {
+        return NSMakeRange(0, 0);
+    }
+
+    NSUInteger requestedLength = MIN(maxLength, string.length);
+    NSRange safeRange = [string rangeOfComposedCharacterSequencesForRange:NSMakeRange(0, requestedLength)];
+
+    while (safeRange.length > maxLength && safeRange.length > 0) {
+        NSUInteger adjustedLength = safeRange.length;
+        NSRange lastSequenceRange = [string rangeOfComposedCharacterSequenceAtIndex:(adjustedLength - 1)];
+        if (lastSequenceRange.location == NSNotFound || lastSequenceRange.location >= adjustedLength) {
+            adjustedLength -= 1;
+        } else {
+            adjustedLength = lastSequenceRange.location;
+        }
+        safeRange = [string rangeOfComposedCharacterSequencesForRange:NSMakeRange(0, adjustedLength)];
+    }
+
+    return safeRange;
 }
 
 - (BOOL)boolPreferenceForKey:(NSString *)key defaultValue:(BOOL)defaultValue {

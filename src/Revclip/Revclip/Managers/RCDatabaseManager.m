@@ -8,6 +8,7 @@
 #import "RCDatabaseManager.h"
 
 #import "FMDB.h"
+#import <sqlite3.h>
 
 static NSInteger const kRCCurrentSchemaVersion = 1;
 
@@ -114,7 +115,12 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     }
 
     NSInteger version = [self currentSchemaVersion];
-    if (version >= kRCCurrentSchemaVersion) {
+    if (version > kRCCurrentSchemaVersion) {
+        NSLog(@"[RCDatabaseManager] Schema version %ld is newer than supported version %ld. Migration aborted.",
+              (long)version, (long)kRCCurrentSchemaVersion);
+        return NO;
+    }
+    if (version == kRCCurrentSchemaVersion) {
         return YES;
     }
 
@@ -199,13 +205,23 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     __block BOOL inserted = NO;
     [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        inserted = [db executeUpdate:@"INSERT OR IGNORE INTO clip_items (data_path, title, data_hash, primary_type, update_time, thumbnail_path, is_color_code) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        inserted = [db executeUpdate:@"INSERT INTO clip_items (data_path, title, data_hash, primary_type, update_time, thumbnail_path, is_color_code) VALUES (?, ?, ?, ?, ?, ?, ?)"
                      withArgumentsInArray:@[dataPath, title, dataHash, primaryType, updateTime, thumbnailPath, isColorCode]];
         if (!inserted) {
-            [self logDatabaseError:db context:@"Failed to insert clip_items row"];
-        } else if (db.changes == 0) {
-            inserted = NO;
-            NSLog(@"[RCDatabaseManager] insertClipItem: duplicate data_hash detected, row ignored");
+            int errorCode = db.lastErrorCode;
+            int extendedErrorCode = db.lastExtendedErrorCode;
+            if (errorCode == SQLITE_CONSTRAINT && extendedErrorCode == SQLITE_CONSTRAINT_UNIQUE) {
+                NSLog(@"[RCDatabaseManager] insertClipItem: duplicate data_hash detected (code=%d, extended=%d)",
+                      errorCode,
+                      extendedErrorCode);
+            } else if (errorCode == SQLITE_CONSTRAINT) {
+                NSLog(@"[RCDatabaseManager] insertClipItem: constraint violation (code=%d, extended=%d, message=%@)",
+                      errorCode,
+                      extendedErrorCode,
+                      db.lastErrorMessage);
+            } else {
+                [self logDatabaseError:db context:@"Failed to insert clip_items row"];
+            }
         }
     }];
 
@@ -287,7 +303,7 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     return [rows copy];
 }
 
-- (NSDictionary *)clipItemWithDataHash:(NSString *)dataHash {
+- (nullable NSDictionary *)clipItemWithDataHash:(NSString *)dataHash {
     if (dataHash.length == 0 || ![self ensureDatabaseReadyForOperation]) {
         return nil;
     }
@@ -440,18 +456,26 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     }
 
     __block BOOL deleted = NO;
-    [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
+    [self.databaseQueue inTransaction:^(FMDatabase * _Nonnull db, BOOL * _Nonnull rollback) {
         // Explicitly delete child snippets before deleting the folder as a
         // defensive measure, rather than relying solely on ON DELETE CASCADE.
-        if (![db executeUpdate:@"DELETE FROM snippets WHERE folder_id = ?" withArgumentsInArray:@[identifier]]) {
+        BOOL deletedChildren = [db executeUpdate:@"DELETE FROM snippets WHERE folder_id = ?" withArgumentsInArray:@[identifier]];
+        if (!deletedChildren) {
             [self logDatabaseError:db context:@"Failed to delete child snippets for folder"];
+        }
+
+        BOOL deletedFolder = [db executeUpdate:@"DELETE FROM snippet_folders WHERE identifier = ?" withArgumentsInArray:@[identifier]];
+        if (!deletedFolder) {
+            [self logDatabaseError:db context:@"Failed to delete snippet_folders row"];
+        }
+
+        if (db.hadError || !deletedChildren || !deletedFolder) {
+            *rollback = YES;
+            deleted = NO;
             return;
         }
 
-        deleted = [db executeUpdate:@"DELETE FROM snippet_folders WHERE identifier = ?" withArgumentsInArray:@[identifier]];
-        if (!deleted) {
-            [self logDatabaseError:db context:@"Failed to delete snippet_folders row"];
-        }
+        deleted = YES;
     }];
 
     return deleted;
@@ -767,7 +791,6 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     NSArray<NSString *> *schemaStatements = @[
         @"CREATE TABLE IF NOT EXISTS clip_items (id INTEGER PRIMARY KEY AUTOINCREMENT, data_path TEXT NOT NULL, title TEXT DEFAULT '', data_hash TEXT UNIQUE NOT NULL, primary_type TEXT DEFAULT '', update_time INTEGER NOT NULL, thumbnail_path TEXT DEFAULT '', is_color_code INTEGER DEFAULT 0)",
         @"CREATE INDEX IF NOT EXISTS idx_clip_update_time ON clip_items(update_time DESC)",
-        @"CREATE INDEX IF NOT EXISTS idx_clip_data_hash ON clip_items(data_hash)",
         @"CREATE TABLE IF NOT EXISTS snippet_folders (id INTEGER PRIMARY KEY AUTOINCREMENT, identifier TEXT UNIQUE NOT NULL, folder_index INTEGER DEFAULT 0, enabled INTEGER DEFAULT 1, title TEXT DEFAULT 'untitled folder')",
         @"CREATE INDEX IF NOT EXISTS idx_folder_index ON snippet_folders(folder_index)",
         @"CREATE TABLE IF NOT EXISTS snippets (id INTEGER PRIMARY KEY AUTOINCREMENT, identifier TEXT UNIQUE NOT NULL, folder_id TEXT NOT NULL REFERENCES snippet_folders(identifier) ON DELETE CASCADE, snippet_index INTEGER DEFAULT 0, enabled INTEGER DEFAULT 1, title TEXT DEFAULT 'untitled snippet', content TEXT DEFAULT '')",
