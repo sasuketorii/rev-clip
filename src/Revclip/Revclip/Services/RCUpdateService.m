@@ -12,6 +12,7 @@
 static NSTimeInterval const kRCDefaultUpdateCheckInterval = 86400.0;
 static NSString * const kRCSparkleFrameworkName = @"Sparkle.framework";
 static NSString * const kRCUpdateServiceErrorDomain = @"com.revclip.update";
+static NSString * const kRCSparkleErrorDomain = @"SUSparkleErrorDomain";
 
 NSNotificationName const RCUpdateServiceDidFailNotification = @"RCUpdateServiceDidFailNotification";
 NSNotificationName const RCUpdateServiceSparkleUnavailableNotification = @"RCUpdateServiceSparkleUnavailableNotification";
@@ -25,6 +26,11 @@ typedef NS_ENUM(NSInteger, RCUpdateServiceErrorCode) {
     RCUpdateServiceErrorCodeUpdaterControllerMissing = 4,
     RCUpdateServiceErrorCodeUpdaterControllerCreationFailed = 5,
     RCUpdateServiceErrorCodeUpdaterNotInitialized = 6,
+};
+
+typedef NS_ENUM(NSInteger, RCSparkleErrorCode) {
+    RCSparkleErrorCodeNoUpdate = 1001,
+    RCSparkleErrorCodeInstallationCanceled = 4007,
 };
 
 @protocol RCSPUUpdater <NSObject>
@@ -204,6 +210,14 @@ typedef NS_ENUM(NSInteger, RCUpdateServiceErrorCode) {
     (void)updateCheck;
 
     if (error != nil) {
+        if ([self isIgnorableSparkleError:error]) {
+            NSLog(@"[RCUpdateService] Ignoring non-actionable Sparkle error: %@ (domain: %@ code: %ld)",
+                  error.localizedDescription ?: @"Unknown error",
+                  error.domain ?: @"",
+                  (long)error.code);
+            self.lastError = nil;
+            return;
+        }
         [self reportFailureWithError:error reason:@"Update check failed."];
         return;
     }
@@ -224,6 +238,24 @@ typedef NS_ENUM(NSInteger, RCUpdateServiceErrorCode) {
     }
     if ([updater respondsToSelector:@selector(setUpdateCheckInterval:)]) {
         updater.updateCheckInterval = self.updateCheckInterval;
+    }
+}
+
+- (BOOL)isIgnorableSparkleError:(NSError *)error {
+    if (error == nil) {
+        return NO;
+    }
+
+    if (![error.domain isEqualToString:kRCSparkleErrorDomain]) {
+        return NO;
+    }
+
+    switch (error.code) {
+        case RCSparkleErrorCodeNoUpdate:
+        case RCSparkleErrorCodeInstallationCanceled:
+            return YES;
+        default:
+            return NO;
     }
 }
 
