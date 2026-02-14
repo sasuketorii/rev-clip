@@ -68,7 +68,11 @@ static const CGFloat RCPreferencesMinimumContentWidth = 700.0;
     }
 
     [super showWindow:sender];
-    [NSApp activateIgnoringOtherApps:YES];
+    if (@available(macOS 14.0, *)) {
+        [NSApp activate];
+    } else {
+        [NSApp activateIgnoringOtherApps:YES];
+    }
     [self.window makeKeyAndOrderFront:sender];
 }
 

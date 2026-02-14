@@ -8,7 +8,7 @@
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="RCGeneralPreferencesViewController">
             <connections>
-                <outlet property="copySameHistoryButton" destination="eF4-jc-Zp1" id="X5u-jx-i8f"/>
+                <outlet property="sameHistoryCopyButton" destination="eF4-jc-Zp1" id="X5u-jx-i8f"/>
                 <outlet property="loginAtStartupButton" destination="gA8-Bm-9Qd" id="PD9-Gw-R1x"/>
                 <outlet property="maxHistorySizeStepper" destination="aS5-yP-HmQ" id="p8M-hn-svU"/>
                 <outlet property="maxHistorySizeTextField" destination="s8n-LC-H7r" id="yQ1-YM-3fu"/>

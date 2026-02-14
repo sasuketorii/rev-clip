@@ -57,9 +57,14 @@ static UInt32 const kRCDefaultKeyCodeB = 11;
 
     NSWindow *window = self.view.window;
     if (window != nil) {
+        __weak typeof(self) weakSelf = self;
         [alert beginSheetModalForWindow:window completionHandler:^(NSModalResponse returnCode) {
+            typeof(self) strongSelf = weakSelf;
+            if (strongSelf == nil) {
+                return;
+            }
             if (returnCode == NSAlertFirstButtonReturn) {
-                [self resetHotKeysToDefaults];
+                [strongSelf resetHotKeysToDefaults];
             }
         }];
         return;

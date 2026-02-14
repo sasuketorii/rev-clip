@@ -23,7 +23,7 @@
             <rect key="frame" x="0.0" y="0.0" width="700" height="380"/>
             <autoresizingMask key="autoresizingMask"/>
             <subviews>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="9nI-bh-dPc" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
+                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="9nI-bh-dPc" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
                     <rect key="frame" x="20" y="344" width="120" height="22"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" title="ベータ機能" id="Y4f-JL-Lso">
                         <font key="font" metaFont="message"/>
@@ -31,7 +31,7 @@
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="wot-nR-fhg" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
+                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="wot-nR-fhg" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
                     <rect key="frame" x="20" y="323" width="300" height="17"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" title="これらの機能は実験的であり、変更される可能性があります。" id="AHB-eC-r0g">
                         <font key="font" metaFont="smallSystem"/>
@@ -39,7 +39,7 @@
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="FSX-2G-0Ui">
+                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="FSX-2G-0Ui">
                     <rect key="frame" x="20" y="286" width="205" height="18"/>
                     <buttonCell key="cell" type="check" title="プレーンテキストでペースト" bezelStyle="regularSquare" imagePosition="left" inset="2" id="mQr-OB-E2r">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -49,7 +49,7 @@
                         <action selector="handleEnableCheckboxChanged:" target="-2" id="qfN-Wx-Iam"/>
                     </connections>
                 </button>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="o2K-Dj-lY5" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
+                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="o2K-Dj-lY5" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
                     <rect key="frame" x="248" y="287" width="56" height="17"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" title="修飾キー" id="2ri-Q0-Ih8">
                         <font key="font" metaFont="system"/>
@@ -57,7 +57,7 @@
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="5GE-Lw-Oz2">
+                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="5GE-Lw-Oz2">
                     <rect key="frame" x="312" y="282" width="148" height="26"/>
                     <popUpButtonCell key="cell" type="square" title="Command" bezelStyle="rounded" alignment="left" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="rTa-rY-VMk" id="Kvp-lx-86m">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
@@ -75,10 +75,10 @@
                         <action selector="handleModifierPopUpChanged:" target="-2" id="1vb-j2-jPE"/>
                     </connections>
                 </popUpButton>
-                <box borderType="none" boxType="separator" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="YES" id="Nwr-Xn-vS8">
+                <box borderType="none" boxType="separator" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="Nwr-Xn-vS8">
                     <rect key="frame" x="20" y="268" width="440" height="1"/>
                 </box>
-                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="FZ8-bX-1UA">
+                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="FZ8-bX-1UA">
                     <rect key="frame" x="20" y="238" width="205" height="18"/>
                     <buttonCell key="cell" type="check" title="履歴を削除" bezelStyle="regularSquare" imagePosition="left" inset="2" id="aqo-h4-zJ4">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -88,7 +88,7 @@
                         <action selector="handleEnableCheckboxChanged:" target="-2" id="OkL-H2-90d"/>
                     </connections>
                 </button>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="PU0-RM-OwU" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
+                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="PU0-RM-OwU" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
                     <rect key="frame" x="248" y="239" width="56" height="17"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" title="修飾キー" id="rVA-zc-uQx">
                         <font key="font" metaFont="system"/>
@@ -96,7 +96,7 @@
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="fr8-z2-n6P">
+                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="fr8-z2-n6P">
                     <rect key="frame" x="312" y="234" width="148" height="26"/>
                     <popUpButtonCell key="cell" type="square" title="Command" bezelStyle="rounded" alignment="left" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="Jbl-fQ-Z6s" id="vU6-08-ysn">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
@@ -114,10 +114,10 @@
                         <action selector="handleModifierPopUpChanged:" target="-2" id="FNe-wX-m9I"/>
                     </connections>
                 </popUpButton>
-                <box borderType="none" boxType="separator" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="YES" id="RR2-yA-0Ie">
+                <box borderType="none" boxType="separator" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="RR2-yA-0Ie">
                     <rect key="frame" x="20" y="220" width="440" height="1"/>
                 </box>
-                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="rKJ-GR-7M4">
+                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="rKJ-GR-7M4">
                     <rect key="frame" x="20" y="190" width="220" height="18"/>
                     <buttonCell key="cell" type="check" title="ペーストして履歴を削除" bezelStyle="regularSquare" imagePosition="left" inset="2" id="5zc-lE-FSH">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -127,7 +127,7 @@
                         <action selector="handleEnableCheckboxChanged:" target="-2" id="a9w-9x-emM"/>
                     </connections>
                 </button>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="UVC-Lp-R0f" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
+                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="UVC-Lp-R0f" bezeled="NO" drawsBackground="NO" editable="NO" selectable="NO">
                     <rect key="frame" x="248" y="191" width="56" height="17"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" title="修飾キー" id="0FQ-R4-fzo">
                         <font key="font" metaFont="system"/>
@@ -135,7 +135,7 @@
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="psL-E8-GU2">
+                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="psL-E8-GU2">
                     <rect key="frame" x="312" y="186" width="148" height="26"/>
                     <popUpButtonCell key="cell" type="square" title="Command" bezelStyle="rounded" alignment="left" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="zSV-5j-YNH" id="w4q-Q0-9rR">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
@@ -153,10 +153,10 @@
                         <action selector="handleModifierPopUpChanged:" target="-2" id="FIV-84-JVn"/>
                     </connections>
                 </popUpButton>
-                <box borderType="none" boxType="separator" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="YES" id="1Qz-em-hgu">
+                <box borderType="none" boxType="separator" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="1Qz-em-hgu">
                     <rect key="frame" x="20" y="172" width="440" height="1"/>
                 </box>
-                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="YES" id="ziL-7m-zNH">
+                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ziL-7m-zNH">
                     <rect key="frame" x="20" y="142" width="250" height="18"/>
                     <buttonCell key="cell" type="check" title="スクリーンショット監視" bezelStyle="regularSquare" imagePosition="left" inset="2" id="N3G-jY-bhg">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -170,6 +170,57 @@
             <constraints>
                 <constraint firstAttribute="width" constant="700" id="b6W-zi-QzL"/>
                 <constraint firstAttribute="height" constant="380" id="Fm4-Ru-WwQ"/>
+                <!-- Title label: top-left -->
+                <constraint firstItem="9nI-bh-dPc" firstAttribute="top" secondItem="Q0r-Ze-fj8" secondAttribute="top" constant="16" id="AL1-t0-001"/>
+                <constraint firstItem="9nI-bh-dPc" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="20" id="AL1-l0-002"/>
+                <!-- Subtitle label: below title -->
+                <constraint firstItem="wot-nR-fhg" firstAttribute="top" secondItem="9nI-bh-dPc" secondAttribute="bottom" constant="4" id="AL1-t0-003"/>
+                <constraint firstItem="wot-nR-fhg" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="20" id="AL1-l0-004"/>
+                <!-- Row 1: Paste plain text checkbox -->
+                <constraint firstItem="FSX-2G-0Ui" firstAttribute="top" secondItem="wot-nR-fhg" secondAttribute="bottom" constant="16" id="AL1-t0-005"/>
+                <constraint firstItem="FSX-2G-0Ui" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="20" id="AL1-l0-006"/>
+                <!-- Row 1: Modifier label, aligned with checkbox -->
+                <constraint firstItem="o2K-Dj-lY5" firstAttribute="centerY" secondItem="FSX-2G-0Ui" secondAttribute="centerY" id="AL1-c0-007"/>
+                <constraint firstItem="o2K-Dj-lY5" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="248" id="AL1-l0-008"/>
+                <!-- Row 1: PopUp button -->
+                <constraint firstItem="5GE-Lw-Oz2" firstAttribute="centerY" secondItem="FSX-2G-0Ui" secondAttribute="centerY" id="AL1-c0-009"/>
+                <constraint firstItem="5GE-Lw-Oz2" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="312" id="AL1-l0-010"/>
+                <constraint firstItem="5GE-Lw-Oz2" firstAttribute="width" constant="148" id="AL1-w0-011"/>
+                <!-- Separator 1 -->
+                <constraint firstItem="Nwr-Xn-vS8" firstAttribute="top" secondItem="FSX-2G-0Ui" secondAttribute="bottom" constant="12" id="AL1-t0-012"/>
+                <constraint firstItem="Nwr-Xn-vS8" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="20" id="AL1-l0-013"/>
+                <constraint firstItem="Nwr-Xn-vS8" firstAttribute="width" constant="440" id="AL1-w0-014"/>
+                <!-- Row 2: Delete history checkbox -->
+                <constraint firstItem="FZ8-bX-1UA" firstAttribute="top" secondItem="Nwr-Xn-vS8" secondAttribute="bottom" constant="12" id="AL1-t0-015"/>
+                <constraint firstItem="FZ8-bX-1UA" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="20" id="AL1-l0-016"/>
+                <!-- Row 2: Modifier label -->
+                <constraint firstItem="PU0-RM-OwU" firstAttribute="centerY" secondItem="FZ8-bX-1UA" secondAttribute="centerY" id="AL1-c0-017"/>
+                <constraint firstItem="PU0-RM-OwU" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="248" id="AL1-l0-018"/>
+                <!-- Row 2: PopUp button -->
+                <constraint firstItem="fr8-z2-n6P" firstAttribute="centerY" secondItem="FZ8-bX-1UA" secondAttribute="centerY" id="AL1-c0-019"/>
+                <constraint firstItem="fr8-z2-n6P" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="312" id="AL1-l0-020"/>
+                <constraint firstItem="fr8-z2-n6P" firstAttribute="width" constant="148" id="AL1-w0-021"/>
+                <!-- Separator 2 -->
+                <constraint firstItem="RR2-yA-0Ie" firstAttribute="top" secondItem="FZ8-bX-1UA" secondAttribute="bottom" constant="12" id="AL1-t0-022"/>
+                <constraint firstItem="RR2-yA-0Ie" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="20" id="AL1-l0-023"/>
+                <constraint firstItem="RR2-yA-0Ie" firstAttribute="width" constant="440" id="AL1-w0-024"/>
+                <!-- Row 3: Paste and delete history checkbox -->
+                <constraint firstItem="rKJ-GR-7M4" firstAttribute="top" secondItem="RR2-yA-0Ie" secondAttribute="bottom" constant="12" id="AL1-t0-025"/>
+                <constraint firstItem="rKJ-GR-7M4" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="20" id="AL1-l0-026"/>
+                <!-- Row 3: Modifier label -->
+                <constraint firstItem="UVC-Lp-R0f" firstAttribute="centerY" secondItem="rKJ-GR-7M4" secondAttribute="centerY" id="AL1-c0-027"/>
+                <constraint firstItem="UVC-Lp-R0f" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="248" id="AL1-l0-028"/>
+                <!-- Row 3: PopUp button -->
+                <constraint firstItem="psL-E8-GU2" firstAttribute="centerY" secondItem="rKJ-GR-7M4" secondAttribute="centerY" id="AL1-c0-029"/>
+                <constraint firstItem="psL-E8-GU2" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="312" id="AL1-l0-030"/>
+                <constraint firstItem="psL-E8-GU2" firstAttribute="width" constant="148" id="AL1-w0-031"/>
+                <!-- Separator 3 -->
+                <constraint firstItem="1Qz-em-hgu" firstAttribute="top" secondItem="rKJ-GR-7M4" secondAttribute="bottom" constant="12" id="AL1-t0-032"/>
+                <constraint firstItem="1Qz-em-hgu" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="20" id="AL1-l0-033"/>
+                <constraint firstItem="1Qz-em-hgu" firstAttribute="width" constant="440" id="AL1-w0-034"/>
+                <!-- Row 4: Screenshot observation checkbox -->
+                <constraint firstItem="ziL-7m-zNH" firstAttribute="top" secondItem="1Qz-em-hgu" secondAttribute="bottom" constant="12" id="AL1-t0-035"/>
+                <constraint firstItem="ziL-7m-zNH" firstAttribute="leading" secondItem="Q0r-Ze-fj8" secondAttribute="leading" constant="20" id="AL1-l0-036"/>
             </constraints>
             <point key="canvasLocation" x="118" y="178"/>
         </customView>

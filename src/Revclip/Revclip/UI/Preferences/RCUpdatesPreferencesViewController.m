@@ -18,10 +18,15 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
 @property (nonatomic, weak) IBOutlet NSButton *checkNowButton;
 @property (nonatomic, weak) IBOutlet NSProgressIndicator *checkProgressIndicator;
 @property (nonatomic, weak) IBOutlet NSTextField *versionInfoLabel;
+@property (nonatomic, strong, nullable) dispatch_source_t checkCompletionTimer;
 
 @end
 
 @implementation RCUpdatesPreferencesViewController
+
+- (void)dealloc {
+    [self cancelCheckCompletionTimer];
+}
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -98,7 +103,13 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
         alert.messageText = NSLocalizedString(@"アップデートを確認できません", nil);
         alert.informativeText = NSLocalizedString(@"アップデート機能の初期化に失敗しました。アプリケーションを再起動してください。", nil);
         [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
-        [alert runModal];
+
+        NSWindow *window = self.view.window;
+        if (window != nil) {
+            [alert beginSheetModalForWindow:window completionHandler:nil];
+        } else {
+            [alert runModal];
+        }
         return;
     }
 
@@ -111,7 +122,17 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
     [self startCheckCompletionPolling];
 }
 
+- (void)cancelCheckCompletionTimer {
+    if (self.checkCompletionTimer != nil) {
+        dispatch_source_cancel(self.checkCompletionTimer);
+        self.checkCompletionTimer = nil;
+    }
+}
+
 - (void)startCheckCompletionPolling {
+    // Cancel any existing polling timer to prevent duplicates
+    [self cancelCheckCompletionTimer];
+
     __block NSInteger pollCount = 0;
     __weak typeof(self) weakSelf = self;
 
@@ -134,9 +155,11 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
             strongSelf.checkNowButton.enabled = YES;
             [strongSelf.checkProgressIndicator stopAnimation:nil];
             strongSelf.checkProgressIndicator.hidden = YES;
-            dispatch_source_cancel(timer);
+            [strongSelf cancelCheckCompletionTimer];
         }
     });
+
+    self.checkCompletionTimer = timer;
     dispatch_resume(timer);
 }
 

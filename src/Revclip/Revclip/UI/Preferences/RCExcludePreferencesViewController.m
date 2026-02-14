@@ -23,6 +23,7 @@ static NSString * const kRCExcludeColumnIdentifierName = @"name";
 
 @property (nonatomic, strong) NSTableView *tableView;
 @property (nonatomic, strong) NSButton *removeButton;
+@property (nonatomic, strong, nullable) id activationObserver;
 
 @end
 
@@ -36,8 +37,36 @@ static NSString * const kRCExcludeColumnIdentifierName = @"name";
     self.iconCache = [NSMutableDictionary dictionary];
     self.displayNameCache = [NSMutableDictionary dictionary];
 
+    [self startTrackingActiveApplication];
     [self configureUserInterface];
     [self reloadExcludedApplications];
+}
+
+- (void)dealloc {
+    if (self.activationObserver != nil) {
+        [[NSWorkspace sharedWorkspace].notificationCenter removeObserver:self.activationObserver];
+        self.activationObserver = nil;
+    }
+}
+
+- (void)startTrackingActiveApplication {
+    NSString *ownBundleIdentifier = [NSBundle mainBundle].bundleIdentifier ?: @"";
+    __weak typeof(self) weakSelf = self;
+    self.activationObserver = [[NSWorkspace sharedWorkspace].notificationCenter
+        addObserverForName:NSWorkspaceDidActivateApplicationNotification
+                    object:nil
+                     queue:[NSOperationQueue mainQueue]
+                usingBlock:^(NSNotification *notification) {
+        typeof(self) strongSelf = weakSelf;
+        if (strongSelf == nil) {
+            return;
+        }
+        NSRunningApplication *activatedApp = notification.userInfo[NSWorkspaceApplicationKey];
+        NSString *activatedBundleId = activatedApp.bundleIdentifier ?: @"";
+        if (activatedBundleId.length > 0 && ![activatedBundleId isEqualToString:ownBundleIdentifier]) {
+            strongSelf.previousActiveApplication = activatedApp;
+        }
+    }];
 }
 
 #pragma mark - Layout
@@ -134,6 +163,8 @@ static NSString * const kRCExcludeColumnIdentifierName = @"name";
         [addCurrentButton.centerYAnchor constraintEqualToAnchor:addButton.centerYAnchor],
         [addCurrentButton.leadingAnchor constraintEqualToAnchor:self.removeButton.trailingAnchor constant:12.0],
         [addCurrentButton.trailingAnchor constraintLessThanOrEqualToAnchor:self.view.trailingAnchor constant:-20.0],
+
+        [addButton.bottomAnchor constraintLessThanOrEqualToAnchor:self.view.bottomAnchor constant:-16.0],
     ]];
 }
 
@@ -192,15 +223,22 @@ static NSString * const kRCExcludeColumnIdentifierName = @"name";
 - (IBAction)addCurrentApplication:(id)sender {
     (void)sender;
 
-    NSRunningApplication *frontmostApplication = [NSWorkspace sharedWorkspace].frontmostApplication;
-    NSString *bundleIdentifier = frontmostApplication.bundleIdentifier ?: @"";
+    // First try the tracked previously active application (before Revclip came to front)
+    NSRunningApplication *targetApp = self.previousActiveApplication;
+    NSString *bundleIdentifier = targetApp.bundleIdentifier ?: @"";
     NSString *ownBundleIdentifier = [NSBundle mainBundle].bundleIdentifier ?: @"";
+
+    // Fall back to frontmostApplication if tracking didn't capture anything
+    if (bundleIdentifier.length == 0 || [bundleIdentifier isEqualToString:ownBundleIdentifier]) {
+        targetApp = [NSWorkspace sharedWorkspace].frontmostApplication;
+        bundleIdentifier = targetApp.bundleIdentifier ?: @"";
+    }
 
     if (bundleIdentifier.length == 0 || [bundleIdentifier isEqualToString:ownBundleIdentifier]) {
         NSAlert *alert = [[NSAlert alloc] init];
         alert.alertStyle = NSAlertStyleInformational;
         alert.messageText = NSLocalizedString(@"Cannot add current application", nil);
-        alert.informativeText = NSLocalizedString(@"The frontmost application is Revclip itself. Please switch to the application you want to exclude, then click this button.", nil);
+        alert.informativeText = NSLocalizedString(@"No other application was detected. Please switch to the application you want to exclude, then click this button.", nil);
         [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
 
         NSWindow *window = self.view.window;

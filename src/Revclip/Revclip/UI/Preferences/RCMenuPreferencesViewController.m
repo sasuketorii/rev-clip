@@ -44,6 +44,43 @@ static CGFloat const kRCMenuPreferencesValueFieldWidth = 50.0;
 
 @implementation RCMenuPreferencesViewController
 
+- (void)dealloc {
+    // Unbind all Cocoa Bindings to prevent dangling KVO observations
+    [self.numberOfItemsInlineTextField unbind:NSValueBinding];
+    [self.numberOfItemsInlineStepper unbind:NSValueBinding];
+    [self.numberOfItemsInFolderTextField unbind:NSValueBinding];
+    [self.numberOfItemsInFolderStepper unbind:NSValueBinding];
+    [self.maxTitleLengthTextField unbind:NSValueBinding];
+    [self.maxTitleLengthStepper unbind:NSValueBinding];
+    [self.markWithNumbersButton unbind:NSValueBinding];
+    [self.startNumberingFromZeroButton unbind:NSValueBinding];
+    [self.startNumberingFromZeroButton unbind:NSEnabledBinding];
+    [self.addNumericKeyEquivalentsButton unbind:NSValueBinding];
+    [self.addClearHistoryItemButton unbind:NSValueBinding];
+    [self.showAlertBeforeClearButton unbind:NSValueBinding];
+    [self.showAlertBeforeClearButton unbind:NSEnabledBinding];
+    [self.showTooltipButton unbind:NSValueBinding];
+    [self.maxTooltipLengthTextField unbind:NSValueBinding];
+    [self.maxTooltipLengthTextField unbind:NSEnabledBinding];
+    [self.maxTooltipLengthStepper unbind:NSValueBinding];
+    [self.maxTooltipLengthStepper unbind:NSEnabledBinding];
+    [self.showImagePreviewButton unbind:NSValueBinding];
+    [self.thumbnailWidthTextField unbind:NSValueBinding];
+    [self.thumbnailWidthTextField unbind:NSEnabledBinding];
+    [self.thumbnailWidthStepper unbind:NSValueBinding];
+    [self.thumbnailWidthStepper unbind:NSEnabledBinding];
+    [self.thumbnailHeightTextField unbind:NSValueBinding];
+    [self.thumbnailHeightTextField unbind:NSEnabledBinding];
+    [self.thumbnailHeightStepper unbind:NSValueBinding];
+    [self.thumbnailHeightStepper unbind:NSEnabledBinding];
+    [self.showColorPreviewButton unbind:NSValueBinding];
+    [self.showIconButton unbind:NSValueBinding];
+    [self.iconSizeTextField unbind:NSValueBinding];
+    [self.iconSizeTextField unbind:NSEnabledBinding];
+    [self.iconSizeStepper unbind:NSValueBinding];
+    [self.iconSizeStepper unbind:NSEnabledBinding];
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
 

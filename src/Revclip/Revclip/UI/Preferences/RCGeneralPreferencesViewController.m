@@ -24,7 +24,7 @@ static const NSInteger RCShowStatusItemDefault = 1;
 @property (nonatomic, weak) IBOutlet NSButton *pasteCommandButton;
 @property (nonatomic, weak) IBOutlet NSButton *reorderAfterPastingButton;
 @property (nonatomic, weak) IBOutlet NSButton *overwriteSameHistoryButton;
-@property (nonatomic, weak) IBOutlet NSButton *copySameHistoryButton;
+@property (nonatomic, weak) IBOutlet NSButton *sameHistoryCopyButton;
 
 @end
 
@@ -54,9 +54,38 @@ static const NSInteger RCShowStatusItemDefault = 1;
     BOOL enabled = (self.loginAtStartupButton.state == NSControlStateValueOn);
     BOOL success = [[RCLoginItemService shared] setLoginItemEnabled:enabled];
     if (success) {
+        // TODO: Wave 3 Group G で loginItem → kRCLoginItem に定数名を変更予定
         [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:loginItem];
     } else {
+        // Revert checkbox to previous state
         self.loginAtStartupButton.state = enabled ? NSControlStateValueOff : NSControlStateValueOn;
+
+        // Show alert to inform user of login item registration failure
+        BOOL suppressAlert = [[NSUserDefaults standardUserDefaults] boolForKey:suppressAlertForLoginItem];
+        if (!suppressAlert) {
+            NSAlert *alert = [[NSAlert alloc] init];
+            alert.alertStyle = NSAlertStyleWarning;
+            alert.messageText = NSLocalizedString(@"ログインアイテムの設定に失敗しました", nil);
+            alert.informativeText = NSLocalizedString(@"システム環境設定の「ログイン項目」で手動で設定してください。", nil);
+            [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
+            alert.showsSuppressionButton = YES;
+            alert.suppressionButton.title = NSLocalizedString(@"今後表示しない", nil);
+
+            NSWindow *window = self.view.window;
+            if (window != nil) {
+                [alert beginSheetModalForWindow:window completionHandler:^(NSModalResponse returnCode) {
+                    (void)returnCode;
+                    if (alert.suppressionButton.state == NSControlStateValueOn) {
+                        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:suppressAlertForLoginItem];
+                    }
+                }];
+            } else {
+                [alert runModal];
+                if (alert.suppressionButton.state == NSControlStateValueOn) {
+                    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:suppressAlertForLoginItem];
+                }
+            }
+        }
     }
 }
 
@@ -66,6 +95,10 @@ static const NSInteger RCShowStatusItemDefault = 1;
     NSInteger preferenceValue = (selectedIndex == 0) ? 0 : 1;
     [[NSUserDefaults standardUserDefaults] setInteger:preferenceValue
                                                forKey:kRCPrefShowStatusItemKey];
+
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"RCStatusItemPreferenceDidChangeNotification"
+                                                        object:nil
+                                                      userInfo:@{@"showStatusItem": @(preferenceValue)}];
 }
 
 - (IBAction)pasteCommandChanged:(id)sender {
@@ -88,7 +121,7 @@ static const NSInteger RCShowStatusItemDefault = 1;
 
 - (IBAction)copySameHistoryChanged:(id)sender {
     (void)sender;
-    [[NSUserDefaults standardUserDefaults] setBool:(self.copySameHistoryButton.state == NSControlStateValueOn)
+    [[NSUserDefaults standardUserDefaults] setBool:(self.sameHistoryCopyButton.state == NSControlStateValueOn)
                                             forKey:kRCPrefCopySameHistory];
 }
 
@@ -110,6 +143,7 @@ static const NSInteger RCShowStatusItemDefault = 1;
                                              defaultValue:RCMaxHistorySizeDefault]
                     persist:NO];
 
+    // TODO: Wave 3 Group G で loginItem → kRCLoginItem, suppressAlertForLoginItem → kRCSuppressAlertForLoginItem に定数名を変更予定
     self.loginAtStartupButton.state = [self boolPreferenceForKey:loginItem defaultValue:NO]
         ? NSControlStateValueOn
         : NSControlStateValueOff;
@@ -128,7 +162,7 @@ static const NSInteger RCShowStatusItemDefault = 1;
     self.overwriteSameHistoryButton.state = [self boolPreferenceForKey:kRCPrefOverwriteSameHistory defaultValue:YES]
         ? NSControlStateValueOn
         : NSControlStateValueOff;
-    self.copySameHistoryButton.state = [self boolPreferenceForKey:kRCPrefCopySameHistory defaultValue:YES]
+    self.sameHistoryCopyButton.state = [self boolPreferenceForKey:kRCPrefCopySameHistory defaultValue:YES]
         ? NSControlStateValueOn
         : NSControlStateValueOff;
 }
