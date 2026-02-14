@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-14
+    runs-on: macos-15
     env:
       PROJECT_DIR: src/Revclip
       SCHEME: Revclip
@@ -21,6 +21,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Select Xcode 16
+        run: |
+          set -euo pipefail
+          XCODE_PATH="$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)"
+          if [[ -z "${XCODE_PATH}" ]]; then
+            echo "No Xcode 16.x found on runner"
+            exit 1
+          fi
+          sudo xcode-select -s "${XCODE_PATH}"
+          xcodebuild -version
 
       # Required secret:
       # - Repository Settings -> Secrets and variables -> Actions -> New repository secret
