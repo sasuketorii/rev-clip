@@ -2,7 +2,7 @@
 "Snippets" = "Snippet";
 "Edit Templates..." = "Modifica modelli...";
 "Preferences..." = "Preferenze...";
-"Quit Revpy" = "Esci da Revpy";
+"Quit Revclip" = "Esci da Revclip";
 "Clear All" = "Cancella tutto";
 "Clear All History" = "Cancella tutta la cronologia";
 "Are you sure you want to clear all clipboard history?" = "Sei sicuro di voler cancellare tutta la cronologia degli appunti?";
@@ -21,7 +21,7 @@
 "Updates" = "Aggiornamenti";
 "Beta" = "Beta";
 
-"Launch Revpy on login" = "Avvia Revpy al login";
+"Launch Revclip on login" = "Avvia Revclip al login";
 "Max clipboard history size" = "Dimensione massima della cronologia degli appunti";
 "Max menu items to display" = "Numero massimo di voci da mostrare nel menu";
 
@@ -88,7 +88,7 @@
 // Exclude Prefs
 "Application" = "Application";
 "Add" = "Add";
-"The frontmost application is Revpy itself. Please switch to the application you want to exclude, then click this button." = "The frontmost application is Revpy itself. Please switch to the application you want to exclude, then click this button.";
+"The frontmost application is Revclip itself. Please switch to the application you want to exclude, then click this button." = "The frontmost application is Revclip itself. Please switch to the application you want to exclude, then click this button.";
 
 // Menu Prefs
 "Menu Settings" = "Menu Settings";
@@ -128,8 +128,8 @@
 "Update checking will be available in a future release." = "Update checking will be available in a future release.";
 
 // Accessibility
-"Revpy requires Accessibility permission" = "Revpy requires Accessibility permission";
-"Revpy needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility." = "Revpy needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility.";
+"Revclip requires Accessibility permission" = "Revclip requires Accessibility permission";
+"Revclip needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility." = "Revclip needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility.";
 "Open System Settings" = "Open System Settings";
 "Later" = "Later";
 
@@ -144,9 +144,9 @@
 
 // Move to Applications
 "Move to Applications folder?" = "Spostare nella cartella Applicazioni?";
-"Revpy needs to be in the Applications folder to work properly. Would you like to move it there?" = "Revpy deve trovarsi nella cartella Applicazioni per funzionare correttamente. Vuoi spostarlo lì?";
+"Revclip needs to be in the Applications folder to work properly. Would you like to move it there?" = "Revclip deve trovarsi nella cartella Applicazioni per funzionare correttamente. Vuoi spostarlo lì?";
 "Move to Applications" = "Sposta in Applicazioni";
 "Do Not Move" = "Non spostare";
-"Could not move Revpy to Applications folder" = "Impossibile spostare Revpy nella cartella Applicazioni";
-"An unknown error occurred while moving Revpy." = "Si è verificato un errore sconosciuto durante lo spostamento di Revpy.";
+"Could not move Revclip to Applications folder" = "Impossibile spostare Revclip nella cartella Applicazioni";
+"An unknown error occurred while moving Revclip." = "Si è verificato un errore sconosciuto durante lo spostamento di Revclip.";
 "Failed to relaunch the app from Applications." = "Impossibile riavviare l'app dalla cartella Applicazioni.";

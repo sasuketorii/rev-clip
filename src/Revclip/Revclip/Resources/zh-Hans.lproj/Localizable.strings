@@ -2,7 +2,7 @@
 "Snippets" = "片段";
 "Edit Templates..." = "编辑模板...";
 "Preferences..." = "偏好设置...";
-"Quit Revpy" = "退出 Revpy";
+"Quit Revclip" = "退出 Revclip";
 "Clear All" = "全部清除";
 "Clear All History" = "清除所有历史记录";
 "Are you sure you want to clear all clipboard history?" = "确定要清除所有剪贴板历史记录吗？";
@@ -21,7 +21,7 @@
 "Updates" = "更新";
 "Beta" = "测试版";
 
-"Launch Revpy on login" = "登录时启动 Revpy";
+"Launch Revclip on login" = "登录时启动 Revclip";
 "Max clipboard history size" = "剪贴板历史记录最大数量";
 "Max menu items to display" = "菜单中显示的最大项目数";
 
@@ -88,7 +88,7 @@
 // Exclude Prefs
 "Application" = "Application";
 "Add" = "Add";
-"The frontmost application is Revpy itself. Please switch to the application you want to exclude, then click this button." = "The frontmost application is Revpy itself. Please switch to the application you want to exclude, then click this button.";
+"The frontmost application is Revclip itself. Please switch to the application you want to exclude, then click this button." = "The frontmost application is Revclip itself. Please switch to the application you want to exclude, then click this button.";
 
 // Menu Prefs
 "Menu Settings" = "Menu Settings";
@@ -128,8 +128,8 @@
 "Update checking will be available in a future release." = "Update checking will be available in a future release.";
 
 // Accessibility
-"Revpy requires Accessibility permission" = "Revpy requires Accessibility permission";
-"Revpy needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility." = "Revpy needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility.";
+"Revclip requires Accessibility permission" = "Revclip requires Accessibility permission";
+"Revclip needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility." = "Revclip needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility.";
 "Open System Settings" = "Open System Settings";
 "Later" = "Later";
 
@@ -144,9 +144,9 @@
 
 // Move to Applications
 "Move to Applications folder?" = "移动到应用程序文件夹？";
-"Revpy needs to be in the Applications folder to work properly. Would you like to move it there?" = "Revpy 需要位于应用程序文件夹中才能正常工作。是否要将其移动到那里？";
+"Revclip needs to be in the Applications folder to work properly. Would you like to move it there?" = "Revclip 需要位于应用程序文件夹中才能正常工作。是否要将其移动到那里？";
 "Move to Applications" = "移动到应用程序";
 "Do Not Move" = "不移动";
-"Could not move Revpy to Applications folder" = "无法将 Revpy 移动到应用程序文件夹";
-"An unknown error occurred while moving Revpy." = "移动 Revpy 时发生未知错误。";
+"Could not move Revclip to Applications folder" = "无法将 Revclip 移动到应用程序文件夹";
+"An unknown error occurred while moving Revclip." = "移动 Revclip 时发生未知错误。";
 "Failed to relaunch the app from Applications." = "无法从应用程序文件夹重新启动应用。";

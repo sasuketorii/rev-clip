@@ -1,8 +1,8 @@
 //
 //  RCMenuManager.m
-//  Revpy
+//  Revclip
 //
-//  Copyright (c) 2024-2026 Revpy. All rights reserved.
+//  Copyright (c) 2024-2026 Revclip. All rights reserved.
 //
 
 #import "RCMenuManager.h"
@@ -74,7 +74,7 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _statusMenu = [self menuWithTitle:@"Revpy"];
+        _statusMenu = [self menuWithTitle:@"Revclip"];
         _thumbnailCache = [[NSCache alloc] init];
         _thumbnailGenerationQueue = dispatch_queue_create("com.revclip.menu.thumbnail", DISPATCH_QUEUE_CONCURRENT);
 
@@ -236,7 +236,7 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
         image = [NSImage imageNamed:NSImageNameSmartBadgeTemplate];
     }
     if (image == nil) {
-        image = [NSImage imageWithSystemSymbolName:@"doc.on.clipboard" accessibilityDescription:@"Revpy"];
+        image = [NSImage imageWithSystemSymbolName:@"doc.on.clipboard" accessibilityDescription:@"Revclip"];
     }
 
     if (image == nil) {
@@ -365,7 +365,7 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
 }
 
 - (NSMenu *)buildStandaloneMenu {
-    NSMenu *menu = [self menuWithTitle:@"Revpy"];
+    NSMenu *menu = [self menuWithTitle:@"Revclip"];
     [self appendClipHistorySectionToMenu:menu];
     [menu addItem:[NSMenuItem separatorItem]];
     [self appendSnippetSectionToMenu:menu];
@@ -545,7 +545,7 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
     editSnippetsItem.target = self;
     [menu addItem:editSnippetsItem];
 
-    NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Quit Revpy", nil)
+    NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Quit Revclip", nil)
                                                        action:@selector(terminate:)
                                                 keyEquivalent:@"q"];
     quitItem.keyEquivalentModifierMask = NSEventModifierFlagCommand;

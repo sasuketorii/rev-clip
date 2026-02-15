@@ -1,8 +1,8 @@
 //
 //  RCAppDelegate.m
-//  Revpy
+//  Revclip
 //
-//  Copyright (c) 2024-2026 Revpy. All rights reserved.
+//  Copyright (c) 2024-2026 Revclip. All rights reserved.
 //
 
 #import "RCAppDelegate.h"
@@ -97,7 +97,7 @@ static UTType *RCSnippetImportExportContentType(void) {
         [[RCLoginItemService shared] setLoginItemEnabled:YES];
     }
 
-    NSLog(@"[Revpy] Application did finish launching.");
+    NSLog(@"[Revclip] Application did finish launching.");
 }
 
 - (void)applicationWillTerminate:(NSNotification *)notification {

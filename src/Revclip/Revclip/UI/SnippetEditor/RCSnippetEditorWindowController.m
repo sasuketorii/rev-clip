@@ -1,8 +1,8 @@
 //
 //  RCSnippetEditorWindowController.m
-//  Revpy
+//  Revclip
 //
-//  Copyright (c) 2024-2026 Revpy. All rights reserved.
+//  Copyright (c) 2024-2026 Revclip. All rights reserved.
 //
 
 #import "RCSnippetEditorWindowController.h"
@@ -451,7 +451,7 @@ static UTType *RCSnippetImportExportContentType(void) {
 
         FMResultSet *resultSet = [db executeQuery:@"SELECT id, identifier, folder_id, snippet_index, enabled, title, content FROM snippets ORDER BY folder_id ASC, snippet_index ASC, id ASC"];
         if (resultSet == nil) {
-            NSLog(@"[Revpy] Failed to fetch snippets in a single query for snippet editor reload.");
+            NSLog(@"[Revclip] Failed to fetch snippets in a single query for snippet editor reload.");
             return YES;
         }
 
@@ -783,7 +783,7 @@ static UTType *RCSnippetImportExportContentType(void) {
             [[RCHotKeyService shared] unregisterSnippetFolderHotKey:identifier];
             [self reloadOutlineSelectingFolderIdentifier:nil snippetIdentifier:nil];
             if (![self persistFolderOrderFromCurrentTree]) {
-                NSLog(@"[Revpy] Failed to persist folder order after folder deletion. folderIdentifier=%@",
+                NSLog(@"[Revclip] Failed to persist folder order after folder deletion. folderIdentifier=%@",
                       identifier);
             }
             [[RCMenuManager shared] rebuildMenu];
@@ -817,7 +817,7 @@ static UTType *RCSnippetImportExportContentType(void) {
             RCSnippetFolderNode *folderNode = [self folderNodeForIdentifier:folderIdentifier];
             if (folderNode != nil) {
                 if (![self persistSnippetOrderForFolder:folderNode]) {
-                    NSLog(@"[Revpy] Failed to persist snippet order after snippet deletion. folderIdentifier=%@",
+                    NSLog(@"[Revclip] Failed to persist snippet order after snippet deletion. folderIdentifier=%@",
                           folderIdentifier);
                 }
             }
@@ -868,7 +868,7 @@ static UTType *RCSnippetImportExportContentType(void) {
             NSString *folderIdentifier = [self stringValueFromDictionary:folderNode.folderDictionary
                                                                      key:@"identifier"
                                                             defaultValue:@"<unknown-folder>"];
-            NSLog(@"[Revpy] Failed to update snippet folder enabled state. folderIdentifier=%@, enabled=%@",
+            NSLog(@"[Revclip] Failed to update snippet folder enabled state. folderIdentifier=%@, enabled=%@",
                   folderIdentifier,
                   nextEnabledNumber);
         }
@@ -885,7 +885,7 @@ static UTType *RCSnippetImportExportContentType(void) {
             NSString *snippetIdentifier = [self stringValueFromDictionary:snippetNode.snippetDictionary
                                                                        key:@"identifier"
                                                               defaultValue:@"<unknown-snippet>"];
-            NSLog(@"[Revpy] Failed to update snippet enabled state. snippetIdentifier=%@, enabled=%@",
+            NSLog(@"[Revclip] Failed to update snippet enabled state. snippetIdentifier=%@, enabled=%@",
                   snippetIdentifier,
                   nextEnabledNumber);
         }

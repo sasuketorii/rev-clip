@@ -27,11 +27,11 @@ targets:
     info:
       path: Revclip/Info.plist
       properties:
-        CFBundleName: "Revpy"
-        CFBundleDisplayName: "Revpy"
+        CFBundleName: "Revclip"
+        CFBundleDisplayName: "Revclip"
         CFBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)"
-        CFBundleVersion: "14"
-        CFBundleShortVersionString: "0.0.14"
+        CFBundleVersion: "15"
+        CFBundleShortVersionString: "0.0.15"
         CFBundleExecutable: "$(EXECUTABLE_NAME)"
         CFBundlePackageType: "APPL"
         CFBundleSignature: "????"
@@ -39,18 +39,17 @@ targets:
         LSUIElement: true
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
         NSPrincipalClass: "NSApplication"
-        NSHumanReadableCopyright: "Copyright © 2024-2026 Revpy. All rights reserved."
+        NSHumanReadableCopyright: "Copyright © 2024-2026 Revclip. All rights reserved."
         CFBundleIconName: "AppIcon"
         SUFeedURL: "https://github.com/sasuketorii/rev-clip/releases/latest/download/appcast.xml"
         SUPublicEDKey: "jW5CH5/B8IApRFYiwOGot/VUmo0uqvE1LawgUG1igUk="
-        NSAccessibilityUsageDescription: "Revpy needs accessibility access to paste clipboard items into other applications."
+        NSAccessibilityUsageDescription: "Revclip needs accessibility access to paste clipboard items into other applications."
     sources:
       - path: Revclip
         excludes:
           - "Vendor/Sparkle/**"
     settings:
       base:
-        PRODUCT_NAME: Revpy
         PRODUCT_BUNDLE_IDENTIFIER: com.revclip.Revclip
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         ARCHS: "arm64 x86_64"
@@ -88,5 +87,5 @@ targets:
       - target: Revclip
     settings:
       base:
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Revpy.app/Contents/MacOS/Revpy"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Revclip.app/Contents/MacOS/Revclip"
         BUNDLE_LOADER: "$(TEST_HOST)"

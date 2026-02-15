@@ -1,8 +1,8 @@
 //
 //  RCPasteService.m
-//  Revpy
+//  Revclip
 //
-//  Copyright (c) 2024-2026 Revpy. All rights reserved.
+//  Copyright (c) 2024-2026 Revclip. All rights reserved.
 //
 
 #import "RCPasteService.h"

@@ -1,8 +1,8 @@
 //
 //  RCPrivacyService.m
-//  Revpy
+//  Revclip
 //
-//  Copyright (c) 2024-2026 Revpy. All rights reserved.
+//  Copyright (c) 2024-2026 Revclip. All rights reserved.
 //
 
 #import "RCPrivacyService.h"
@@ -144,8 +144,8 @@ typedef NS_ENUM(NSInteger, RCPrivacyServiceErrorCode) {
     dispatch_block_t showAlert = ^{
         NSAlert *alert = [[NSAlert alloc] init];
         alert.alertStyle = NSAlertStyleWarning;
-        alert.messageText = @"Revpy needs clipboard access";
-        alert.informativeText = @"macOS requires explicit permission for clipboard access. Please allow Revpy to access the clipboard in System Settings.";
+        alert.messageText = @"Revclip needs clipboard access";
+        alert.informativeText = @"macOS requires explicit permission for clipboard access. Please allow Revclip to access the clipboard in System Settings.";
         [alert addButtonWithTitle:@"Open System Settings"];
         [alert addButtonWithTitle:@"Later"];
 

@@ -1,8 +1,8 @@
 //
 //  RCMoveToApplicationsService.m
-//  Revpy
+//  Revclip
 //
-//  Copyright (c) 2024-2026 Revpy. All rights reserved.
+//  Copyright (c) 2024-2026 Revclip. All rights reserved.
 //
 
 #import "RCMoveToApplicationsService.h"
@@ -58,7 +58,7 @@ static NSString * const kRCMoveToApplicationsErrorDomain = @"com.revclip.movetoa
     NSAlert *alert = [[NSAlert alloc] init];
     alert.alertStyle = NSAlertStyleWarning;
     alert.messageText = NSLocalizedString(@"Move to Applications folder?", nil);
-    alert.informativeText = NSLocalizedString(@"Revpy needs to be in the Applications folder to work properly. Would you like to move it there?", nil);
+    alert.informativeText = NSLocalizedString(@"Revclip needs to be in the Applications folder to work properly. Would you like to move it there?", nil);
     [alert addButtonWithTitle:NSLocalizedString(@"Move to Applications", nil)];
     [alert addButtonWithTitle:NSLocalizedString(@"Do Not Move", nil)];
 
@@ -91,7 +91,7 @@ static NSString * const kRCMoveToApplicationsErrorDomain = @"com.revclip.movetoa
     NSString *applicationsDirectoryPath = destinationPath.stringByDeletingLastPathComponent;
     NSString *bundleBaseName = destinationPath.lastPathComponent.stringByDeletingPathExtension;
     if (bundleBaseName.length == 0) {
-        bundleBaseName = @"Revpy";
+        bundleBaseName = @"Revclip";
     }
     NSString *temporaryBundlePath = [applicationsDirectoryPath stringByAppendingPathComponent:[NSString stringWithFormat:@".%@_installing_%@.app", bundleBaseName, [NSUUID UUID].UUIDString]];
     NSURL *temporaryBundleURL = [NSURL fileURLWithPath:temporaryBundlePath];
@@ -186,8 +186,8 @@ static NSString * const kRCMoveToApplicationsErrorDomain = @"com.revclip.movetoa
 
     NSAlert *alert = [[NSAlert alloc] init];
     alert.alertStyle = NSAlertStyleCritical;
-    alert.messageText = NSLocalizedString(@"Could not move Revpy to Applications folder", nil);
-    alert.informativeText = error.localizedDescription ?: NSLocalizedString(@"An unknown error occurred while moving Revpy.", nil);
+    alert.messageText = NSLocalizedString(@"Could not move Revclip to Applications folder", nil);
+    alert.informativeText = error.localizedDescription ?: NSLocalizedString(@"An unknown error occurred while moving Revclip.", nil);
     [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
     [alert runModal];
 }
@@ -195,7 +195,7 @@ static NSString * const kRCMoveToApplicationsErrorDomain = @"com.revclip.movetoa
 - (NSString *)applicationsBundlePath {
     NSString *bundleName = NSBundle.mainBundle.bundlePath.lastPathComponent;
     if (bundleName.length == 0) {
-        bundleName = @"Revpy.app";
+        bundleName = @"Revclip.app";
     }
     return [@"/Applications" stringByAppendingPathComponent:bundleName];
 }

@@ -1,8 +1,8 @@
 //
 //  RCAccessibilityService.m
-//  Revpy
+//  Revclip
 //
-//  Copyright (c) 2024-2026 Revpy. All rights reserved.
+//  Copyright (c) 2024-2026 Revclip. All rights reserved.
 //
 
 #import "RCAccessibilityService.h"
@@ -56,8 +56,8 @@
 
     NSAlert *alert = [[NSAlert alloc] init];
     alert.alertStyle = NSAlertStyleWarning;
-    alert.messageText = NSLocalizedString(@"Revpy requires Accessibility permission", nil);
-    alert.informativeText = NSLocalizedString(@"Revpy needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility.", nil);
+    alert.messageText = NSLocalizedString(@"Revclip requires Accessibility permission", nil);
+    alert.informativeText = NSLocalizedString(@"Revclip needs Accessibility permission to paste clipboard items. Please enable it in System Settings > Privacy & Security > Accessibility.", nil);
     [alert addButtonWithTitle:NSLocalizedString(@"Open System Settings", nil)];
     [alert addButtonWithTitle:NSLocalizedString(@"Later", nil)];
 
