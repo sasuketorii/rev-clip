@@ -553,7 +553,11 @@ static os_log_t RCClipboardServiceLog(void) {
 
     NSData *thumbnailData = [bitmapRep representationUsingType:NSBitmapImageFileTypeJPEG
                                                     properties:@{ NSImageCompressionFactor: @0.7 }];
-    if (thumbnailData.length == 0) {
+    if (!thumbnailData) {
+        thumbnailData = [bitmapRep representationUsingType:NSBitmapImageFileTypePNG
+                                                properties:@{}];
+    }
+    if (!thumbnailData || thumbnailData.length == 0) {
         return @"";
     }
 

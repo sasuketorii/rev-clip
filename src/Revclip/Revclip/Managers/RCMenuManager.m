@@ -116,10 +116,6 @@ static os_log_t RCMenuManagerLog(void) {
                                    name:RCHotKeyClearHistoryTriggeredNotification
                                  object:nil];
         [notificationCenter addObserver:self
-                               selector:@selector(handlePanicHotKeyTriggered:)
-                                   name:RCHotKeyPanicTriggeredNotification
-                                 object:nil];
-        [notificationCenter addObserver:self
                                selector:@selector(handleHotKeySnippetFolderTriggered:)
                                    name:RCHotKeySnippetFolderTriggeredNotification
                                  object:nil];
@@ -196,11 +192,6 @@ static os_log_t RCMenuManagerLog(void) {
     [self performOnMainThread:^{
         [self clearHistoryMenuItemSelected:nil];
     }];
-}
-
-- (void)handlePanicHotKeyTriggered:(NSNotification *)notification {
-    (void)notification;
-    [[RCPanicEraseService shared] executePanicEraseWithCompletion:nil];
 }
 
 - (void)handleHotKeySnippetFolderTriggered:(NSNotification *)notification {
@@ -379,12 +370,6 @@ static os_log_t RCMenuManagerLog(void) {
         [self.statusMenu addItem:clearHistoryItem];
     }
 
-    NSMenuItem *panicItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Panic Erase", nil)
-                                                        action:@selector(panicEraseMenuItemSelected:)
-                                                 keyEquivalent:@""];
-    panicItem.target = self;
-    [self.statusMenu addItem:panicItem];
-
     [self.statusMenu addItem:[NSMenuItem separatorItem]];
     [self appendApplicationSectionToMenu:self.statusMenu];
     self.statusItem.menu = self.statusMenu;
@@ -405,12 +390,6 @@ static os_log_t RCMenuManagerLog(void) {
         clearHistoryItem.target = self;
         [menu addItem:clearHistoryItem];
     }
-
-    NSMenuItem *panicItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Panic Erase", nil)
-                                                        action:@selector(panicEraseMenuItemSelected:)
-                                                 keyEquivalent:@""];
-    panicItem.target = self;
-    [menu addItem:panicItem];
 
     [menu addItem:[NSMenuItem separatorItem]];
     [self appendApplicationSectionToMenu:menu];
@@ -575,6 +554,16 @@ static os_log_t RCMenuManagerLog(void) {
                                                         keyEquivalent:@""];
     editSnippetsItem.target = self;
     [menu addItem:editSnippetsItem];
+
+    [menu addItem:[NSMenuItem separatorItem]];
+
+    NSMenuItem *panicItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Panic Erase", nil)
+                                                        action:@selector(panicEraseMenuItemSelected:)
+                                                 keyEquivalent:@""];
+    panicItem.target = self;
+    [menu addItem:panicItem];
+
+    [menu addItem:[NSMenuItem separatorItem]];
 
     NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Quit Revclip", nil)
                                                        action:@selector(terminate:)
@@ -1203,13 +1192,22 @@ static os_log_t RCMenuManagerLog(void) {
 
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = NSLocalizedString(@"Panic Erase", nil);
-    alert.informativeText = NSLocalizedString(@"All clipboard history, snippets, and settings will be permanently deleted. The app will quit. This cannot be undone.", nil);
+    alert.informativeText = NSLocalizedString(@"All clipboard history, snippets, and settings will be permanently deleted. The app will quit.\n\nType \"Panic\" to confirm.", nil);
     alert.alertStyle = NSAlertStyleCritical;
     [alert addButtonWithTitle:NSLocalizedString(@"Erase & Quit", nil)];
     [alert addButtonWithTitle:NSLocalizedString(@"Cancel", nil)];
 
+    NSTextField *inputField = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 200, 24)];
+    inputField.placeholderString = @"Panic";
+    alert.accessoryView = inputField;
+
+    [alert.window setInitialFirstResponder:inputField];
+
     if ([alert runModal] == NSAlertFirstButtonReturn) {
-        [[RCPanicEraseService shared] executePanicEraseWithCompletion:nil];
+        NSString *typed = [inputField.stringValue stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if ([typed isEqualToString:@"Panic"]) {
+            [[RCPanicEraseService shared] executePanicEraseWithCompletion:nil];
+        }
     }
 }
 

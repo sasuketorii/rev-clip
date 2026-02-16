@@ -13,7 +13,6 @@
 
 static UInt32 const kRCDefaultKeyCodeV = 9;
 static UInt32 const kRCDefaultKeyCodeB = 11;
-static UInt32 const kRCDefaultKeyCodeDelete = 51;
 
 @interface RCShortcutsPreferencesViewController () <RCHotKeyRecorderViewDelegate>
 
@@ -21,7 +20,6 @@ static UInt32 const kRCDefaultKeyCodeDelete = 51;
 @property (nonatomic, weak) IBOutlet RCHotKeyRecorderView *historyMenuRecorderView;
 @property (nonatomic, weak) IBOutlet RCHotKeyRecorderView *snippetMenuRecorderView;
 @property (nonatomic, weak) IBOutlet RCHotKeyRecorderView *clearHistoryRecorderView;
-@property (nonatomic, weak) IBOutlet RCHotKeyRecorderView *panicButtonRecorderView;
 
 - (void)reloadRecordersFromDefaults;
 - (nullable NSString *)userDefaultsKeyForRecorderView:(RCHotKeyRecorderView *)recorderView;
@@ -44,7 +42,6 @@ static UInt32 const kRCDefaultKeyCodeDelete = 51;
     self.historyMenuRecorderView.delegate = self;
     self.snippetMenuRecorderView.delegate = self;
     self.clearHistoryRecorderView.delegate = self;
-    self.panicButtonRecorderView.delegate = self;
 
     [self reloadRecordersFromDefaults];
 }
@@ -57,7 +54,7 @@ static UInt32 const kRCDefaultKeyCodeDelete = 51;
     NSAlert *alert = [[NSAlert alloc] init];
     alert.alertStyle = NSAlertStyleWarning;
     alert.messageText = NSLocalizedString(@"Reset all shortcuts to defaults?", nil);
-    alert.informativeText = NSLocalizedString(@"Main Menu, History Menu, Snippet Menu, and Panic Erase will be restored. Clear History will be removed.", nil);
+    alert.informativeText = NSLocalizedString(@"Main Menu, History Menu, and Snippet Menu will be restored. Clear History will be removed.", nil);
     [alert addButtonWithTitle:NSLocalizedString(@"Reset", nil)];
     [alert addButtonWithTitle:NSLocalizedString(@"Cancel", nil)];
 
@@ -110,7 +107,6 @@ static UInt32 const kRCDefaultKeyCodeDelete = 51;
     self.historyMenuRecorderView.keyCombo = [self keyComboForDefaultsKey:kRCHotKeyHistoryKeyCombo];
     self.snippetMenuRecorderView.keyCombo = [self keyComboForDefaultsKey:kRCHotKeySnippetKeyCombo];
     self.clearHistoryRecorderView.keyCombo = [self keyComboForDefaultsKey:kRCClearHistoryKeyCombo];
-    self.panicButtonRecorderView.keyCombo = [self keyComboForDefaultsKey:kRCPanicButtonKeyCombo];
 }
 
 - (nullable NSString *)userDefaultsKeyForRecorderView:(RCHotKeyRecorderView *)recorderView {
@@ -125,9 +121,6 @@ static UInt32 const kRCDefaultKeyCodeDelete = 51;
     }
     if (recorderView == self.clearHistoryRecorderView) {
         return kRCClearHistoryKeyCombo;
-    }
-    if (recorderView == self.panicButtonRecorderView) {
-        return kRCPanicButtonKeyCombo;
     }
     return nil;
 }
@@ -160,9 +153,6 @@ static UInt32 const kRCDefaultKeyCodeDelete = 51;
     if ([defaultsKey isEqualToString:kRCHotKeySnippetKeyCombo]) {
         return RCMakeKeyCombo(kRCDefaultKeyCodeB, cmdKey | shiftKey);
     }
-    if ([defaultsKey isEqualToString:kRCPanicButtonKeyCombo]) {
-        return RCMakeKeyCombo(kRCDefaultKeyCodeDelete, cmdKey | shiftKey | optionKey);
-    }
     return RCInvalidKeyCombo();
 }
 
@@ -179,8 +169,6 @@ static UInt32 const kRCDefaultKeyCodeDelete = 51;
                    toUserDefaults:kRCHotKeyHistoryKeyCombo];
     [RCHotKeyService saveKeyCombo:[self defaultKeyComboForDefaultsKey:kRCHotKeySnippetKeyCombo]
                    toUserDefaults:kRCHotKeySnippetKeyCombo];
-    [RCHotKeyService saveKeyCombo:[self defaultKeyComboForDefaultsKey:kRCPanicButtonKeyCombo]
-                   toUserDefaults:kRCPanicButtonKeyCombo];
     [[NSUserDefaults standardUserDefaults] removeObjectForKey:kRCClearHistoryKeyCombo];
 
     [self reloadHotKeysAndRecorders];
@@ -217,9 +205,6 @@ static UInt32 const kRCDefaultKeyCodeDelete = 51;
     }
     if ([self isUnsetKeyCombo:[RCHotKeyService keyComboFromUserDefaults:kRCClearHistoryKeyCombo]]) {
         [hotKeyService registerClearHistoryHotKey:invalidCombo];
-    }
-    if ([self isUnsetKeyCombo:[RCHotKeyService keyComboFromUserDefaults:kRCPanicButtonKeyCombo]]) {
-        [hotKeyService registerPanicHotKey:invalidCombo];
     }
 }
 
