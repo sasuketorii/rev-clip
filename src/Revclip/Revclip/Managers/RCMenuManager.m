@@ -557,14 +557,6 @@ static os_log_t RCMenuManagerLog(void) {
 
     [menu addItem:[NSMenuItem separatorItem]];
 
-    NSMenuItem *panicItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Panic Erase", nil)
-                                                        action:@selector(panicEraseMenuItemSelected:)
-                                                 keyEquivalent:@""];
-    panicItem.target = self;
-    [menu addItem:panicItem];
-
-    [menu addItem:[NSMenuItem separatorItem]];
-
     NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Quit Revclip", nil)
                                                        action:@selector(terminate:)
                                                 keyEquivalent:@"q"];
@@ -1183,30 +1175,6 @@ static os_log_t RCMenuManagerLog(void) {
     } @finally {
         if (wasMonitoring) {
             [clipboardService startMonitoring];
-        }
-    }
-}
-
-- (void)panicEraseMenuItemSelected:(id)sender {
-    (void)sender;
-
-    NSAlert *alert = [[NSAlert alloc] init];
-    alert.messageText = NSLocalizedString(@"Panic Erase", nil);
-    alert.informativeText = NSLocalizedString(@"All clipboard history, snippets, and settings will be permanently deleted. The app will quit.\n\nType \"Panic\" to confirm.", nil);
-    alert.alertStyle = NSAlertStyleCritical;
-    [alert addButtonWithTitle:NSLocalizedString(@"Erase & Quit", nil)];
-    [alert addButtonWithTitle:NSLocalizedString(@"Cancel", nil)];
-
-    NSTextField *inputField = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 200, 24)];
-    inputField.placeholderString = @"Panic";
-    alert.accessoryView = inputField;
-
-    [alert.window setInitialFirstResponder:inputField];
-
-    if ([alert runModal] == NSAlertFirstButtonReturn) {
-        NSString *typed = [inputField.stringValue stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-        if ([typed isEqualToString:@"Panic"]) {
-            [[RCPanicEraseService shared] executePanicEraseWithCompletion:nil];
         }
     }
 }

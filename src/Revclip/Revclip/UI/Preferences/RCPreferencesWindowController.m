@@ -11,6 +11,7 @@
 #import "RCExcludePreferencesViewController.h"
 #import "RCGeneralPreferencesViewController.h"
 #import "RCMenuPreferencesViewController.h"
+#import "RCPanicPreferencesViewController.h"
 #import "RCShortcutsPreferencesViewController.h"
 #import "RCTypePreferencesViewController.h"
 #import "RCUpdatesPreferencesViewController.h"
@@ -22,6 +23,7 @@ NSString * const RCPreferencesTabExclude = @"exclude";
 NSString * const RCPreferencesTabShortcuts = @"shortcuts";
 NSString * const RCPreferencesTabUpdates = @"updates";
 NSString * const RCPreferencesTabBeta = @"beta";
+NSString * const RCPreferencesTabPanic = @"panic";
 static const CGFloat RCPreferencesMinimumContentWidth = 700.0;
 
 @interface RCPreferencesWindowController () <NSToolbarDelegate>
@@ -33,6 +35,7 @@ static const CGFloat RCPreferencesMinimumContentWidth = 700.0;
 @property (nonatomic, strong, nullable) RCShortcutsPreferencesViewController *shortcutsViewController;
 @property (nonatomic, strong, nullable) RCUpdatesPreferencesViewController *updatesViewController;
 @property (nonatomic, strong, nullable) RCBetaPreferencesViewController *betaViewController;
+@property (nonatomic, strong, nullable) RCPanicPreferencesViewController *panicViewController;
 @property (nonatomic, assign) BOOL centeredOnFirstShow;
 
 @end
@@ -204,6 +207,7 @@ static const CGFloat RCPreferencesMinimumContentWidth = 700.0;
         RCPreferencesTabShortcuts,
         RCPreferencesTabUpdates,
         RCPreferencesTabBeta,
+        RCPreferencesTabPanic,
     ];
 }
 
@@ -257,6 +261,13 @@ static const CGFloat RCPreferencesMinimumContentWidth = 700.0;
         return self.betaViewController;
     }
 
+    if ([tabIdentifier isEqualToString:RCPreferencesTabPanic]) {
+        if (self.panicViewController == nil) {
+            self.panicViewController = [[RCPanicPreferencesViewController alloc] initWithNibName:@"RCPanicPreferencesView" bundle:nil];
+        }
+        return self.panicViewController;
+    }
+
     return nil;
 }
 
@@ -282,6 +293,9 @@ static const CGFloat RCPreferencesMinimumContentWidth = 700.0;
     if ([tabIdentifier isEqualToString:RCPreferencesTabBeta]) {
         return NSLocalizedString(@"Beta", nil);
     }
+    if ([tabIdentifier isEqualToString:RCPreferencesTabPanic]) {
+        return @"パニック";
+    }
     return @"";
 }
 
@@ -306,6 +320,9 @@ static const CGFloat RCPreferencesMinimumContentWidth = 700.0;
     }
     if ([tabIdentifier isEqualToString:RCPreferencesTabBeta]) {
         return @"testtube.2";
+    }
+    if ([tabIdentifier isEqualToString:RCPreferencesTabPanic]) {
+        return @"exclamationmark.triangle";
     }
     return @"";
 }

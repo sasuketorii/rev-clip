@@ -22,6 +22,7 @@
 		310AA557CE2AD6EB9339A2E9 /* RCExcludePreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 99259E01619E218FBAF12209 /* RCExcludePreferencesViewController.m */; };
 		31D7EA5F5A314A0A8C5D7503 /* RCBetaPreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 55917DFDB23A0A6C8141CB54 /* RCBetaPreferencesView.xib */; };
 		32BFE2A3BE437181DE9AA571 /* RCMoveToApplicationsService.m in Sources */ = {isa = PBXBuildFile; fileRef = DCA8EDDCB9D425D0662EC410 /* RCMoveToApplicationsService.m */; };
+		3AAF3AFA3CBF720436B5C1D4 /* RCPanicPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D85AD2CD9C0B24D0D0084E42 /* RCPanicPreferencesViewController.m */; };
 		3C1D7E56F1A76791221AE313 /* RCPrivacyService.m in Sources */ = {isa = PBXBuildFile; fileRef = A8C4545CE9A6A3C5F4FFFF5D /* RCPrivacyService.m */; };
 		3CA63D159E34482A2D546BA7 /* NSImage+Color.m in Sources */ = {isa = PBXBuildFile; fileRef = B29CDB9ED92BE68E6F79E0FA /* NSImage+Color.m */; };
 		401B6B8F5294FA17DE1EE632 /* RCDesignableButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 6CFF5FE4C6DE4594A8B429C4 /* RCDesignableButton.m */; };
@@ -55,6 +56,7 @@
 		C0C9F9EA99509C688918834E /* Sparkle.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 29EFACD3596BD52D03777F8F /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C41B5460AFB7B44C63958D22 /* RCScreenshotMonitorService.m in Sources */ = {isa = PBXBuildFile; fileRef = F0745D75F427D64A46C4FA80 /* RCScreenshotMonitorService.m */; };
 		C4F8E649B3E67A777009125A /* RCAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BDAC5C7B818F45DD9E0C9EA /* RCAppDelegate.m */; };
+		C6A96B59BA81A98502C65BE2 /* RCPanicPreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4C7F121178E531482650B445 /* RCPanicPreferencesView.xib */; };
 		CA6BC549CAFFB981EA4D939A /* RCAccessibilityService.m in Sources */ = {isa = PBXBuildFile; fileRef = A4379C8BD7DFE2AA71F729A5 /* RCAccessibilityService.m */; };
 		D4D5001C0ECBA162D2DF23B1 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ADA1C708FEE8CC377FAB5E86 /* Carbon.framework */; };
 		D69FE0B43F37C7268DF990FC /* RCBetaPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = DEBB1B9F37BE193C53F19669 /* RCBetaPreferencesViewController.m */; };
@@ -124,6 +126,7 @@
 		3BADEF87387998B46B2116FC /* RCTypePreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCTypePreferencesViewController.h; sourceTree = "<group>"; };
 		419E6FDE78A12DBEDEB50ADE /* NSColor+HexString.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSColor+HexString.m"; sourceTree = "<group>"; };
 		48E70D0F63A020DF7D3F69E5 /* RCDatabaseManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCDatabaseManager.m; sourceTree = "<group>"; };
+		4C7F121178E531482650B445 /* RCPanicPreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCPanicPreferencesView.xib; sourceTree = "<group>"; };
 		4CCF04B4A5FC11C335C33C3B /* RCMenuPreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCMenuPreferencesViewController.h; sourceTree = "<group>"; };
 		55917DFDB23A0A6C8141CB54 /* RCBetaPreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCBetaPreferencesView.xib; sourceTree = "<group>"; };
 		56CB1B6D7CD0DD3C91806485 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/MainMenu.strings; sourceTree = "<group>"; };
@@ -148,6 +151,7 @@
 		7B4EB153C6F388548300CCA7 /* RCHotKeyService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCHotKeyService.h; sourceTree = "<group>"; };
 		7DACFA4F445C38F0B288D2F6 /* RCDesignableView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCDesignableView.h; sourceTree = "<group>"; };
 		818829683B375E4BF451A901 /* RCConstants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCConstants.h; sourceTree = "<group>"; };
+		82F71B7750D0FCE4C94ED1DB /* RCPanicPreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCPanicPreferencesViewController.h; sourceTree = "<group>"; };
 		8468E4CF844656C7B4874C49 /* Revclip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Revclip.entitlements; sourceTree = "<group>"; };
 		84DFE7D9B83FAC3E02E2DF18 /* RCMoveToApplicationsService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCMoveToApplicationsService.h; sourceTree = "<group>"; };
 		8664124CFFEF6AB194C4FFBE /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/MainMenu.strings; sourceTree = "<group>"; };
@@ -195,6 +199,7 @@
 		D52AAFAA8BD4B439E283CC9A /* FMResultSet.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FMResultSet.m; sourceTree = "<group>"; };
 		D55765A002971C5D1880E229 /* RCShortcutsPreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCShortcutsPreferencesView.xib; sourceTree = "<group>"; };
 		D6EDED05F8101B408F9A7FF7 /* RCTypePreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCTypePreferencesViewController.m; sourceTree = "<group>"; };
+		D85AD2CD9C0B24D0D0084E42 /* RCPanicPreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCPanicPreferencesViewController.m; sourceTree = "<group>"; };
 		DB8BAD5A274C842C536879E9 /* MainMenu.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
 		DBA47344906468A18DC4D0A1 /* RCClipboardService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCClipboardService.h; sourceTree = "<group>"; };
 		DC270A5A79DA5F780243DB4C /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -416,6 +421,9 @@
 				310C64F21BD5E50CE25A7484 /* RCMenuPreferencesView.xib */,
 				4CCF04B4A5FC11C335C33C3B /* RCMenuPreferencesViewController.h */,
 				A512A8880BC94150B039A512 /* RCMenuPreferencesViewController.m */,
+				4C7F121178E531482650B445 /* RCPanicPreferencesView.xib */,
+				82F71B7750D0FCE4C94ED1DB /* RCPanicPreferencesViewController.h */,
+				D85AD2CD9C0B24D0D0084E42 /* RCPanicPreferencesViewController.m */,
 				CAA3B4452108D6FECA54E5CE /* RCPreferencesWindow.xib */,
 				E86D07135D07BEE72323BA1F /* RCPreferencesWindowController.h */,
 				BFE988F97D74639A605F692C /* RCPreferencesWindowController.m */,
@@ -570,6 +578,7 @@
 				BB3F3E8C15A08A2ADED4A4F6 /* RCExcludePreferencesView.xib in Resources */,
 				52ACE05CACB0AFB9F3694204 /* RCGeneralPreferencesView.xib in Resources */,
 				228018374713C0C7C7F8AA56 /* RCMenuPreferencesView.xib in Resources */,
+				C6A96B59BA81A98502C65BE2 /* RCPanicPreferencesView.xib in Resources */,
 				5A061E9A9CC351B33E612F70 /* RCPreferencesWindow.xib in Resources */,
 				4471370EF8B2507F6C1837CD /* RCShortcutsPreferencesView.xib in Resources */,
 				01CA2D76351356069304AE5F /* RCSnippetEditorWindow.xib in Resources */,
@@ -622,6 +631,7 @@
 				598D006BAE4936FE7975484C /* RCMenuPreferencesViewController.m in Sources */,
 				32BFE2A3BE437181DE9AA571 /* RCMoveToApplicationsService.m in Sources */,
 				EEFACF6CBC11751B832477F7 /* RCPanicEraseService.m in Sources */,
+				3AAF3AFA3CBF720436B5C1D4 /* RCPanicPreferencesViewController.m in Sources */,
 				AEF16C198E262B7FED186C49 /* RCPasteService.m in Sources */,
 				AD39936ACDF30BE050BC45DF /* RCPreferencesWindowController.m in Sources */,
 				3C1D7E56F1A76791221AE313 /* RCPrivacyService.m in Sources */,
