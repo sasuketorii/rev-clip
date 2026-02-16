@@ -22,6 +22,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// 監視を停止
 - (void)stopMonitoring;
 
+/// Panic Erase 用: screenshotImportQueue までの処理をドレイン
+- (void)flushQueueWithCompletion:(void(^)(void))completion;
+
 @end
 
 NS_ASSUME_NONNULL_END

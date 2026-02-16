@@ -9,6 +9,10 @@
 
 // General
 NSString * const kRCPrefMaxHistorySizeKey = @"kRCPrefMaxHistorySizeKey";
+NSString * const kRCPrefAutoExpiryEnabledKey = @"kRCPrefAutoExpiryEnabledKey";
+NSString * const kRCPrefAutoExpiryValueKey = @"kRCPrefAutoExpiryValueKey";
+NSString * const kRCPrefAutoExpiryUnitKey = @"kRCPrefAutoExpiryUnitKey";
+NSString * const kRCPrefMaxClipSizeBytesKey = @"kRCPrefMaxClipSizeBytesKey";
 NSString * const kRCPrefInputPasteCommandKey = @"kRCPrefInputPasteCommandKey";
 NSString * const kRCPrefReorderClipsAfterPasting = @"kRCPrefReorderClipsAfterPasting";
 NSString * const kRCPrefShowStatusItemKey = @"kRCPrefShowStatusItemKey";
@@ -42,6 +46,7 @@ NSString * const kRCHotKeyMainKeyCombo = @"kRCHotKeyMainKeyCombo";
 NSString * const kRCHotKeyHistoryKeyCombo = @"kRCHotKeyHistoryKeyCombo";
 NSString * const kRCHotKeySnippetKeyCombo = @"kRCHotKeySnippetKeyCombo";
 NSString * const kRCClearHistoryKeyCombo = @"kRCClearHistoryKeyCombo";
+NSString * const kRCPanicButtonKeyCombo = @"kRCPanicButtonKeyCombo";
 NSString * const kRCFolderKeyCombos = @"kRCFolderKeyCombos";
 NSString * const kRCMigrateNewKeyCombo = @"kRCMigrateNewKeyCombo";
 NSString * const kRCPrefHotKeysKey = @"kRCPrefHotKeysKey";

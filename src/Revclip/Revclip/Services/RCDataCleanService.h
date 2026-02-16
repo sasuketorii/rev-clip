@@ -9,6 +9,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class RCDatabaseManager;
+
 @interface RCDataCleanService : NSObject
 
 + (instancetype)shared;
@@ -19,6 +21,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 // 手動クリーンアップ実行
 - (void)performCleanup;
+
+// 有効時のみ期限切れ履歴を削除
+- (void)expireHistoryIfNeededWithDatabaseManager:(RCDatabaseManager *)databaseManager;
+
+// クリップ保存後の軽量デバウンスクリーンアップを予約
+- (void)scheduleDebouncedCleanup;
+
+// Panic Erase 用: cleanupQueue までの処理をドレイン
+- (void)flushQueueWithCompletion:(void(^)(void))completion;
 
 @end
 

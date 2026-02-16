@@ -13,11 +13,14 @@
 #import "RCConstants.h"
 #import "RCDatabaseManager.h"
 #import "RCHotKeyService.h"
+#import "RCPanicEraseService.h"
 #import "RCPasteService.h"
+#import "FMDB.h"
 #import "NSColor+HexString.h"
 #import "NSImage+Color.h"
 #import "NSImage+Resize.h"
 #import "RCUtilities.h"
+#import <os/log.h>
 
 static NSString * const kRCStatusBarIconAssetName = @"StatusBarIcon";
 static NSInteger const kRCMaximumNumberedMenuItems = 9;
@@ -27,6 +30,15 @@ static NSString * const kRCThumbnailFileExtension = @"thumb";
 static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
 static NSString * const kRCSnippetMenuFolderIdentifierKey = @"folderIdentifier";
 static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier";
+
+static os_log_t RCMenuManagerLog(void) {
+    static os_log_t logger = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        logger = os_log_create("com.revclip", "RCMenuManager");
+    });
+    return logger;
+}
 
 @interface RCMenuManager () <NSMenuDelegate>
 
@@ -102,6 +114,10 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
         [notificationCenter addObserver:self
                                selector:@selector(handleHotKeyClearHistoryTriggered:)
                                    name:RCHotKeyClearHistoryTriggeredNotification
+                                 object:nil];
+        [notificationCenter addObserver:self
+                               selector:@selector(handlePanicHotKeyTriggered:)
+                                   name:RCHotKeyPanicTriggeredNotification
                                  object:nil];
         [notificationCenter addObserver:self
                                selector:@selector(handleHotKeySnippetFolderTriggered:)
@@ -180,6 +196,11 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
     [self performOnMainThread:^{
         [self clearHistoryMenuItemSelected:nil];
     }];
+}
+
+- (void)handlePanicHotKeyTriggered:(NSNotification *)notification {
+    (void)notification;
+    [[RCPanicEraseService shared] executePanicEraseWithCompletion:nil];
 }
 
 - (void)handleHotKeySnippetFolderTriggered:(NSNotification *)notification {
@@ -349,15 +370,20 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
     [self appendSnippetSectionToMenu:self.statusMenu];
 
     BOOL addClearHistory = [self boolPreferenceForKey:kRCPrefAddClearHistoryMenuItemKey defaultValue:YES];
+    [self.statusMenu addItem:[NSMenuItem separatorItem]];
     if (addClearHistory) {
-        [self.statusMenu addItem:[NSMenuItem separatorItem]];
-
         NSMenuItem *clearHistoryItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Clear History", nil)
                                                                    action:@selector(clearHistoryMenuItemSelected:)
                                                             keyEquivalent:@""];
         clearHistoryItem.target = self;
         [self.statusMenu addItem:clearHistoryItem];
     }
+
+    NSMenuItem *panicItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Panic Erase", nil)
+                                                        action:@selector(panicEraseMenuItemSelected:)
+                                                 keyEquivalent:@""];
+    panicItem.target = self;
+    [self.statusMenu addItem:panicItem];
 
     [self.statusMenu addItem:[NSMenuItem separatorItem]];
     [self appendApplicationSectionToMenu:self.statusMenu];
@@ -371,15 +397,20 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
     [self appendSnippetSectionToMenu:menu];
 
     BOOL addClearHistory = [self boolPreferenceForKey:kRCPrefAddClearHistoryMenuItemKey defaultValue:YES];
+    [menu addItem:[NSMenuItem separatorItem]];
     if (addClearHistory) {
-        [menu addItem:[NSMenuItem separatorItem]];
-
         NSMenuItem *clearHistoryItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Clear History", nil)
                                                                    action:@selector(clearHistoryMenuItemSelected:)
                                                             keyEquivalent:@""];
         clearHistoryItem.target = self;
         [menu addItem:clearHistoryItem];
     }
+
+    NSMenuItem *panicItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Panic Erase", nil)
+                                                        action:@selector(panicEraseMenuItemSelected:)
+                                                 keyEquivalent:@""];
+    panicItem.target = self;
+    [menu addItem:panicItem];
 
     [menu addItem:[NSMenuItem separatorItem]];
     [self appendApplicationSectionToMenu:menu];
@@ -846,8 +877,8 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
 
     BOOL showImagePreview = [self boolPreferenceForKey:kRCShowImageInTheMenuKey defaultValue:YES];
     if (showImagePreview) {
-        CGFloat thumbnailWidth = (CGFloat)MAX(1, [self integerPreferenceForKey:kRCThumbnailWidthKey defaultValue:100]);
-        CGFloat thumbnailHeight = (CGFloat)MAX(1, [self integerPreferenceForKey:kRCThumbnailHeightKey defaultValue:32]);
+        CGFloat thumbnailWidth = (CGFloat)MIN(512, MAX(16, [self integerPreferenceForKey:kRCThumbnailWidthKey defaultValue:100]));
+        CGFloat thumbnailHeight = (CGFloat)MIN(512, MAX(16, [self integerPreferenceForKey:kRCThumbnailHeightKey defaultValue:32]));
         NSSize thumbnailSize = NSMakeSize(thumbnailWidth, thumbnailHeight);
 
         NSImage *thumbnailImage = nil;
@@ -879,8 +910,8 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
 }
 
 - (NSSize)thumbnailPreviewSize {
-    CGFloat thumbnailWidth = (CGFloat)MAX(1, [self integerPreferenceForKey:kRCThumbnailWidthKey defaultValue:100]);
-    CGFloat thumbnailHeight = (CGFloat)MAX(1, [self integerPreferenceForKey:kRCThumbnailHeightKey defaultValue:32]);
+    CGFloat thumbnailWidth = (CGFloat)MIN(512, MAX(16, [self integerPreferenceForKey:kRCThumbnailWidthKey defaultValue:100]));
+    CGFloat thumbnailHeight = (CGFloat)MIN(512, MAX(16, [self integerPreferenceForKey:kRCThumbnailHeightKey defaultValue:32]));
     return NSMakeSize(thumbnailWidth, thumbnailHeight);
 }
 
@@ -1147,6 +1178,12 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
             return;
         }
 
+        [databaseManager performDatabaseOperation:^BOOL(FMDatabase *db) {
+            [db executeStatements:@"PRAGMA incremental_vacuum;"];
+            [db executeStatements:@"PRAGMA wal_checkpoint(TRUNCATE);"];
+            return YES;
+        }];
+
         [self.thumbnailCache removeAllObjects];
 
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -1158,6 +1195,21 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
         if (wasMonitoring) {
             [clipboardService startMonitoring];
         }
+    }
+}
+
+- (void)panicEraseMenuItemSelected:(id)sender {
+    (void)sender;
+
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = NSLocalizedString(@"Panic Erase", nil);
+    alert.informativeText = NSLocalizedString(@"All clipboard history, snippets, and settings will be permanently deleted. The app will quit. This cannot be undone.", nil);
+    alert.alertStyle = NSAlertStyleCritical;
+    [alert addButtonWithTitle:NSLocalizedString(@"Erase & Quit", nil)];
+    [alert addButtonWithTitle:NSLocalizedString(@"Cancel", nil)];
+
+    if ([alert runModal] == NSAlertFirstButtonReturn) {
+        [[RCPanicEraseService shared] executePanicEraseWithCompletion:nil];
     }
 }
 
@@ -1217,8 +1269,29 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
 }
 
 - (void)removeClipDataFilesAtPaths:(NSArray<NSString *> *)paths {
+    NSString *clipDirectoryPath = [RCUtilities clipDataDirectoryPath];
+    NSString *expandedPath = [[clipDirectoryPath stringByExpandingTildeInPath] stringByStandardizingPath];
+    NSString *canonicalBase = [expandedPath stringByResolvingSymlinksInPath];
+    if (canonicalBase.length == 0) {
+        return;
+    }
+    if (![canonicalBase hasSuffix:@"/"]) {
+        canonicalBase = [canonicalBase stringByAppendingString:@"/"];
+    }
+
     for (NSString *path in paths) {
-        [self removeFileAtPath:path];
+        NSString *itemPath = [[path stringByExpandingTildeInPath] stringByStandardizingPath];
+        if (itemPath.length == 0) {
+            continue;
+        }
+
+        NSString *canonicalPath = [itemPath stringByResolvingSymlinksInPath];
+        if (![canonicalPath hasPrefix:canonicalBase]) {
+            continue;
+        }
+
+        [RCPanicEraseService secureOverwriteFileAtPath:itemPath];
+        [self removeFileAtPath:itemPath];
     }
 }
 
@@ -1257,12 +1330,16 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
 
     BOOL deleted = [[RCDatabaseManager shared] deleteClipItemWithDataHash:dataHash];
     if (!deleted) {
-        NSLog(@"[RCMenuManager] Clip data recovery failed: could not delete orphaned row for data_hash=%@ (%@).", dataHash, safeReason);
+        os_log_error(RCMenuManagerLog(),
+                     "Clip data recovery failed: could not delete orphaned row for data_hash=%{private}@ (%{public}@)",
+                     dataHash, safeReason);
         [self rebuildMenu];
         return;
     }
 
-    NSLog(@"[RCMenuManager] Removed orphaned clip row for missing clip data. data_hash=%@ (%@).", dataHash, safeReason);
+    os_log_debug(RCMenuManagerLog(),
+                 "Removed orphaned clip row for missing clip data. data_hash=%{private}@ (%{public}@)",
+                 dataHash, safeReason);
     [self.thumbnailCache removeAllObjects];
     [self rebuildMenu];
 }
@@ -1276,12 +1353,24 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
 
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSArray<NSString *> *children = [fileManager contentsOfDirectoryAtPath:expandedPath error:nil];
+    NSString *canonicalBase = [expandedPath stringByResolvingSymlinksInPath];
+    if (canonicalBase.length == 0) {
+        return;
+    }
+    if (![canonicalBase hasSuffix:@"/"]) {
+        canonicalBase = [canonicalBase stringByAppendingString:@"/"];
+    }
     for (NSString *child in children) {
         if (![self isKnownClipDataFileName:child]) {
             continue;
         }
 
         NSString *itemPath = [expandedPath stringByAppendingPathComponent:child];
+        NSString *canonicalPath = [itemPath stringByResolvingSymlinksInPath];
+        if (![canonicalPath hasPrefix:canonicalBase]) {
+            continue;
+        }
+
         BOOL isDirectory = NO;
         if (![fileManager fileExistsAtPath:itemPath isDirectory:&isDirectory] || isDirectory) {
             continue;
@@ -1340,10 +1429,14 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
         return;
     }
 
+    [RCPanicEraseService secureOverwriteFileAtPath:expandedPath];
+
     NSError *error = nil;
     BOOL removed = [fileManager removeItemAtPath:expandedPath error:&error];
     if (!removed) {
-        NSLog(@"[RCMenuManager] Failed to remove file at '%@': %@", expandedPath, error.localizedDescription);
+        os_log_error(RCMenuManagerLog(),
+                     "Failed to remove file at %{private}@ (%{private}@)",
+                     expandedPath, error.localizedDescription);
     }
 }
 
@@ -1414,6 +1507,10 @@ static NSString * const kRCSnippetMenuSnippetIdentifierKey = @"snippetIdentifier
     }
 
     dispatch_async(dispatch_get_main_queue(), block);
+}
+
+- (void)clearThumbnailCache {
+    [self.thumbnailCache removeAllObjects];
 }
 
 - (NSString *)stringValueFromDictionary:(NSDictionary *)dictionary key:(NSString *)key defaultValue:(NSString *)defaultValue {

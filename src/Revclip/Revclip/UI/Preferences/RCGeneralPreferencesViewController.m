@@ -10,10 +10,15 @@
 #import "RCConstants.h"
 #import "RCDataCleanService.h"
 #import "RCLoginItemService.h"
+#import <CoreFoundation/CoreFoundation.h>
 
 static const NSInteger RCMaxHistorySizeMinimum = 1;
 static const NSInteger RCMaxHistorySizeMaximum = 9999;
 static const NSInteger RCMaxHistorySizeDefault = 30;
+static const NSInteger RCAutoExpiryValueMinimum = 1;
+static const NSInteger RCAutoExpiryValueMaximum = 9999;
+static const NSInteger RCAutoExpiryValueDefault = 30;
+static const NSInteger RCAutoExpiryUnitDefault = RCAutoExpiryUnitDay;
 static const NSInteger RCShowStatusItemDefault = 1;
 
 @interface RCGeneralPreferencesViewController ()
@@ -28,6 +33,10 @@ static const NSInteger RCShowStatusItemDefault = 1;
 @property (nonatomic, weak) IBOutlet NSButton *sameHistoryCopyButton;
 
 - (void)refreshLoginAtStartupButtonState;
+- (void)updateAutoExpiryControlsEnabled:(BOOL)enabled;
+- (void)setAutoExpiryValue:(NSInteger)autoExpiryValue persist:(BOOL)persist;
+- (NSInteger)clampedAutoExpiryValue:(NSInteger)value;
+- (NSInteger)clampedAutoExpiryUnit:(NSInteger)value;
 
 @end
 
@@ -55,6 +64,32 @@ static const NSInteger RCShowStatusItemDefault = 1;
 - (IBAction)maxHistorySizeStepperChanged:(id)sender {
     (void)sender;
     [self setMaxHistorySize:self.maxHistorySizeStepper.integerValue persist:YES];
+}
+
+- (IBAction)autoExpiryEnabledChanged:(id)sender {
+    (void)sender;
+    BOOL enabled = (self.autoExpiryEnabledButton.state == NSControlStateValueOn);
+    [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:kRCPrefAutoExpiryEnabledKey];
+    [self updateAutoExpiryControlsEnabled:enabled];
+    [[RCDataCleanService shared] performCleanup];
+}
+
+- (IBAction)autoExpiryValueTextFieldChanged:(id)sender {
+    (void)sender;
+    [self setAutoExpiryValue:self.autoExpiryValueTextField.integerValue persist:YES];
+}
+
+- (IBAction)autoExpiryValueStepperChanged:(id)sender {
+    (void)sender;
+    [self setAutoExpiryValue:self.autoExpiryValueStepper.integerValue persist:YES];
+}
+
+- (IBAction)autoExpiryUnitChanged:(id)sender {
+    (void)sender;
+    NSInteger selectedIndex = [self clampedAutoExpiryUnit:self.autoExpiryUnitPopUpButton.indexOfSelectedItem];
+    [self.autoExpiryUnitPopUpButton selectItemAtIndex:selectedIndex];
+    [[NSUserDefaults standardUserDefaults] setInteger:selectedIndex forKey:kRCPrefAutoExpiryUnitKey];
+    [[RCDataCleanService shared] performCleanup];
 }
 
 - (IBAction)loginAtStartupChanged:(id)sender {
@@ -141,11 +176,30 @@ static const NSInteger RCShowStatusItemDefault = 1;
     self.maxHistorySizeStepper.autorepeat = YES;
     self.maxHistorySizeStepper.valueWraps = NO;
 
+    self.autoExpiryValueStepper.minValue = RCAutoExpiryValueMinimum;
+    self.autoExpiryValueStepper.maxValue = RCAutoExpiryValueMaximum;
+    self.autoExpiryValueStepper.increment = 1.0;
+    self.autoExpiryValueStepper.autorepeat = YES;
+    self.autoExpiryValueStepper.valueWraps = NO;
+
+    [self.autoExpiryUnitPopUpButton removeAllItems];
+    [self.autoExpiryUnitPopUpButton addItemsWithTitles:@[@"日", @"時間", @"分"]];
+
     [self.showStatusItemPopUpButton removeAllItems];
     [self.showStatusItemPopUpButton addItemsWithTitles:@[NSLocalizedString(@"Hide", nil), NSLocalizedString(@"Show", nil)]];
 }
 
 - (void)applyPreferenceValues {
+    BOOL autoExpiryEnabled = [self boolPreferenceForKey:kRCPrefAutoExpiryEnabledKey defaultValue:NO];
+    self.autoExpiryEnabledButton.state = autoExpiryEnabled ? NSControlStateValueOn : NSControlStateValueOff;
+    [self setAutoExpiryValue:[self integerPreferenceForKey:kRCPrefAutoExpiryValueKey
+                                               defaultValue:RCAutoExpiryValueDefault]
+                     persist:NO];
+    NSInteger autoExpiryUnit = [self integerPreferenceForKey:kRCPrefAutoExpiryUnitKey
+                                                defaultValue:RCAutoExpiryUnitDefault];
+    [self.autoExpiryUnitPopUpButton selectItemAtIndex:[self clampedAutoExpiryUnit:autoExpiryUnit]];
+    [self updateAutoExpiryControlsEnabled:autoExpiryEnabled];
+
     [self setMaxHistorySize:[self integerPreferenceForKey:kRCPrefMaxHistorySizeKey
                                              defaultValue:RCMaxHistorySizeDefault]
                     persist:NO];
@@ -187,6 +241,23 @@ static const NSInteger RCShowStatusItemDefault = 1;
     }
 }
 
+- (void)setAutoExpiryValue:(NSInteger)autoExpiryValue persist:(BOOL)persist {
+    NSInteger clampedValue = [self clampedAutoExpiryValue:autoExpiryValue];
+    self.autoExpiryValueTextField.integerValue = clampedValue;
+    self.autoExpiryValueStepper.integerValue = clampedValue;
+
+    if (persist) {
+        [[NSUserDefaults standardUserDefaults] setInteger:clampedValue forKey:kRCPrefAutoExpiryValueKey];
+        [[RCDataCleanService shared] performCleanup];
+    }
+}
+
+- (void)updateAutoExpiryControlsEnabled:(BOOL)enabled {
+    self.autoExpiryValueTextField.enabled = enabled;
+    self.autoExpiryValueStepper.enabled = enabled;
+    self.autoExpiryUnitPopUpButton.enabled = enabled;
+}
+
 - (void)refreshLoginAtStartupButtonState {
     BOOL loginItemEnabled = [RCLoginItemService shared].loginItemEnabled;
     self.loginAtStartupButton.state = loginItemEnabled ? NSControlStateValueOn : NSControlStateValueOff;
@@ -202,11 +273,40 @@ static const NSInteger RCShowStatusItemDefault = 1;
     return value;
 }
 
+- (NSInteger)clampedAutoExpiryValue:(NSInteger)value {
+    if (value < RCAutoExpiryValueMinimum) {
+        return RCAutoExpiryValueMinimum;
+    }
+    if (value > RCAutoExpiryValueMaximum) {
+        return RCAutoExpiryValueMaximum;
+    }
+    return value;
+}
+
+- (NSInteger)clampedAutoExpiryUnit:(NSInteger)value {
+    if (value < RCAutoExpiryUnitDay || value > RCAutoExpiryUnitMinute) {
+        return RCAutoExpiryUnitDefault;
+    }
+    return value;
+}
+
 - (BOOL)boolPreferenceForKey:(NSString *)key defaultValue:(BOOL)defaultValue {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    if ([defaults objectForKey:key] == nil) {
+    id value = [defaults objectForKey:key];
+    if (value == nil) {
         return defaultValue;
     }
+
+    if ([key isEqualToString:kRCPrefAutoExpiryEnabledKey]) {
+        if (CFGetTypeID((__bridge CFTypeRef)value) == CFBooleanGetTypeID()) {
+            return [(NSNumber *)value boolValue];
+        }
+        if ([value isKindOfClass:[NSNumber class]]) {
+            return [(NSNumber *)value boolValue];
+        }
+        return NO;
+    }
+
     return [defaults boolForKey:key];
 }
 

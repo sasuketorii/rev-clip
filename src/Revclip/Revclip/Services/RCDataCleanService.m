@@ -7,13 +7,22 @@
 
 #import "RCDataCleanService.h"
 
+#import "FMDB.h"
 #import "RCClipItem.h"
 #import "RCConstants.h"
 #import "RCDatabaseManager.h"
+#import "RCPanicEraseService.h"
 #import "RCUtilities.h"
+#import <CoreFoundation/CoreFoundation.h>
+#import <os/log.h>
 
 static NSTimeInterval const kRCCleanupInterval = 30.0 * 60.0;
+static NSTimeInterval const kRCDebouncedCleanupInterval = 5.0;
 static NSInteger const kRCDefaultMaxHistorySize = 30;
+static NSInteger const kRCMaxAllowedHistorySize = 9999;
+static NSInteger const kRCAutoExpiryDefaultValue = 30;
+static NSInteger const kRCAutoExpiryMinimumValue = 1;
+static NSInteger const kRCAutoExpiryMaximumValue = 9999;
 static NSTimeInterval const kRCOrphanFileMinimumAge = 60.0;
 static NSString * const kRCClipDataFileExtension = @"rcclip";
 static NSString * const kRCThumbFileExtension = @"thumb";
@@ -21,10 +30,28 @@ static NSString * const kRCLegacyThumbnailFileExtension = @"thumbnail.tiff";
 static NSString * const kRCThumbFileSuffix = @".thumb";
 static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
 
+static os_log_t RCDataCleanServiceLog(void) {
+    static os_log_t logger = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        logger = os_log_create("com.revclip", "RCDataCleanService");
+    });
+    return logger;
+}
+
 @interface RCDataCleanService ()
 
 @property (nonatomic, strong, nullable) dispatch_source_t cleanupTimer;
+@property (nonatomic, strong, nullable) dispatch_source_t cleanupDebounceTimer;
 @property (nonatomic, strong) dispatch_queue_t cleanupQueue;
+
+- (void)runDatabaseMaintenanceWithDatabaseManager:(RCDatabaseManager *)databaseManager;
+- (BOOL)autoExpiryEnabledPreferenceValue;
+- (NSInteger)autoExpiryValuePreference;
+- (RCAutoExpiryUnit)autoExpiryUnitPreference;
+- (NSString *)validatedCanonicalClipPath:(NSString *)path
+                  clipDataDirectoryPath:(NSString *)canonicalClipDataDirectoryPath;
+- (NSString *)resolvedPath:(NSString *)path;
 
 @end
 
@@ -91,40 +118,159 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
 
 - (void)stopCleanupTimer {
     dispatch_source_t timer = nil;
+    dispatch_source_t debounceTimer = nil;
 
     @synchronized (self) {
         timer = self.cleanupTimer;
         self.cleanupTimer = nil;
+        debounceTimer = self.cleanupDebounceTimer;
+        self.cleanupDebounceTimer = nil;
     }
 
     if (timer != nil) {
         dispatch_source_cancel(timer);
     }
+    if (debounceTimer != nil) {
+        dispatch_source_cancel(debounceTimer);
+    }
 }
 
 - (void)performCleanup {
+    if ([RCPanicEraseService shared].isPanicInProgress) {
+        return;
+    }
+
     dispatch_async(self.cleanupQueue, ^{
         [self performCleanupOnCleanupQueue];
+    });
+}
+
+- (void)scheduleDebouncedCleanup {
+    if ([RCPanicEraseService shared].isPanicInProgress) {
+        return;
+    }
+
+    dispatch_async(self.cleanupQueue, ^{
+        @synchronized (self) {
+            if (self.cleanupDebounceTimer != nil) {
+                dispatch_source_cancel(self.cleanupDebounceTimer);
+                self.cleanupDebounceTimer = nil;
+            }
+
+            dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, self.cleanupQueue);
+            if (timer == nil) {
+                return;
+            }
+
+            uint64_t interval = (uint64_t)(kRCDebouncedCleanupInterval * (double)NSEC_PER_SEC);
+            uint64_t leeway = interval / 10;
+            dispatch_source_set_timer(timer,
+                                      dispatch_time(DISPATCH_TIME_NOW, (int64_t)interval),
+                                      DISPATCH_TIME_FOREVER,
+                                      leeway);
+
+            __weak typeof(self) weakSelf = self;
+            dispatch_source_set_event_handler(timer, ^{
+                __strong typeof(weakSelf) strongSelf = weakSelf;
+                if (strongSelf == nil) {
+                    return;
+                }
+
+                @synchronized (strongSelf) {
+                    if (strongSelf.cleanupDebounceTimer != timer) {
+                        return;
+                    }
+                    strongSelf.cleanupDebounceTimer = nil;
+                }
+
+                dispatch_source_cancel(timer);
+                [strongSelf performCleanupOnCleanupQueue];
+            });
+
+            self.cleanupDebounceTimer = timer;
+            dispatch_resume(timer);
+        }
+    });
+}
+
+- (void)flushQueueWithCompletion:(void(^)(void))completion {
+    dispatch_async(self.cleanupQueue, ^{
+        if (completion != nil) {
+            completion();
+        }
     });
 }
 
 #pragma mark - Private
 
 - (void)performCleanupOnCleanupQueue {
+    if ([RCPanicEraseService shared].isPanicInProgress) {
+        return;
+    }
+
     RCDatabaseManager *databaseManager = [RCDatabaseManager shared];
     if (![databaseManager setupDatabase]) {
         return;
     }
 
+    [self expireHistoryIfNeededWithDatabaseManager:databaseManager];
     [self trimHistoryIfNeededWithDatabaseManager:databaseManager];
     [self removeOrphanClipFilesWithDatabaseManager:databaseManager];
+    [self runDatabaseMaintenanceWithDatabaseManager:databaseManager];
+}
+
+- (void)expireHistoryIfNeededWithDatabaseManager:(RCDatabaseManager *)databaseManager {
+    if ([RCPanicEraseService shared].isPanicInProgress) {
+        return;
+    }
+
+    if (![self autoExpiryEnabledPreferenceValue]) {
+        return;
+    }
+
+    NSInteger expiryValue = [self autoExpiryValuePreference];
+    RCAutoExpiryUnit expiryUnit = [self autoExpiryUnitPreference];
+
+    NSInteger expiryDurationMs = 0;
+    switch (expiryUnit) {
+        case RCAutoExpiryUnitHour:
+            expiryDurationMs = expiryValue * 3600 * 1000;
+            break;
+        case RCAutoExpiryUnitMinute:
+            expiryDurationMs = expiryValue * 60 * 1000;
+            break;
+        case RCAutoExpiryUnitDay:
+        default:
+            expiryDurationMs = expiryValue * 86400 * 1000;
+            break;
+    }
+
+    NSInteger nowMs = (NSInteger)([[NSDate date] timeIntervalSince1970] * 1000.0);
+    NSInteger cutoffMs = nowMs - expiryDurationMs;
+    NSArray<RCClipItem *> *expiredItems = [databaseManager clipItemsOlderThan:cutoffMs];
+    for (RCClipItem *expiredItem in expiredItems) {
+        if (expiredItem.dataHash.length == 0) {
+            continue;
+        }
+
+        if ([databaseManager deleteClipItemWithDataHash:expiredItem.dataHash olderThan:cutoffMs]) {
+            [self removeFilesForClipItem:expiredItem];
+        }
+    }
 }
 
 - (void)trimHistoryIfNeededWithDatabaseManager:(RCDatabaseManager *)databaseManager {
+    if ([RCPanicEraseService shared].isPanicInProgress) {
+        return;
+    }
+
     NSInteger maxHistorySize = [self integerPreferenceForKey:kRCPrefMaxHistorySizeKey
                                                 defaultValue:kRCDefaultMaxHistorySize];
     if (maxHistorySize <= 0) {
-        return;
+        maxHistorySize = kRCDefaultMaxHistorySize;
+    }
+    if (maxHistorySize > kRCMaxAllowedHistorySize) {
+        maxHistorySize = kRCMaxAllowedHistorySize;
     }
 
     NSInteger count = [databaseManager clipItemCount];
@@ -149,9 +295,34 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
     }
 }
 
+- (void)runDatabaseMaintenanceWithDatabaseManager:(RCDatabaseManager *)databaseManager {
+    [databaseManager performDatabaseOperation:^BOOL(FMDatabase *db) {
+        BOOL vacuumed = [db executeStatements:@"PRAGMA incremental_vacuum;"];
+        if (!vacuumed) {
+            os_log_error(RCDataCleanServiceLog(), "Failed to execute incremental_vacuum pragma");
+            return NO;
+        }
+
+        NSString *journalMode = [[db stringForQuery:@"PRAGMA journal_mode;"] lowercaseString];
+        if ([journalMode isEqualToString:@"wal"]) {
+            BOOL checkpointed = [db executeStatements:@"PRAGMA wal_checkpoint(TRUNCATE);"];
+            if (!checkpointed) {
+                os_log_error(RCDataCleanServiceLog(), "Failed to execute wal_checkpoint(TRUNCATE) pragma");
+                return NO;
+            }
+        }
+
+        return YES;
+    }];
+}
+
 - (void)removeOrphanClipFilesWithDatabaseManager:(RCDatabaseManager *)databaseManager {
     NSString *clipDirectoryPath = [RCUtilities clipDataDirectoryPath];
     if (![RCUtilities ensureDirectoryExists:clipDirectoryPath]) {
+        return;
+    }
+    NSString *canonicalClipDataDirectoryPath = [self canonicalPath:clipDirectoryPath];
+    if (canonicalClipDataDirectoryPath.length == 0) {
         return;
     }
 
@@ -160,8 +331,9 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
     NSArray<NSString *> *fileNames = [fileManager contentsOfDirectoryAtPath:clipDirectoryPath
                                                                        error:&directoryError];
     if (fileNames == nil) {
-        NSLog(@"[RCDataCleanService] Failed to enumerate clip directory '%@': %@",
-              clipDirectoryPath, directoryError.localizedDescription);
+        os_log_error(RCDataCleanServiceLog(),
+                     "Failed to enumerate clip directory %{private}@ (%{private}@)",
+                     clipDirectoryPath, directoryError.localizedDescription);
         return;
     }
 
@@ -172,14 +344,16 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
         NSArray<NSDictionary *> *clipDictionaries = [databaseManager fetchClipItemsWithLimit:count];
         for (NSDictionary *clipDictionary in clipDictionaries) {
             RCClipItem *clipItem = [[RCClipItem alloc] initWithDictionary:clipDictionary];
-            NSString *standardizedPath = [self standardizedPath:clipItem.dataPath];
-            if (standardizedPath.length > 0) {
-                [databaseClipPaths addObject:standardizedPath];
+            NSString *canonicalDataPath = [self validatedCanonicalClipPath:clipItem.dataPath
+                                                     clipDataDirectoryPath:canonicalClipDataDirectoryPath];
+            if (canonicalDataPath.length > 0) {
+                [databaseClipPaths addObject:canonicalDataPath];
             }
 
-            NSString *standardizedThumbnailPath = [self standardizedPath:clipItem.thumbnailPath];
-            if (standardizedThumbnailPath.length > 0) {
-                [databaseThumbnailPaths addObject:standardizedThumbnailPath];
+            NSString *canonicalThumbnailPath = [self validatedCanonicalClipPath:clipItem.thumbnailPath
+                                                          clipDataDirectoryPath:canonicalClipDataDirectoryPath];
+            if (canonicalThumbnailPath.length > 0) {
+                [databaseThumbnailPaths addObject:canonicalThumbnailPath];
             }
         }
     }
@@ -189,7 +363,8 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
             continue;
         }
 
-        NSString *clipFilePath = [self standardizedPath:[clipDirectoryPath stringByAppendingPathComponent:fileName]];
+        NSString *clipFilePath = [self validatedCanonicalClipPath:[clipDirectoryPath stringByAppendingPathComponent:fileName]
+                                            clipDataDirectoryPath:canonicalClipDataDirectoryPath];
         if (clipFilePath.length == 0) {
             continue;
         }
@@ -211,7 +386,8 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
             continue;
         }
 
-        NSString *thumbnailFilePath = [self standardizedPath:[clipDirectoryPath stringByAppendingPathComponent:fileName]];
+        NSString *thumbnailFilePath = [self validatedCanonicalClipPath:[clipDirectoryPath stringByAppendingPathComponent:fileName]
+                                                 clipDataDirectoryPath:canonicalClipDataDirectoryPath];
         if (thumbnailFilePath.length == 0) {
             continue;
         }
@@ -220,8 +396,9 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
             continue;
         }
 
-        NSString *correspondingClipPath = [self clipPathForThumbnailFileName:fileName
-                                                             clipDirectoryPath:clipDirectoryPath];
+        NSString *correspondingClipPath = [self validatedCanonicalClipPath:[self clipPathForThumbnailFileName:fileName
+                                                                                            clipDirectoryPath:clipDirectoryPath]
+                                                     clipDataDirectoryPath:canonicalClipDataDirectoryPath];
         if (correspondingClipPath.length > 0 && [databaseClipPaths containsObject:correspondingClipPath]) {
             continue;
         }
@@ -298,7 +475,7 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
 }
 
 - (BOOL)isRegularFileAtPath:(NSString *)path fileManager:(NSFileManager *)fileManager {
-    NSString *standardizedPath = [self standardizedPath:path];
+    NSString *standardizedPath = [self canonicalPath:path];
     if (standardizedPath.length == 0) {
         return NO;
     }
@@ -308,7 +485,7 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
 }
 
 - (BOOL)isOldEnoughForOrphanDeletionAtPath:(NSString *)path fileManager:(NSFileManager *)fileManager {
-    NSString *standardizedPath = [self standardizedPath:path];
+    NSString *standardizedPath = [self canonicalPath:path];
     if (standardizedPath.length == 0) {
         return NO;
     }
@@ -321,8 +498,9 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
     NSError *attributesError = nil;
     NSDictionary *attributes = [fileManager attributesOfItemAtPath:standardizedPath error:&attributesError];
     if (attributes == nil) {
-        NSLog(@"[RCDataCleanService] Failed to get file attributes '%@': %@",
-              standardizedPath, attributesError.localizedDescription);
+        os_log_error(RCDataCleanServiceLog(),
+                     "Failed to get file attributes for %{private}@ (%{private}@)",
+                     standardizedPath, attributesError.localizedDescription);
         return NO;
     }
 
@@ -336,29 +514,30 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
 }
 
 - (void)removeFileAtPath:(NSString *)path {
-    NSString *standardizedPath = [self standardizedPath:path];
-    if (standardizedPath.length == 0) {
-        return;
-    }
-
-    NSString *canonicalPath = [self canonicalPath:standardizedPath];
     NSString *canonicalClipDataDirectoryPath = [self canonicalPath:[RCUtilities clipDataDirectoryPath]];
-    if (![self isPath:canonicalPath withinDirectory:canonicalClipDataDirectoryPath]) {
-        NSLog(@"[RCDataCleanService] Refusing to delete path outside clip data directory: '%@'", canonicalPath);
+    NSString *canonicalPath = [self validatedCanonicalClipPath:path
+                                         clipDataDirectoryPath:canonicalClipDataDirectoryPath];
+    if (canonicalPath.length == 0) {
+        os_log_with_type(RCDataCleanServiceLog(), OS_LOG_TYPE_DEBUG,
+                         "Refusing to delete path outside clip data directory (%{private}@)",
+                         path);
         return;
     }
 
     NSFileManager *fileManager = [NSFileManager defaultManager];
     BOOL isDirectory = NO;
-    if (![fileManager fileExistsAtPath:standardizedPath isDirectory:&isDirectory] || isDirectory) {
+    if (![fileManager fileExistsAtPath:canonicalPath isDirectory:&isDirectory] || isDirectory) {
         return;
     }
 
+    [RCPanicEraseService secureOverwriteFileAtPath:canonicalPath];
+
     NSError *error = nil;
-    BOOL removed = [fileManager removeItemAtPath:standardizedPath error:&error];
+    BOOL removed = [fileManager removeItemAtPath:canonicalPath error:&error];
     if (!removed) {
-        NSLog(@"[RCDataCleanService] Failed to remove file '%@': %@",
-              standardizedPath, error.localizedDescription);
+        os_log_error(RCDataCleanServiceLog(),
+                     "Failed to remove file %{private}@ (%{private}@)",
+                     canonicalPath, error.localizedDescription);
     }
 }
 
@@ -374,6 +553,38 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
     return defaultValue;
 }
 
+- (BOOL)autoExpiryEnabledPreferenceValue {
+    id value = [[NSUserDefaults standardUserDefaults] objectForKey:kRCPrefAutoExpiryEnabledKey];
+    if (value == nil) {
+        return NO;
+    }
+    if (CFGetTypeID((__bridge CFTypeRef)value) == CFBooleanGetTypeID()) {
+        return [(NSNumber *)value boolValue];
+    }
+    if ([value isKindOfClass:[NSNumber class]]) {
+        return [(NSNumber *)value boolValue];
+    }
+    return NO;
+}
+
+- (NSInteger)autoExpiryValuePreference {
+    NSInteger value = [self integerPreferenceForKey:kRCPrefAutoExpiryValueKey
+                                       defaultValue:kRCAutoExpiryDefaultValue];
+    if (value < kRCAutoExpiryMinimumValue || value > kRCAutoExpiryMaximumValue) {
+        return kRCAutoExpiryDefaultValue;
+    }
+    return value;
+}
+
+- (RCAutoExpiryUnit)autoExpiryUnitPreference {
+    NSInteger rawUnit = [self integerPreferenceForKey:kRCPrefAutoExpiryUnitKey
+                                         defaultValue:RCAutoExpiryUnitDay];
+    if (rawUnit < RCAutoExpiryUnitDay || rawUnit > RCAutoExpiryUnitMinute) {
+        return RCAutoExpiryUnitDay;
+    }
+    return (RCAutoExpiryUnit)rawUnit;
+}
+
 - (NSString *)standardizedPath:(NSString *)path {
     if (path.length == 0) {
         return @"";
@@ -381,13 +592,41 @@ static NSString * const kRCLegacyThumbnailFileSuffix = @".thumbnail.tiff";
     return [[path stringByExpandingTildeInPath] stringByStandardizingPath];
 }
 
-- (NSString *)canonicalPath:(NSString *)path {
+- (NSString *)resolvedPath:(NSString *)path {
     NSString *standardizedPath = [self standardizedPath:path];
     if (standardizedPath.length == 0) {
         return @"";
     }
 
-    return [standardizedPath stringByResolvingSymlinksInPath];
+    if (standardizedPath.isAbsolutePath) {
+        return standardizedPath;
+    }
+
+    NSString *clipDataDirectoryPath = [self standardizedPath:[RCUtilities clipDataDirectoryPath]];
+    if (clipDataDirectoryPath.length == 0) {
+        return @"";
+    }
+
+    NSString *resolvedPath = [clipDataDirectoryPath stringByAppendingPathComponent:standardizedPath];
+    return [resolvedPath stringByStandardizingPath];
+}
+
+- (NSString *)canonicalPath:(NSString *)path {
+    NSString *resolvedPath = [self resolvedPath:path];
+    if (resolvedPath.length == 0) {
+        return @"";
+    }
+
+    return [resolvedPath stringByResolvingSymlinksInPath];
+}
+
+- (NSString *)validatedCanonicalClipPath:(NSString *)path
+                  clipDataDirectoryPath:(NSString *)canonicalClipDataDirectoryPath {
+    NSString *canonicalPath = [self canonicalPath:path];
+    if (![self isPath:canonicalPath withinDirectory:canonicalClipDataDirectoryPath]) {
+        return @"";
+    }
+    return canonicalPath;
 }
 
 - (BOOL)isPath:(NSString *)path withinDirectory:(NSString *)directoryPath {

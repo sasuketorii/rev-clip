@@ -9,6 +9,9 @@
 
 #import <AppKit/AppKit.h>
 #import <CommonCrypto/CommonDigest.h>
+#import <os/log.h>
+
+#import "RCUtilities.h"
 
 static NSString * const kRCClipDataStringValueKey = @"stringValue";
 static NSString * const kRCClipDataRTFDataKey = @"RTFData";
@@ -20,12 +23,25 @@ static NSString * const kRCClipDataURLStringKey = @"URLString";
 static NSString * const kRCClipDataTIFFDataKey = @"TIFFData";
 static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
 
+static os_log_t RCClipDataLog(void) {
+    static os_log_t logger = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        logger = os_log_create("com.revclip", "RCClipData");
+    });
+    return logger;
+}
+
 @interface RCClipData ()
 
 + (NSString *)sha256HexForDigest:(const unsigned char *)digest;
 + (BOOL)updateHashContext:(CC_SHA256_CTX *)context withData:(nullable NSData *)source;
 + (BOOL)updateHashContext:(CC_SHA256_CTX *)context withString:(nullable NSString *)string;
 + (NSString *)truncateString:(NSString *)string length:(NSUInteger)length;
++ (NSString *)standardizedPath:(NSString *)path;
++ (NSString *)resolvedClipStoragePath:(NSString *)path;
++ (NSString *)canonicalPath:(NSString *)path;
++ (BOOL)isPath:(NSString *)path withinDirectory:(NSString *)directoryPath;
 
 @end
 
@@ -310,15 +326,22 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
         return NO;
     }
 
-    NSString *directoryPath = [path stringByDeletingLastPathComponent];
+    NSString *resolvedPath = [[self class] resolvedClipStoragePath:path];
+    if (resolvedPath.length == 0) {
+        return NO;
+    }
+
+    NSString *directoryPath = [resolvedPath stringByDeletingLastPathComponent];
     if (directoryPath.length > 0) {
         NSError *directoryError = nil;
         BOOL created = [[NSFileManager defaultManager] createDirectoryAtPath:directoryPath
                                                  withIntermediateDirectories:YES
-                                                                  attributes:nil
+                                                                  attributes:@{ NSFilePosixPermissions: @(0700) }
                                                                        error:&directoryError];
         if (!created) {
-            NSLog(@"[RCClipData] Failed to create directory at path '%@': %@", directoryPath, directoryError.localizedDescription);
+            os_log_error(RCClipDataLog(),
+                         "Failed to create directory at path %{private}@ (%{private}@)",
+                         directoryPath, directoryError.localizedDescription);
             return NO;
         }
     }
@@ -333,11 +356,24 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
     }
 
     NSError *writeError = nil;
-    BOOL wrote = [archiveData writeToFile:path options:NSDataWritingAtomic error:&writeError];
+    BOOL wrote = [archiveData writeToFile:resolvedPath options:NSDataWritingAtomic error:&writeError];
     if (!wrote) {
-        NSLog(@"[RCClipData] Failed to save clip data at path '%@': %@", path, writeError.localizedDescription);
+        os_log_error(RCClipDataLog(),
+                     "Failed to save clip data at path %{private}@ (%{private}@)",
+                     resolvedPath, writeError.localizedDescription);
+        return NO;
     }
-    return wrote;
+
+    NSError *permissionsError = nil;
+    BOOL permissionApplied = [[NSFileManager defaultManager] setAttributes:@{ NSFilePosixPermissions: @(0600) }
+                                                               ofItemAtPath:resolvedPath
+                                                                      error:&permissionsError];
+    if (!permissionApplied && permissionsError != nil) {
+        os_log_error(RCClipDataLog(),
+                     "Failed to set clip data file permissions for %{private}@ (%{private}@)",
+                     resolvedPath, permissionsError.localizedDescription);
+    }
+    return YES;
 }
 
 + (nullable instancetype)clipDataFromPath:(NSString *)path {
@@ -345,8 +381,17 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
         return nil;
     }
 
+    NSString *canonicalPath = [[self class] canonicalPath:path];
+    NSString *canonicalClipDirectoryPath = [[self class] canonicalPath:[RCUtilities clipDataDirectoryPath]];
+    if (![[self class] isPath:canonicalPath withinDirectory:canonicalClipDirectoryPath]) {
+        os_log_with_type(RCClipDataLog(), OS_LOG_TYPE_DEBUG,
+                         "Refusing to load clip data outside clip directory (%{private}@)",
+                         path);
+        return nil;
+    }
+
     NSError *readError = nil;
-    NSData *archiveData = [NSData dataWithContentsOfFile:path options:0 error:&readError];
+    NSData *archiveData = [NSData dataWithContentsOfFile:canonicalPath options:0 error:&readError];
     if (archiveData == nil) {
         return nil;
     }
@@ -356,7 +401,9 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
                                                                    fromData:archiveData
                                                                       error:&unarchiveError];
     if (decodedObject == nil && unarchiveError != nil) {
-        NSLog(@"[RCClipData] Failed to unarchive clip data at path '%@': %@", path, unarchiveError.localizedDescription);
+        os_log_error(RCClipDataLog(),
+                     "Failed to unarchive clip data at path %{private}@ (%{private}@)",
+                     canonicalPath, unarchiveError.localizedDescription);
     }
     return decodedObject;
 }
@@ -389,6 +436,56 @@ static NSString * const kRCClipDataPrimaryTypeKey = @"primaryType";
     }
     NSData *data = [string dataUsingEncoding:NSUTF8StringEncoding];
     return [self updateHashContext:context withData:data];
+}
+
++ (NSString *)standardizedPath:(NSString *)path {
+    if (path.length == 0) {
+        return @"";
+    }
+    return [[path stringByExpandingTildeInPath] stringByStandardizingPath];
+}
+
++ (NSString *)resolvedClipStoragePath:(NSString *)path {
+    NSString *standardizedPath = [self standardizedPath:path];
+    if (standardizedPath.length == 0) {
+        return @"";
+    }
+
+    if (standardizedPath.isAbsolutePath) {
+        return standardizedPath;
+    }
+
+    NSString *clipDirectoryPath = [self standardizedPath:[RCUtilities clipDataDirectoryPath]];
+    if (clipDirectoryPath.length == 0) {
+        return @"";
+    }
+
+    NSString *resolvedPath = [clipDirectoryPath stringByAppendingPathComponent:standardizedPath];
+    return [resolvedPath stringByStandardizingPath];
+}
+
++ (NSString *)canonicalPath:(NSString *)path {
+    NSString *resolvedPath = [self resolvedClipStoragePath:path];
+    if (resolvedPath.length == 0) {
+        return @"";
+    }
+
+    return [resolvedPath stringByResolvingSymlinksInPath];
+}
+
++ (BOOL)isPath:(NSString *)path withinDirectory:(NSString *)directoryPath {
+    if (path.length == 0 || directoryPath.length == 0) {
+        return NO;
+    }
+
+    if ([path isEqualToString:directoryPath]) {
+        return YES;
+    }
+
+    NSString *directoryPrefix = [directoryPath hasSuffix:@"/"]
+        ? directoryPath
+        : [directoryPath stringByAppendingString:@"/"];
+    return [path hasPrefix:directoryPrefix];
 }
 
 + (NSString *)truncateString:(NSString *)string length:(NSUInteger)length {

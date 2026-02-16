@@ -19,6 +19,9 @@ NS_ASSUME_NONNULL_BEGIN
 // メニューの再構築
 - (void)rebuildMenu;
 
+// Panic Erase 用: サムネイルキャッシュを即時破棄
+- (void)clearThumbnailCache;
+
 @end
 
 NS_ASSUME_NONNULL_END

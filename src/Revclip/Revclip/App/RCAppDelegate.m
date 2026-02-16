@@ -53,6 +53,9 @@ static UTType *RCSnippetImportExportContentType(void) {
     RCDatabaseManager *databaseManager = [RCDatabaseManager shared];
     [databaseManager setupDatabase];
 
+    // 2.5 Data protection (permissions + backup/index exclusions)
+    [RCUtilities applyDataProtectionAttributes];
+
     // 3. Core services
     RCClipboardService *clipboardService = [RCClipboardService shared];
     RCMenuManager *menuManager = [RCMenuManager shared];

@@ -48,6 +48,8 @@ NS_INLINE BOOL RCIsValidKeyCombo(RCKeyCombo combo) {
 - (BOOL)registerSnippetHotKey:(RCKeyCombo)combo;
 // 履歴クリアホットキー登録
 - (BOOL)registerClearHistoryHotKey:(RCKeyCombo)combo;
+// 緊急削除ホットキー登録
+- (BOOL)registerPanicHotKey:(RCKeyCombo)combo;
 // フォルダ個別ホットキー登録
 - (BOOL)registerSnippetFolderHotKey:(RCKeyCombo)combo forFolderIdentifier:(NSString *)identifier;
 // フォルダ個別ホットキー解除
@@ -75,6 +77,7 @@ extern NSString * const RCHotKeyMainTriggeredNotification;
 extern NSString * const RCHotKeyHistoryTriggeredNotification;
 extern NSString * const RCHotKeySnippetTriggeredNotification;
 extern NSString * const RCHotKeyClearHistoryTriggeredNotification;
+extern NSString * const RCHotKeyPanicTriggeredNotification;
 extern NSString * const RCHotKeySnippetFolderTriggeredNotification;
 extern NSString * const RCHotKeyFolderIdentifierUserInfoKey;
 extern NSString * const RCHotKeyRegistrationDidFailNotification;

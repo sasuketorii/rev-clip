@@ -62,6 +62,7 @@
 		E1ADCFEFCC1AC01E99D3F82B /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 65D1C7D8529C2527AE10BF95 /* InfoPlist.strings */; };
 		E8241CFD4F2F23661129E39E /* RCDesignableView.m in Sources */ = {isa = PBXBuildFile; fileRef = 2FF85CB84E59C53F3A92F4EA /* RCDesignableView.m */; };
 		E8DBAA3A505E0F4F0E6D878F /* MainMenu.strings in Resources */ = {isa = PBXBuildFile; fileRef = 383DF05375912711A4B301E0 /* MainMenu.strings */; };
+		EEFACF6CBC11751B832477F7 /* RCPanicEraseService.m in Sources */ = {isa = PBXBuildFile; fileRef = F8E3E2838FC4911093FE9134 /* RCPanicEraseService.m */; };
 		F149185FACD5F3855ABE9B2B /* RCUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = C70788A46CCA535A1FB719BB /* RCUtilities.m */; };
 		F155D25D956E31B88743B279 /* RCExcludeAppService.m in Sources */ = {isa = PBXBuildFile; fileRef = 60CA064AC4C4126C454E19FE /* RCExcludeAppService.m */; };
 		F7C2112472B50567D10E1561 /* RCHotKeyService.m in Sources */ = {isa = PBXBuildFile; fileRef = A0B8EAEDC93FF66179F29C00 /* RCHotKeyService.m */; };
@@ -107,6 +108,7 @@
 		1F02261C7B12751D1E7B0EE4 /* RCBetaPreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCBetaPreferencesViewController.h; sourceTree = "<group>"; };
 		237A6C799771D7B90ACEDE57 /* RCClipboardService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCClipboardService.m; sourceTree = "<group>"; };
 		23BCF5000D494C483DABC121 /* RCPasteService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCPasteService.h; sourceTree = "<group>"; };
+		246AB9733894426A519EFD05 /* RCPanicEraseService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCPanicEraseService.h; sourceTree = "<group>"; };
 		24F3BF24A239AA69518650DA /* RCGeneralPreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCGeneralPreferencesViewController.m; sourceTree = "<group>"; };
 		25A85028708E20A4E991CDE7 /* RCSnippetImportExportService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCSnippetImportExportService.m; sourceTree = "<group>"; };
 		27E9CE1DA500A65DF3C502FA /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
@@ -212,6 +214,7 @@
 		F514271FDDAF58CE1717BE27 /* RCShortcutsPreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCShortcutsPreferencesViewController.h; sourceTree = "<group>"; };
 		F522328A6E99D3B93FDEC733 /* RCClipData.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCClipData.m; sourceTree = "<group>"; };
 		F6ADD6859E9239E28CE95D92 /* RCExcludePreferencesView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RCExcludePreferencesView.xib; sourceTree = "<group>"; };
+		F8E3E2838FC4911093FE9134 /* RCPanicEraseService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCPanicEraseService.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -382,6 +385,8 @@
 				71B8827D5CBB523F2BF40EAC /* RCLoginItemService.m */,
 				84DFE7D9B83FAC3E02E2DF18 /* RCMoveToApplicationsService.h */,
 				DCA8EDDCB9D425D0662EC410 /* RCMoveToApplicationsService.m */,
+				246AB9733894426A519EFD05 /* RCPanicEraseService.h */,
+				F8E3E2838FC4911093FE9134 /* RCPanicEraseService.m */,
 				23BCF5000D494C483DABC121 /* RCPasteService.h */,
 				16E69D3F56BF40CE5AA3F9E9 /* RCPasteService.m */,
 				7418A9005D73E625B71FF2FD /* RCPrivacyService.h */,
@@ -616,6 +621,7 @@
 				648640A77EDB8248928C4215 /* RCMenuManager.m in Sources */,
 				598D006BAE4936FE7975484C /* RCMenuPreferencesViewController.m in Sources */,
 				32BFE2A3BE437181DE9AA571 /* RCMoveToApplicationsService.m in Sources */,
+				EEFACF6CBC11751B832477F7 /* RCPanicEraseService.m in Sources */,
 				AEF16C198E262B7FED186C49 /* RCPasteService.m in Sources */,
 				AD39936ACDF30BE050BC45DF /* RCPreferencesWindowController.m in Sources */,
 				3C1D7E56F1A76791221AE313 /* RCPrivacyService.m in Sources */,

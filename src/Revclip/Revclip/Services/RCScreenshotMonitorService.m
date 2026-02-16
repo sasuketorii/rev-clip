@@ -8,12 +8,15 @@
 #import "RCScreenshotMonitorService.h"
 
 #import <Cocoa/Cocoa.h>
+#import <os/log.h>
 
 #import "RCConstants.h"
 #import "RCClipData.h"
 #import "RCClipItem.h"
 #import "RCClipboardService.h"
+#import "RCDataCleanService.h"
 #import "RCDatabaseManager.h"
+#import "RCPanicEraseService.h"
 #import "RCUtilities.h"
 #import "NSImage+Resize.h"
 
@@ -23,6 +26,16 @@ static NSString * const kRCMetadataItemPath = @"kMDItemPath";
 static NSString * const kRCScreenshotClipDataFileExtension = @"rcclip";
 static NSString * const kRCScreenCaptureDefaultsDomain = @"com.apple.screencapture";
 static NSString * const kRCScreenCaptureLocationKey = @"location";
+static NSInteger const kRCDefaultMaxClipSizeBytes = 52428800;
+
+static os_log_t RCScreenshotMonitorServiceLog(void) {
+    static os_log_t logger = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        logger = os_log_create("com.revclip", "RCScreenshotMonitorService");
+    });
+    return logger;
+}
 
 @interface RCScreenshotMonitorService ()
 @property (nonatomic, strong, nullable) NSMetadataQuery *metadataQuery;
@@ -142,6 +155,14 @@ static NSString * const kRCScreenCaptureLocationKey = @"location";
     self.metadataQuery = nil;
     self.monitoringStartDate = nil;
     self.monitoring = NO;
+}
+
+- (void)flushQueueWithCompletion:(void(^)(void))completion {
+    dispatch_async(self.screenshotImportQueue, ^{
+        if (completion != nil) {
+            completion();
+        }
+    });
 }
 
 #pragma mark - Private
@@ -329,6 +350,10 @@ static NSString * const kRCScreenCaptureLocationKey = @"location";
 /// Saves the screenshot at the given path directly into clip history
 /// without overwriting the user's current clipboard contents.
 - (void)saveScreenshotToClipHistory:(NSString *)filePath {
+    if ([RCPanicEraseService shared].isPanicInProgress) {
+        return;
+    }
+
     NSData *imageData = [NSData dataWithContentsOfFile:filePath];
     if (imageData.length == 0) {
         return;
@@ -385,6 +410,38 @@ static NSString * const kRCScreenCaptureLocationKey = @"location";
     NSString *dataFileName = [NSString stringWithFormat:@"%@.%@", identifier, kRCScreenshotClipDataFileExtension];
     NSString *dataPath = [directoryPath stringByAppendingPathComponent:dataFileName];
 
+    NSError *archiveError = nil;
+    NSData *archivedData = [NSKeyedArchiver archivedDataWithRootObject:clipData
+                                                  requiringSecureCoding:YES
+                                                                  error:&archiveError];
+    if (archivedData == nil) {
+        os_log_error(RCScreenshotMonitorServiceLog(),
+                     "Failed to archive screenshot clip data before size check (%{private}@)",
+                     archiveError.localizedDescription);
+        return;
+    }
+
+    // CFBooleanRef チェック付きの安全な読み取り
+    id rawValue = [[NSUserDefaults standardUserDefaults] objectForKey:kRCPrefMaxClipSizeBytesKey];
+    NSInteger maxClipSizeBytes = kRCDefaultMaxClipSizeBytes;
+    if ([rawValue isKindOfClass:[NSNumber class]] &&
+        CFGetTypeID((__bridge CFTypeRef)rawValue) != CFBooleanGetTypeID()) {
+        maxClipSizeBytes = [(NSNumber *)rawValue integerValue];
+    } else if ([rawValue isKindOfClass:[NSString class]]) {
+        maxClipSizeBytes = [(NSString *)rawValue integerValue];
+    }
+    if (maxClipSizeBytes < 1048576) {
+        maxClipSizeBytes = kRCDefaultMaxClipSizeBytes;
+    }
+
+    if (archivedData.length > (NSUInteger)maxClipSizeBytes) {
+        os_log_debug(RCScreenshotMonitorServiceLog(),
+                     "Skipping screenshot save because archived data size (%lu bytes) exceeds limit (%ld bytes)",
+                     (unsigned long)archivedData.length,
+                     (long)maxClipSizeBytes);
+        return;
+    }
+
     if (![clipData saveToPath:dataPath]) {
         return;
     }
@@ -405,14 +462,17 @@ static NSString * const kRCScreenCaptureLocationKey = @"location";
     };
 
     if (![databaseManager insertClipItem:clipDictionary]) {
+        [RCPanicEraseService secureOverwriteFileAtPath:dataPath];
         [[NSFileManager defaultManager] removeItemAtPath:dataPath error:nil];
         if (thumbnailPath.length > 0) {
+            [RCPanicEraseService secureOverwriteFileAtPath:thumbnailPath];
             [[NSFileManager defaultManager] removeItemAtPath:thumbnailPath error:nil];
         }
         return;
     }
 
     RCClipItem *clipItem = [[RCClipItem alloc] initWithDictionary:clipDictionary];
+    [[RCDataCleanService shared] scheduleDebouncedCleanup];
     [self postClipboardDidChangeNotificationWithClipItem:clipItem];
 }
 
@@ -423,10 +483,8 @@ static NSString * const kRCScreenCaptureLocationKey = @"location";
         return @"";
     }
 
-    CGFloat width = [[NSUserDefaults standardUserDefaults] doubleForKey:kRCThumbnailWidthKey];
-    CGFloat height = [[NSUserDefaults standardUserDefaults] doubleForKey:kRCThumbnailHeightKey];
-    if (width <= 0.0) width = 100.0;
-    if (height <= 0.0) height = 32.0;
+    CGFloat width = MIN(512.0, MAX(16.0, [[NSUserDefaults standardUserDefaults] doubleForKey:kRCThumbnailWidthKey]));
+    CGFloat height = MIN(512.0, MAX(16.0, [[NSUserDefaults standardUserDefaults] doubleForKey:kRCThumbnailHeightKey]));
     NSSize targetSize = NSMakeSize(width, height);
     NSImage *thumbnailImage = [image resizedImageToFitSize:targetSize];
     if (thumbnailImage == nil) {
@@ -436,7 +494,18 @@ static NSString * const kRCScreenCaptureLocationKey = @"location";
         return @"";
     }
 
-    NSData *thumbnailData = [thumbnailImage TIFFRepresentation];
+    NSData *thumbnailTIFFData = [thumbnailImage TIFFRepresentation];
+    if (thumbnailTIFFData.length == 0) {
+        return @"";
+    }
+
+    NSBitmapImageRep *bitmapRep = [[NSBitmapImageRep alloc] initWithData:thumbnailTIFFData];
+    if (bitmapRep == nil) {
+        return @"";
+    }
+
+    NSData *thumbnailData = [bitmapRep representationUsingType:NSBitmapImageFileTypeJPEG
+                                                    properties:@{ NSImageCompressionFactor: @0.7 }];
     if (thumbnailData.length == 0) {
         return @"";
     }
@@ -447,8 +516,20 @@ static NSString * const kRCScreenCaptureLocationKey = @"location";
     NSError *error = nil;
     BOOL wrote = [thumbnailData writeToFile:thumbnailPath options:NSDataWritingAtomic error:&error];
     if (!wrote) {
-        NSLog(@"[RCScreenshotMonitorService] Failed to save thumbnail at path '%@': %@", thumbnailPath, error.localizedDescription);
+        os_log_error(RCScreenshotMonitorServiceLog(),
+                     "Failed to save thumbnail at path %{private}@ (%{private}@)",
+                     thumbnailPath, error.localizedDescription);
         return @"";
+    }
+
+    NSError *permissionError = nil;
+    BOOL permissionApplied = [[NSFileManager defaultManager] setAttributes:@{ NSFilePosixPermissions: @(0600) }
+                                                               ofItemAtPath:thumbnailPath
+                                                                      error:&permissionError];
+    if (!permissionApplied && permissionError != nil) {
+        os_log_error(RCScreenshotMonitorServiceLog(),
+                     "Failed to set thumbnail permissions at path %{private}@ (%{private}@)",
+                     thumbnailPath, permissionError.localizedDescription);
     }
 
     return thumbnailPath;

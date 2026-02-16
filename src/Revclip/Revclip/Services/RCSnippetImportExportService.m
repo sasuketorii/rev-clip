@@ -32,10 +32,43 @@ static NSString * const kRCRevclipPlistFoldersKey = @"folders";
 static NSString * const kRCRevclipPlistExportedAtKey = @"exported_at";
 static NSInteger const kRCRevclipSupportedPlistVersion = 1;
 static unsigned long long const kRCMaxImportFileSize = 50ULL * 1024ULL * 1024ULL;
+static NSInteger const kRCMaxImportFolderCount = 100;
+static NSInteger const kRCMaxImportSnippetCount = 10000;
+static NSUInteger const kRCMaxImportTitleLength = 500;
+static NSUInteger const kRCMaxImportContentLengthBytes = 1024 * 1024;
 
 static NSString * const kRCFolderTitleFallback = @"untitled folder";
 static NSString * const kRCSnippetTitleFallback = @"untitled snippet";
 static NSString * const kRCImportedFolderTitle = @"Imported";
+
+static NSStringEncoding RCStringEncodingFromXMLBOM(NSData *data) {
+    if (data.length < 2) {
+        return 0;
+    }
+
+    const uint8_t *bytes = data.bytes;
+    if (data.length >= 4) {
+        if (bytes[0] == 0x00 && bytes[1] == 0x00 && bytes[2] == 0xFE && bytes[3] == 0xFF) {
+            return NSUTF32BigEndianStringEncoding;
+        }
+        if (bytes[0] == 0xFF && bytes[1] == 0xFE && bytes[2] == 0x00 && bytes[3] == 0x00) {
+            return NSUTF32LittleEndianStringEncoding;
+        }
+    }
+
+    if (data.length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF) {
+        return NSUTF8StringEncoding;
+    }
+
+    if (bytes[0] == 0xFE && bytes[1] == 0xFF) {
+        return NSUTF16BigEndianStringEncoding;
+    }
+    if (bytes[0] == 0xFF && bytes[1] == 0xFE) {
+        return NSUTF16LittleEndianStringEncoding;
+    }
+
+    return 0;
+}
 
 @interface RCSnippetImportExportService ()
 
@@ -52,12 +85,14 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
 - (BOOL)looksLikeSnippetObject:(id)object;
 - (BOOL)looksLikeFolderArray:(NSArray *)objects;
 - (BOOL)looksLikeSnippetArray:(NSArray *)objects;
+- (BOOL)validateImportLimitsForFolders:(NSArray<NSDictionary *> *)folders error:(NSError **)error;
 
 - (nullable NSArray<NSDictionary *> *)parseFoldersFromLegacyXMLData:(NSData *)data error:(NSError **)error;
 - (nullable NSArray<NSDictionary *> *)parseFoldersFromLegacyXMLRootElement:(NSXMLElement *)rootElement error:(NSError **)error;
 - (nullable NSXMLElement *)firstChildElementNamed:(NSString *)name inElement:(NSXMLElement *)element;
 - (nullable NSString *)valueForElement:(NSString *)name inElement:(NSXMLElement *)element;
 - (nullable NSString *)trimmedValueForElement:(NSString *)name inElement:(NSXMLElement *)element;
+- (BOOL)containsDisallowedDoctypeInXMLData:(NSData *)data;
 
 - (BOOL)persistParsedFolders:(NSArray<NSDictionary *> *)folders merge:(BOOL)merge error:(NSError **)error;
 - (nullable NSError *)databaseErrorFromDatabase:(FMDatabase *)db fallbackDescription:(NSString *)description;
@@ -264,6 +299,9 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
                                    code:RCSnippetImportExportErrorInvalidXMLFormat
                             description:@"Unsupported snippets file format."
                         underlyingError:nil];
+    }
+    if (![self validateImportLimitsForFolders:parsedFolders error:error]) {
+        return NO;
     }
 
     return [self persistParsedFolders:parsedFolders merge:merge error:error];
@@ -636,11 +674,78 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
     return YES;
 }
 
+- (BOOL)validateImportLimitsForFolders:(NSArray<NSDictionary *> *)folders error:(NSError **)error {
+    if (folders.count > kRCMaxImportFolderCount) {
+        return [self assignSnippetError:error
+                                   code:RCSnippetImportExportErrorInvalidXMLFormat
+                            description:@"Imported folder count exceeds the maximum supported limit (100)."
+                        underlyingError:nil];
+    }
+
+    NSInteger snippetCount = 0;
+    for (NSDictionary *folder in folders) {
+        NSString *folderTitle = [self stringValueInDictionary:folder keys:@[@"title", @"name"] defaultValue:kRCFolderTitleFallback];
+        if (folderTitle.length > kRCMaxImportTitleLength) {
+            return [self assignSnippetError:error
+                                       code:RCSnippetImportExportErrorInvalidXMLFormat
+                                description:@"Folder title exceeds the maximum length (500 characters)."
+                            underlyingError:nil];
+        }
+
+        NSArray *snippets = [self arrayValueInDictionary:folder keys:@[@"snippets", @"items", @"children"]];
+        for (id snippetObject in snippets) {
+            if (![snippetObject isKindOfClass:[NSDictionary class]]) {
+                continue;
+            }
+
+            snippetCount += 1;
+            if (snippetCount > kRCMaxImportSnippetCount) {
+                return [self assignSnippetError:error
+                                           code:RCSnippetImportExportErrorInvalidXMLFormat
+                                    description:@"Imported snippet count exceeds the maximum supported limit (10000)."
+                                underlyingError:nil];
+            }
+
+            NSDictionary *snippet = (NSDictionary *)snippetObject;
+            NSString *snippetTitle = [self stringValueInDictionary:snippet keys:@[@"title", @"name"] defaultValue:kRCSnippetTitleFallback];
+            if (snippetTitle.length > kRCMaxImportTitleLength) {
+                return [self assignSnippetError:error
+                                           code:RCSnippetImportExportErrorInvalidXMLFormat
+                                    description:@"Snippet title exceeds the maximum length (500 characters)."
+                                underlyingError:nil];
+            }
+
+            NSString *snippetContent = [self stringValueInDictionary:snippet
+                                                                keys:@[@"content", @"text", @"value", @"string"]
+                                                         defaultValue:@""];
+            NSData *contentData = [snippetContent dataUsingEncoding:NSUTF8StringEncoding];
+            if (contentData.length > kRCMaxImportContentLengthBytes) {
+                return [self assignSnippetError:error
+                                           code:RCSnippetImportExportErrorInvalidXMLFormat
+                                    description:@"Snippet content exceeds the maximum size (1 MB)."
+                                underlyingError:nil];
+            }
+        }
+    }
+
+    return YES;
+}
+
 #pragma mark - Private: Parse (legacy XML)
 
 - (NSArray<NSDictionary *> *)parseFoldersFromLegacyXMLData:(NSData *)data error:(NSError **)error {
+    if ([self containsDisallowedDoctypeInXMLData:data]) {
+        [self assignSnippetError:error
+                            code:RCSnippetImportExportErrorInvalidXMLFormat
+                     description:@"DOCTYPE is not allowed in imported XML."
+                 underlyingError:nil];
+        return nil;
+    }
+
     NSError *parseError = nil;
-    NSXMLDocument *document = [[NSXMLDocument alloc] initWithData:data options:0 error:&parseError];
+    NSXMLDocument *document = [[NSXMLDocument alloc] initWithData:data
+                                                          options:NSXMLNodeLoadExternalEntitiesNever
+                                                            error:&parseError];
     if (document == nil) {
         if (error != NULL) {
             *error = parseError;
@@ -723,6 +828,47 @@ static NSString * const kRCImportedFolderTitle = @"Imported";
 
 - (NSString *)trimmedValueForElement:(NSString *)name inElement:(NSXMLElement *)element {
     return [self trimmedString:[self valueForElement:name inElement:element]];
+}
+
+- (BOOL)containsDisallowedDoctypeInXMLData:(NSData *)data {
+    if (data.length == 0) {
+        return NO;
+    }
+
+    NSMutableArray<NSNumber *> *candidateEncodings = [NSMutableArray array];
+    NSStringEncoding bomEncoding = RCStringEncodingFromXMLBOM(data);
+    if (bomEncoding != 0) {
+        [candidateEncodings addObject:@(bomEncoding)];
+    }
+
+    NSArray<NSNumber *> *fallbackEncodings = @[
+        @(NSUTF8StringEncoding),
+        @(NSUTF16LittleEndianStringEncoding),
+        @(NSUTF16BigEndianStringEncoding),
+        @(NSUTF32BigEndianStringEncoding),
+        @(NSUTF32LittleEndianStringEncoding),
+        @(NSISOLatin1StringEncoding),
+    ];
+    for (NSNumber *encodingNumber in fallbackEncodings) {
+        if ([candidateEncodings containsObject:encodingNumber]) {
+            continue;
+        }
+        [candidateEncodings addObject:encodingNumber];
+    }
+
+    for (NSNumber *encodingNumber in candidateEncodings) {
+        NSString *decodedString = [[NSString alloc] initWithData:data
+                                                        encoding:(NSStringEncoding)encodingNumber.unsignedIntegerValue];
+        if (decodedString.length == 0) {
+            continue;
+        }
+
+        if ([decodedString rangeOfString:@"<!doctype" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            return YES;
+        }
+    }
+
+    return NO;
 }
 
 #pragma mark - Private: Persist

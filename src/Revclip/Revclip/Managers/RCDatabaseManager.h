@@ -10,6 +10,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class FMDatabase;
+@class RCClipItem;
 
 @interface RCDatabaseManager : NSObject
 
@@ -22,13 +23,19 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)setupDatabase;
 - (NSInteger)currentSchemaVersion;
 - (BOOL)migrateIfNeeded;
+- (BOOL)performDatabaseOperation:(BOOL (^)(FMDatabase *db))block;
 - (BOOL)performTransaction:(BOOL (^)(FMDatabase *db, BOOL *rollback))block;
+- (void)closeDatabase;
+- (void)deleteDatabaseFiles;
+- (void)reinitializeDatabase;
 
 // clip_items CRUD
 - (BOOL)insertClipItem:(NSDictionary *)clipDict;
 - (BOOL)updateClipItemUpdateTime:(NSString *)dataHash time:(NSInteger)updateTime;
 - (BOOL)deleteClipItemWithDataHash:(NSString *)dataHash;
+- (BOOL)deleteClipItemWithDataHash:(NSString *)dataHash olderThan:(NSInteger)updateTimeMs;
 - (BOOL)deleteClipItemsOlderThan:(NSInteger)updateTime;
+- (NSArray<RCClipItem *> *)clipItemsOlderThan:(NSInteger)updateTimeMs;
 - (NSArray *)fetchClipItemsWithLimit:(NSInteger)limit;
 - (nullable NSDictionary *)clipItemWithDataHash:(NSString *)dataHash;
 - (NSInteger)clipItemCount;
@@ -51,6 +58,15 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSArray *)fetchSnippetsForFolder:(NSString *)folderIdentifier;
 - (BOOL)snippetExistsWithIdentifier:(NSString *)identifier;
 - (BOOL)deleteAllClipItems;
+- (BOOL)deleteAllSnippets;
+
+/// Panic-only: delete all clip items bypassing isPanicInProgress guard.
+/// Must only be called from RCPanicEraseService during panic sequence.
+- (BOOL)panicDeleteAllClipItems;
+
+/// Panic-only: delete all snippets bypassing isPanicInProgress guard.
+/// Must only be called from RCPanicEraseService during panic sequence.
+- (BOOL)panicDeleteAllSnippets;
 
 @end
 

@@ -24,6 +24,9 @@ NS_ASSUME_NONNULL_BEGIN
 // 手動での最新クリップ取得
 - (void)captureCurrentClipboard;
 
+// Panic Erase 用: monitoringQueue までの処理をドレイン
+- (void)flushQueueWithCompletion:(void(^)(void))completion;
+
 @end
 
 // 通知名

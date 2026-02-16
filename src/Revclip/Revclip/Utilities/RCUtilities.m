@@ -9,11 +9,27 @@
 
 #import "RCConstants.h"
 
+static NSString * const kRCDatabaseFileName = @"revclip.db";
+static NSString * const kRCNeverIndexFileName = @".metadata_never_index";
+static NSNumber * const kRCDirectoryPermissions = @(0700);
+static NSNumber * const kRCFilePermissions = @(0600);
+
+@interface RCUtilities ()
+
++ (BOOL)applyPOSIXPermissions:(NSNumber *)permissions toPath:(NSString *)path fileManager:(NSFileManager *)fileManager;
++ (BOOL)isProtectedClipDataFileName:(NSString *)fileName;
+
+@end
+
 @implementation RCUtilities
 
 + (void)registerDefaultSettings {
     NSDictionary *defaultSettings = @{
         kRCPrefMaxHistorySizeKey: @30,
+        kRCPrefAutoExpiryEnabledKey: @NO,
+        kRCPrefAutoExpiryValueKey: @30,
+        kRCPrefAutoExpiryUnitKey: @0,
+        kRCPrefMaxClipSizeBytesKey: @52428800,
         kRCPrefInputPasteCommandKey: @YES,
         kRCPrefReorderClipsAfterPasting: @YES,
         kRCPrefShowStatusItemKey: @1,
@@ -96,18 +112,117 @@
     NSFileManager *fileManager = [NSFileManager defaultManager];
     BOOL isDirectory = NO;
     if ([fileManager fileExistsAtPath:expandedPath isDirectory:&isDirectory]) {
-        return isDirectory;
+        if (!isDirectory) {
+            return NO;
+        }
+
+        [self applyPOSIXPermissions:kRCDirectoryPermissions toPath:expandedPath fileManager:fileManager];
+        return YES;
     }
 
     NSError *error = nil;
     BOOL created = [fileManager createDirectoryAtPath:expandedPath
                           withIntermediateDirectories:YES
-                                           attributes:nil
+                                           attributes:@{ NSFilePosixPermissions: kRCDirectoryPermissions }
                                                 error:&error];
     if (!created) {
         NSLog(@"[RCUtilities] Failed to create directory: %@ (%@)", expandedPath, error.localizedDescription);
     }
     return created;
+}
+
++ (void)applyDataProtectionAttributes {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *applicationSupportPath = [self applicationSupportPath];
+    NSString *clipDataDirectoryPath = [self clipDataDirectoryPath];
+
+    [self ensureDirectoryExists:applicationSupportPath];
+    [self ensureDirectoryExists:clipDataDirectoryPath];
+
+    [self applyPOSIXPermissions:kRCDirectoryPermissions toPath:applicationSupportPath fileManager:fileManager];
+    [self applyPOSIXPermissions:kRCDirectoryPermissions toPath:clipDataDirectoryPath fileManager:fileManager];
+
+    NSURL *applicationSupportURL = [NSURL fileURLWithPath:applicationSupportPath isDirectory:YES];
+    NSError *backupError = nil;
+    BOOL excludedFromBackup = [applicationSupportURL setResourceValue:@YES
+                                                               forKey:NSURLIsExcludedFromBackupKey
+                                                                error:&backupError];
+    if (!excludedFromBackup && backupError != nil) {
+        NSLog(@"[RCUtilities] Failed to exclude Application Support from backup: %@",
+              backupError.localizedDescription);
+    }
+
+    NSString *neverIndexPath = [clipDataDirectoryPath stringByAppendingPathComponent:kRCNeverIndexFileName];
+    if (![fileManager fileExistsAtPath:neverIndexPath]) {
+        BOOL createdNeverIndex = [fileManager createFileAtPath:neverIndexPath
+                                                       contents:[NSData data]
+                                                     attributes:@{ NSFilePosixPermissions: kRCFilePermissions }];
+        if (!createdNeverIndex) {
+            NSLog(@"[RCUtilities] Failed to create Spotlight exclusion marker file.");
+        }
+    } else {
+        [self applyPOSIXPermissions:kRCFilePermissions toPath:neverIndexPath fileManager:fileManager];
+    }
+
+    NSString *databaseBasePath = [applicationSupportPath stringByAppendingPathComponent:kRCDatabaseFileName];
+    NSArray<NSString *> *databaseSuffixes = @[@"", @"-journal", @"-wal", @"-shm"];
+    for (NSString *suffix in databaseSuffixes) {
+        NSString *databasePath = [databaseBasePath stringByAppendingString:suffix];
+        [self applyPOSIXPermissions:kRCFilePermissions toPath:databasePath fileManager:fileManager];
+    }
+
+    NSDirectoryEnumerator<NSString *> *enumerator = [fileManager enumeratorAtPath:clipDataDirectoryPath];
+    for (NSString *relativePath in enumerator) {
+        if (![self isProtectedClipDataFileName:relativePath]) {
+            continue;
+        }
+
+        NSString *absolutePath = [clipDataDirectoryPath stringByAppendingPathComponent:relativePath];
+        NSDictionary<NSFileAttributeKey, id> *attributes = [fileManager attributesOfItemAtPath:absolutePath error:nil];
+        if (attributes == nil) {
+            continue;
+        }
+
+        NSString *fileType = attributes[NSFileType];
+        if ([fileType isEqualToString:NSFileTypeSymbolicLink]) {
+            continue;
+        }
+
+        BOOL isDirectory = NO;
+        if (![fileManager fileExistsAtPath:absolutePath isDirectory:&isDirectory] || isDirectory) {
+            continue;
+        }
+
+        [self applyPOSIXPermissions:kRCFilePermissions toPath:absolutePath fileManager:fileManager];
+    }
+}
+
++ (BOOL)applyPOSIXPermissions:(NSNumber *)permissions toPath:(NSString *)path fileManager:(NSFileManager *)fileManager {
+    NSString *expandedPath = [[path stringByExpandingTildeInPath] stringByStandardizingPath];
+    if (expandedPath.length == 0 || permissions == nil) {
+        return NO;
+    }
+
+    BOOL isDirectory = NO;
+    if (![fileManager fileExistsAtPath:expandedPath isDirectory:&isDirectory]) {
+        return NO;
+    }
+
+    NSError *error = nil;
+    BOOL applied = [fileManager setAttributes:@{ NSFilePosixPermissions: permissions }
+                                 ofItemAtPath:expandedPath
+                                        error:&error];
+    if (!applied && error != nil) {
+        NSLog(@"[RCUtilities] Failed to set POSIX permissions for '%@': %@", expandedPath, error.localizedDescription);
+    }
+    return applied;
+}
+
++ (BOOL)isProtectedClipDataFileName:(NSString *)fileName {
+    NSString *lowercaseName = fileName.lowercaseString;
+    return [lowercaseName hasSuffix:@".rcclip"]
+        || [lowercaseName hasSuffix:@".thumbnail.tiff"]
+        || [lowercaseName hasSuffix:@".thumb"];
 }
 
 @end

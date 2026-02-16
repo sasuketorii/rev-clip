@@ -11,15 +11,19 @@
 
 #import "RCConstants.h"
 #import "RCExcludeAppService.h"
+#import "RCDataCleanService.h"
 #import "RCDatabaseManager.h"
+#import "RCPanicEraseService.h"
 #import "RCClipData.h"
 #import "RCClipItem.h"
 #import "NSColor+HexString.h"
 #import "RCUtilities.h"
+#import <os/log.h>
 
 NSString * const RCClipboardDidChangeNotification = @"RCClipboardDidChangeNotification";
 
 static NSTimeInterval const kRCClipboardPollingInterval = 0.5;
+static NSInteger const kRCDefaultMaxClipSizeBytes = 52428800;
 static NSString * const kRCClipDataFileExtension = @"rcclip";
 static NSString * const kRCStoreTypeString = @"String";
 static NSString * const kRCStoreTypeRTF = @"RTF";
@@ -28,6 +32,15 @@ static NSString * const kRCStoreTypePDF = @"PDF";
 static NSString * const kRCStoreTypeFilenames = @"Filenames";
 static NSString * const kRCStoreTypeURL = @"URL";
 static NSString * const kRCStoreTypeTIFF = @"TIFF";
+
+static os_log_t RCClipboardServiceLog(void) {
+    static os_log_t logger = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        logger = os_log_create("com.revclip", "RCClipboardService");
+    });
+    return logger;
+}
 
 @interface RCClipboardService ()
 
@@ -139,6 +152,14 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
     });
 }
 
+- (void)flushQueueWithCompletion:(void(^)(void))completion {
+    dispatch_async(self.monitoringQueue, ^{
+        if (completion != nil) {
+            completion();
+        }
+    });
+}
+
 #pragma mark - Private: Monitor / Capture
 
 - (NSInteger)readGeneralPasteboardChangeCount {
@@ -247,6 +268,10 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
 
 - (void)processClipDataOnMonitoringQueue:(RCClipData *)clipData
                     sourceBundleIdentifier:(NSString *)sourceBundleIdentifier {
+    if ([RCPanicEraseService shared].isPanicInProgress) {
+        return;
+    }
+
     if ([[RCExcludeAppService shared] shouldExcludeAppWithBundleIdentifier:sourceBundleIdentifier]) {
         return;
     }
@@ -318,6 +343,7 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
     RCClipItem *clipItem = [[RCClipItem alloc] initWithDictionary:clipDictionary];
     // G3-006: トリミングロジックは RCDataCleanService に一本化。
     // ここでは重複して trimHistoryIfNeeded を呼ばない。
+    [[RCDataCleanService shared] scheduleDebouncedCleanup];
     [self postClipboardDidChangeNotificationWithClipItem:clipItem];
 }
 
@@ -447,6 +473,37 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
         return NO;
     }
 
+    NSError *archiveError = nil;
+    NSData *archivedData = [NSKeyedArchiver archivedDataWithRootObject:clipData
+                                                  requiringSecureCoding:YES
+                                                                  error:&archiveError];
+    if (archivedData == nil) {
+        os_log_error(RCClipboardServiceLog(),
+                     "Failed to archive clip data before size check (%{private}@)",
+                     archiveError.localizedDescription);
+        return NO;
+    }
+
+    // CFBooleanRef チェック付きの安全な読み取り
+    id rawValue = [[NSUserDefaults standardUserDefaults] objectForKey:kRCPrefMaxClipSizeBytesKey];
+    NSInteger maxClipSizeBytes = kRCDefaultMaxClipSizeBytes;
+    if ([rawValue isKindOfClass:[NSNumber class]] &&
+        CFGetTypeID((__bridge CFTypeRef)rawValue) != CFBooleanGetTypeID()) {
+        maxClipSizeBytes = [(NSNumber *)rawValue integerValue];
+    } else if ([rawValue isKindOfClass:[NSString class]]) {
+        maxClipSizeBytes = [(NSString *)rawValue integerValue];
+    }
+    if (maxClipSizeBytes < 1048576) {
+        maxClipSizeBytes = kRCDefaultMaxClipSizeBytes;
+    }
+    if (archivedData.length > (NSUInteger)maxClipSizeBytes) {
+        os_log_debug(RCClipboardServiceLog(),
+                     "Skipping clip save because archived data size (%lu bytes) exceeds limit (%ld bytes)",
+                     (unsigned long)archivedData.length,
+                     (long)maxClipSizeBytes);
+        return NO;
+    }
+
     __block BOOL saved = NO;
     dispatch_sync(self.fileOperationQueue, ^{
         saved = [clipData saveToPath:path];
@@ -494,7 +551,8 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
         return @"";
     }
 
-    NSData *thumbnailData = [bitmapRep TIFFRepresentation];
+    NSData *thumbnailData = [bitmapRep representationUsingType:NSBitmapImageFileTypeJPEG
+                                                    properties:@{ NSImageCompressionFactor: @0.7 }];
     if (thumbnailData.length == 0) {
         return @"";
     }
@@ -508,7 +566,20 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
         NSError *error = nil;
         wrote = [thumbnailData writeToFile:thumbnailPath options:NSDataWritingAtomic error:&error];
         if (!wrote) {
-            NSLog(@"[RCClipboardService] Failed to save thumbnail at path '%@': %@", thumbnailPath, error.localizedDescription);
+            os_log_error(RCClipboardServiceLog(),
+                         "Failed to save thumbnail at path %{private}@ (%{private}@)",
+                         thumbnailPath, error.localizedDescription);
+            return;
+        }
+
+        NSError *permissionError = nil;
+        BOOL permissionApplied = [[NSFileManager defaultManager] setAttributes:@{ NSFilePosixPermissions: @(0600) }
+                                                                   ofItemAtPath:thumbnailPath
+                                                                          error:&permissionError];
+        if (!permissionApplied && permissionError != nil) {
+            os_log_error(RCClipboardServiceLog(),
+                         "Failed to set thumbnail permissions for %{private}@ (%{private}@)",
+                         thumbnailPath, permissionError.localizedDescription);
         }
     });
 
@@ -517,14 +588,8 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
 
 - (NSSize)thumbnailTargetSize {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    CGFloat width = [defaults doubleForKey:kRCThumbnailWidthKey];
-    CGFloat height = [defaults doubleForKey:kRCThumbnailHeightKey];
-    if (width <= 0.0) {
-        width = 100.0;
-    }
-    if (height <= 0.0) {
-        height = 32.0;
-    }
+    CGFloat width = MIN(512.0, MAX(16.0, [defaults doubleForKey:kRCThumbnailWidthKey]));
+    CGFloat height = MIN(512.0, MAX(16.0, [defaults doubleForKey:kRCThumbnailHeightKey]));
     return NSMakeSize(width, height);
 }
 
@@ -539,10 +604,14 @@ static NSString * const kRCStoreTypeTIFF = @"TIFF";
             return;
         }
 
+        [RCPanicEraseService secureOverwriteFileAtPath:path];
+
         NSError *error = nil;
         BOOL removed = [fileManager removeItemAtPath:path error:&error];
         if (!removed) {
-            NSLog(@"[RCClipboardService] Failed to remove file at path '%@': %@", path, error.localizedDescription);
+            os_log_error(RCClipboardServiceLog(),
+                         "Failed to remove file at path %{private}@ (%{private}@)",
+                         path, error.localizedDescription);
         }
     });
 }

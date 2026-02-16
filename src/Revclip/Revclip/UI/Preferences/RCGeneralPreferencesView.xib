@@ -8,6 +8,10 @@
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="RCGeneralPreferencesViewController">
             <connections>
+                <outlet property="autoExpiryEnabledButton" destination="uD1-sQ-9nT" id="M2h-Qp-L8s"/>
+                <outlet property="autoExpiryUnitPopUpButton" destination="sF9-bT-5yU" id="T8v-Cm-H3a"/>
+                <outlet property="autoExpiryValueStepper" destination="qH8-uY-1wE" id="R4t-Yu-P6k"/>
+                <outlet property="autoExpiryValueTextField" destination="mC2-eR-7kJ" id="Q7r-Nf-Z1d"/>
                 <outlet property="sameHistoryCopyButton" destination="eF4-jc-Zp1" id="X5u-jx-i8f"/>
                 <outlet property="loginAtStartupButton" destination="gA8-Bm-9Qd" id="PD9-Gw-R1x"/>
                 <outlet property="maxHistorySizeStepper" destination="aS5-yP-HmQ" id="p8M-hn-svU"/>
@@ -21,7 +25,7 @@
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customView id="bqE-j2-v8m">
-            <rect key="frame" x="0.0" y="0.0" width="700" height="300"/>
+            <rect key="frame" x="0.0" y="0.0" width="700" height="360"/>
             <autoresizingMask key="autoresizingMask"/>
             <subviews>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Yf1-hq-3UA">
@@ -53,6 +57,59 @@
                 <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="kF7-rd-Mx2">
                     <rect key="frame" x="20" y="249" width="440" height="1"/>
                 </box>
+                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="uD1-sQ-9nT">
+                    <rect key="frame" x="20" y="225" width="131" height="18"/>
+                    <buttonCell key="cell" controlSize="small" type="check" title="古い履歴を自動削除" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="nK7-cV-2pR">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="autoExpiryEnabledChanged:" target="-2" id="D6s-Jn-5qR"/>
+                    </connections>
+                </button>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="vP4-aH-8mL">
+                    <rect key="frame" x="20" y="194" width="30" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="期限" id="xT6-fB-3qW">
+                        <font key="font" metaFont="message"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="mC2-eR-7kJ">
+                    <rect key="frame" x="272" y="191" width="80" height="19"/>
+                    <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" alignment="right" title="30" drawsBackground="YES" id="pL5-zN-4dS">
+                        <font key="font" metaFont="smallSystem"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                    <connections>
+                        <action selector="autoExpiryValueTextFieldChanged:" target="-2" id="F2a-Vc-9mX"/>
+                    </connections>
+                </textField>
+                <stepper horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="qH8-uY-1wE">
+                    <rect key="frame" x="360" y="190" width="15" height="22"/>
+                    <stepperCell key="cell" controlSize="small" continuous="YES" alignment="left" minValue="1" maxValue="9999" doubleValue="30" increment="1" id="rJ3-kM-6tP"/>
+                    <connections>
+                        <action selector="autoExpiryValueStepperChanged:" target="-2" id="G9p-Lk-4bN"/>
+                    </connections>
+                </stepper>
+                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="sF9-bT-5yU">
+                    <rect key="frame" x="383" y="189" width="77" height="26"/>
+                    <popUpButtonCell key="cell" controlSize="small" type="push" title="日" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="aE7-rL-2mQ" id="tV4-dX-8oI">
+                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                        <menu key="menu" title="期限" id="uK2-jP-3fN">
+                            <items>
+                                <menuItem title="日" state="on" id="aE7-rL-2mQ"/>
+                                <menuItem title="時間" id="bN6-hS-4pD"/>
+                                <menuItem title="分" id="cW1-zG-9xV"/>
+                            </items>
+                        </menu>
+                    </popUpButtonCell>
+                    <connections>
+                        <action selector="autoExpiryUnitChanged:" target="-2" id="H3w-Td-7fJ"/>
+                    </connections>
+                </popUpButton>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hQ3-rp-SiL">
                     <rect key="frame" x="20" y="226" width="104" height="16"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" title="ログイン時に起動" id="bW2-vC-N0z">
@@ -173,7 +230,7 @@
             </subviews>
             <constraints>
                 <constraint firstAttribute="width" constant="700" id="W0K-J9-Zqf"/>
-                <constraint firstAttribute="height" constant="300" id="eJ8-Rh-Sq2"/>
+                <constraint firstAttribute="height" constant="360" id="eJ8-Rh-Sq2"/>
                 <constraint firstItem="Yf1-hq-3UA" firstAttribute="leading" secondItem="bqE-j2-v8m" secondAttribute="leading" constant="20" id="2nB-VW-5qZ"/>
                 <constraint firstItem="s8n-LC-H7r" firstAttribute="top" secondItem="bqE-j2-v8m" secondAttribute="top" constant="20" id="4ad-Mz-fyW"/>
                 <constraint firstItem="s8n-LC-H7r" firstAttribute="width" constant="80" id="8Gk-vE-jq3"/>
@@ -186,7 +243,20 @@
                 <constraint firstItem="kF7-rd-Mx2" firstAttribute="leading" secondItem="bqE-j2-v8m" secondAttribute="leading" constant="20" id="J9x-bU-5eM"/>
                 <constraint firstAttribute="trailing" secondItem="kF7-rd-Mx2" secondAttribute="trailing" constant="20" id="L4m-Pp-h8R"/>
                 <constraint firstItem="kF7-rd-Mx2" firstAttribute="height" constant="1" id="Mh2-Yg-rfD"/>
-                <constraint firstItem="gA8-Bm-9Qd" firstAttribute="top" secondItem="kF7-rd-Mx2" secondAttribute="bottom" constant="8" id="N7p-fV-kQ6"/>
+                <constraint firstItem="uD1-sQ-9nT" firstAttribute="leading" secondItem="bqE-j2-v8m" secondAttribute="leading" constant="20" id="M9d-Xk-1pQ"/>
+                <constraint firstItem="uD1-sQ-9nT" firstAttribute="top" secondItem="kF7-rd-Mx2" secondAttribute="bottom" constant="8" id="N4f-Lv-8rT"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="uD1-sQ-9nT" secondAttribute="trailing" constant="20" id="P7h-Ce-2mB"/>
+                <constraint firstItem="mC2-eR-7kJ" firstAttribute="top" secondItem="uD1-sQ-9nT" secondAttribute="bottom" constant="8" id="Q1j-Bn-6dR"/>
+                <constraint firstItem="mC2-eR-7kJ" firstAttribute="width" constant="80" id="R8k-Hy-5sV"/>
+                <constraint firstItem="qH8-uY-1wE" firstAttribute="leading" secondItem="mC2-eR-7kJ" secondAttribute="trailing" constant="8" id="S3m-Uq-7tW"/>
+                <constraint firstItem="qH8-uY-1wE" firstAttribute="centerY" secondItem="mC2-eR-7kJ" secondAttribute="centerY" id="T5n-Zx-4cY"/>
+                <constraint firstItem="sF9-bT-5yU" firstAttribute="leading" secondItem="qH8-uY-1wE" secondAttribute="trailing" constant="8" id="U6p-Aw-9fL"/>
+                <constraint firstItem="sF9-bT-5yU" firstAttribute="centerY" secondItem="mC2-eR-7kJ" secondAttribute="centerY" id="V2q-Es-3gH"/>
+                <constraint firstAttribute="trailing" secondItem="sF9-bT-5yU" secondAttribute="trailing" constant="20" id="W4r-Df-1hJ"/>
+                <constraint firstItem="vP4-aH-8mL" firstAttribute="leading" secondItem="bqE-j2-v8m" secondAttribute="leading" constant="20" id="X7s-Gh-8jK"/>
+                <constraint firstItem="vP4-aH-8mL" firstAttribute="centerY" secondItem="mC2-eR-7kJ" secondAttribute="centerY" id="Y9t-Jk-2lM"/>
+                <constraint firstItem="vP4-aH-8mL" firstAttribute="trailing" relation="lessThanOrEqual" secondItem="mC2-eR-7kJ" secondAttribute="leading" constant="-12" id="Z1u-Kl-6nP"/>
+                <constraint firstItem="gA8-Bm-9Qd" firstAttribute="top" secondItem="mC2-eR-7kJ" secondAttribute="bottom" constant="8" id="A3v-Mn-5pR"/>
                 <constraint firstAttribute="trailing" secondItem="gA8-Bm-9Qd" secondAttribute="trailing" constant="20" id="Q6s-LD-wq9"/>
                 <constraint firstItem="gA8-Bm-9Qd" firstAttribute="width" constant="18" id="R5c-tM-mB1"/>
                 <constraint firstItem="hQ3-rp-SiL" firstAttribute="leading" secondItem="bqE-j2-v8m" secondAttribute="leading" constant="20" id="S2g-pW-vD4"/>

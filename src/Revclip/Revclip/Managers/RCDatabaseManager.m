@@ -8,15 +8,46 @@
 #import "RCDatabaseManager.h"
 
 #import "FMDB.h"
+#import "RCClipItem.h"
+#import "RCPanicEraseService.h"
+#import "RCUtilities.h"
+#import <os/log.h>
 #import <sqlite3.h>
 
 static NSInteger const kRCCurrentSchemaVersion = 1;
+static NSNumber * const kRCDatabaseFilePermissions = @(0600);
+static NSNumber * const kRCDatabaseDirectoryPermissions = @(0700);
+static NSString * const kRCAutoVacuumMigrationCompletedKey = @"kRCAutoVacuumMigrationCompletedKey";
+
+static os_log_t RCDatabaseManagerLog(void) {
+    static os_log_t logger = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        logger = os_log_create("com.revclip", "RCDatabaseManager");
+    });
+    return logger;
+}
 
 @interface RCDatabaseManager ()
 
 @property (nonatomic, strong, nullable) FMDatabaseQueue *databaseQueue;
 @property (nonatomic, readwrite, copy) NSString *databasePath;
 @property (nonatomic, assign) BOOL setupCompleted;
+@property (nonatomic, assign) BOOL databaseCreatedDuringCurrentSetup;
+
+- (BOOL)enableSecureDeleteForDatabase:(FMDatabase *)db;
+- (BOOL)configureIncrementalAutoVacuumForNewDatabase:(FMDatabase *)db;
+- (NSInteger)integerValueForPragma:(NSString *)pragmaName
+                        inDatabase:(FMDatabase *)db
+                      defaultValue:(NSInteger)defaultValue;
+- (void)migrateAutoVacuumToIncrementalIfNeeded;
+- (void)applyDatabaseFilePermissionsIfNeeded;
+- (NSString *)storagePathForClipPath:(NSString *)path;
+- (NSString *)resolvedPathForStoredClipPath:(NSString *)storedPath;
+- (NSString *)standardizedPath:(NSString *)path;
+- (NSString *)canonicalPath:(NSString *)path;
+- (BOOL)isPath:(NSString *)path withinDirectory:(NSString *)directoryPath;
+- (BOOL)tableExists:(NSString *)tableName inDatabase:(FMDatabase *)db;
 
 @end
 
@@ -65,6 +96,17 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
                 return;
             }
 
+            if (![self enableSecureDeleteForDatabase:db]) {
+                setupSucceeded = NO;
+                return;
+            }
+
+            if (self.databaseCreatedDuringCurrentSetup
+                && ![self configureIncrementalAutoVacuumForNewDatabase:db]) {
+                setupSucceeded = NO;
+                return;
+            }
+
             setupSucceeded = [self createBaseSchemaInDatabase:db];
         }];
 
@@ -76,6 +118,9 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
         if (!migrated) {
             return NO;
         }
+
+        [self migrateAutoVacuumToIncrementalIfNeeded];
+        [self applyDatabaseFilePermissionsIfNeeded];
 
         self.setupCompleted = YES;
         return YES;
@@ -166,6 +211,18 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     return migrated;
 }
 
+- (BOOL)performDatabaseOperation:(BOOL (^)(FMDatabase *db))block {
+    if (block == nil || ![self ensureDatabaseReadyForOperation]) {
+        return NO;
+    }
+
+    __block BOOL succeeded = YES;
+    [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        succeeded = block(db);
+    }];
+    return succeeded;
+}
+
 - (BOOL)performTransaction:(BOOL (^)(FMDatabase *db, BOOL *rollback))block {
     if (block == nil || ![self ensureDatabaseReadyForOperation]) {
         return NO;
@@ -183,6 +240,33 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     return succeeded;
 }
 
+- (void)closeDatabase {
+    @synchronized (self) {
+        [self.databaseQueue close];
+        self.databaseQueue = nil;
+        self.setupCompleted = NO;
+        self.databaseCreatedDuringCurrentSetup = NO;
+    }
+}
+
+- (void)deleteDatabaseFiles {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *basePath = self.databasePath ?: @"";
+    if (basePath.length == 0) {
+        return;
+    }
+
+    NSArray<NSString *> *suffixes = @[@"", @"-journal", @"-wal", @"-shm"];
+    for (NSString *suffix in suffixes) {
+        NSString *path = [basePath stringByAppendingString:suffix];
+        [fileManager removeItemAtPath:path error:nil];
+    }
+}
+
+- (void)reinitializeDatabase {
+    [self setupDatabase];
+}
+
 #pragma mark - Public: clip_items
 
 - (BOOL)insertClipItem:(NSDictionary *)clipDict {
@@ -190,7 +274,8 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
         return NO;
     }
 
-    NSString *dataPath = [self stringValueInDictionary:clipDict keys:@[@"data_path", @"dataPath"] defaultValue:nil];
+    NSString *rawDataPath = [self stringValueInDictionary:clipDict keys:@[@"data_path", @"dataPath"] defaultValue:nil];
+    NSString *dataPath = [self storagePathForClipPath:rawDataPath];
     NSString *dataHash = [self stringValueInDictionary:clipDict keys:@[@"data_hash", @"dataHash"] defaultValue:nil];
     NSNumber *updateTime = [self numberValueInDictionary:clipDict keys:@[@"update_time", @"updateTime"] defaultValue:nil];
 
@@ -200,7 +285,8 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 
     NSString *title = [self stringValueInDictionary:clipDict keys:@[@"title"] defaultValue:@""];
     NSString *primaryType = [self stringValueInDictionary:clipDict keys:@[@"primary_type", @"primaryType"] defaultValue:@""];
-    NSString *thumbnailPath = [self stringValueInDictionary:clipDict keys:@[@"thumbnail_path", @"thumbnailPath"] defaultValue:@""];
+    NSString *rawThumbnailPath = [self stringValueInDictionary:clipDict keys:@[@"thumbnail_path", @"thumbnailPath"] defaultValue:@""];
+    NSString *thumbnailPath = [self storagePathForClipPath:rawThumbnailPath];
     NSNumber *isColorCode = [self numberValueInDictionary:clipDict keys:@[@"is_color_code", @"isColorCode"] defaultValue:@0];
 
     __block BOOL inserted = NO;
@@ -215,10 +301,9 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
                       errorCode,
                       extendedErrorCode);
             } else if (errorCode == SQLITE_CONSTRAINT) {
-                NSLog(@"[RCDatabaseManager] insertClipItem: constraint violation (code=%d, extended=%d, message=%@)",
-                      errorCode,
-                      extendedErrorCode,
-                      db.lastErrorMessage);
+                os_log_with_type(RCDatabaseManagerLog(), OS_LOG_TYPE_DEBUG,
+                                 "insertClipItem constraint violation (code=%d, extended=%d, message=%{private}@)",
+                                 errorCode, extendedErrorCode, db.lastErrorMessage);
             } else {
                 [self logDatabaseError:db context:@"Failed to insert clip_items row"];
             }
@@ -264,6 +349,25 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     return deleted;
 }
 
+- (BOOL)deleteClipItemWithDataHash:(NSString *)dataHash olderThan:(NSInteger)updateTimeMs {
+    if (dataHash.length == 0 || ![self ensureDatabaseReadyForOperation]) {
+        return NO;
+    }
+
+    __block BOOL deleted = NO;
+    [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        BOOL executed = [db executeUpdate:@"DELETE FROM clip_items WHERE data_hash = ? AND update_time < ?"
+                     withArgumentsInArray:@[dataHash, @(updateTimeMs)]];
+        if (!executed) {
+            [self logDatabaseError:db context:@"Failed to delete expired clip_items row"];
+            return;
+        }
+        deleted = (db.changes > 0);
+    }];
+
+    return deleted;
+}
+
 - (BOOL)deleteClipItemsOlderThan:(NSInteger)updateTime {
     if (![self ensureDatabaseReadyForOperation]) {
         return NO;
@@ -278,6 +382,31 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     }];
 
     return deleted;
+}
+
+- (NSArray<RCClipItem *> *)clipItemsOlderThan:(NSInteger)updateTimeMs {
+    if (![self ensureDatabaseReadyForOperation]) {
+        return @[];
+    }
+
+    __block NSMutableArray<RCClipItem *> *clipItems = [NSMutableArray array];
+    [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        FMResultSet *resultSet = [db executeQuery:@"SELECT id, data_path, title, data_hash, primary_type, update_time, thumbnail_path, is_color_code FROM clip_items WHERE update_time < ? ORDER BY update_time ASC"
+                             withArgumentsInArray:@[@(updateTimeMs)]];
+        if (!resultSet) {
+            [self logDatabaseError:db context:@"Failed to fetch old clip_items rows"];
+            return;
+        }
+
+        while ([resultSet next]) {
+            NSDictionary *clipDictionary = [self clipItemDictionaryFromResultSet:resultSet];
+            RCClipItem *clipItem = [[RCClipItem alloc] initWithDictionary:clipDictionary];
+            [clipItems addObject:clipItem];
+        }
+        [resultSet close];
+    }];
+
+    return [clipItems copy];
 }
 
 - (NSArray *)fetchClipItemsWithLimit:(NSInteger)limit {
@@ -361,6 +490,74 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
         }
     }];
 
+    return deleted;
+}
+
+- (BOOL)deleteAllSnippets {
+    if (![self ensureDatabaseReadyForOperation]) {
+        return NO;
+    }
+
+    __block BOOL deleted = YES;
+    [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        if ([self tableExists:@"snippets" inDatabase:db]) {
+            if (![db executeUpdate:@"DELETE FROM snippets"]) {
+                [self logDatabaseError:db context:@"Failed to delete all snippets rows"];
+                deleted = NO;
+                return;
+            }
+        }
+
+        if ([self tableExists:@"snippet_folders" inDatabase:db]) {
+            if (![db executeUpdate:@"DELETE FROM snippet_folders"]) {
+                [self logDatabaseError:db context:@"Failed to delete all snippet_folders rows"];
+                deleted = NO;
+                return;
+            }
+        }
+    }];
+
+    return deleted;
+}
+
+- (BOOL)panicDeleteAllClipItems {
+    if (![self ensureDatabaseQueue]) {
+        return NO;
+    }
+
+    __block BOOL deleted = NO;
+    [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        deleted = [db executeUpdate:@"DELETE FROM clip_items"];
+        if (!deleted) {
+            [self logDatabaseError:db context:@"Panic: Failed to delete all clip_items rows"];
+        }
+    }];
+    return deleted;
+}
+
+- (BOOL)panicDeleteAllSnippets {
+    if (![self ensureDatabaseQueue]) {
+        return NO;
+    }
+
+    __block BOOL deleted = YES;
+    [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        if ([self tableExists:@"snippets" inDatabase:db]) {
+            if (![db executeUpdate:@"DELETE FROM snippets"]) {
+                [self logDatabaseError:db context:@"Panic: Failed to delete all snippets rows"];
+                deleted = NO;
+                return;
+            }
+        }
+
+        if ([self tableExists:@"snippet_folders" inDatabase:db]) {
+            if (![db executeUpdate:@"DELETE FROM snippet_folders"]) {
+                [self logDatabaseError:db context:@"Panic: Failed to delete all snippet_folders rows"];
+                deleted = NO;
+                return;
+            }
+        }
+    }];
     return deleted;
 }
 
@@ -717,13 +914,7 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 #pragma mark - Private: Database setup
 
 + (NSString *)defaultDatabasePath {
-    NSArray<NSString *> *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-    NSString *applicationSupportPath = paths.firstObject;
-    if (applicationSupportPath.length == 0) {
-        applicationSupportPath = [[NSHomeDirectory() stringByAppendingPathComponent:@"Library"] stringByAppendingPathComponent:@"Application Support"];
-    }
-
-    NSString *revclipDirectoryPath = [applicationSupportPath stringByAppendingPathComponent:@"Revclip"];
+    NSString *revclipDirectoryPath = [RCUtilities applicationSupportPath];
     return [revclipDirectoryPath stringByAppendingPathComponent:@"revclip.db"];
 }
 
@@ -731,6 +922,10 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 // inDatabase: or inTransaction: block. FMDatabaseQueue uses a serial dispatch
 // queue internally, so re-entrant calls will deadlock.
 - (BOOL)ensureDatabaseReadyForOperation {
+    if ([RCPanicEraseService shared].isPanicInProgress) {
+        return NO;
+    }
+
     @synchronized (self) {
         if (self.setupCompleted) {
             return YES;
@@ -751,25 +946,52 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     BOOL exists = [fileManager fileExistsAtPath:directoryPath isDirectory:&isDirectory];
 
     if (exists && !isDirectory) {
-        NSLog(@"[RCDatabaseManager] Expected directory but found file at path: %@", directoryPath);
+        os_log_error(RCDatabaseManagerLog(),
+                     "Expected directory but found file at path %{private}@",
+                     directoryPath);
         return NO;
     }
 
-    if (!exists) {
+    NSDictionary *directoryAttributes = @{ NSFilePosixPermissions: kRCDatabaseDirectoryPermissions };
+    if (exists) {
+        NSError *permissionsError = nil;
+        BOOL applied = [fileManager setAttributes:directoryAttributes
+                                     ofItemAtPath:directoryPath
+                                            error:&permissionsError];
+        if (!applied && permissionsError != nil) {
+            os_log_with_type(RCDatabaseManagerLog(), OS_LOG_TYPE_DEBUG,
+                             "Failed to apply database directory permissions for %{private}@ (%{private}@)",
+                             directoryPath, permissionsError.localizedDescription);
+        }
+    } else {
         NSError *directoryError = nil;
         BOOL created = [fileManager createDirectoryAtPath:directoryPath
                               withIntermediateDirectories:YES
-                                               attributes:nil
+                                               attributes:directoryAttributes
                                                     error:&directoryError];
         if (!created || directoryError != nil) {
-            NSLog(@"[RCDatabaseManager] Failed to create Application Support directory: %@", directoryError);
+            os_log_error(RCDatabaseManagerLog(),
+                         "Failed to create database directory %{private}@ (%{private}@)",
+                         directoryPath, directoryError.localizedDescription);
             return NO;
         }
     }
 
+    BOOL databasePathIsDirectory = NO;
+    if ([fileManager fileExistsAtPath:self.databasePath isDirectory:&databasePathIsDirectory]
+        && databasePathIsDirectory) {
+        os_log_error(RCDatabaseManagerLog(),
+                     "Expected database file but found directory at path %{private}@",
+                     self.databasePath);
+        return NO;
+    }
+
+    self.databaseCreatedDuringCurrentSetup = ![fileManager fileExistsAtPath:self.databasePath];
     self.databaseQueue = [FMDatabaseQueue databaseQueueWithPath:self.databasePath];
     if (self.databaseQueue == nil) {
-        NSLog(@"[RCDatabaseManager] Failed to create FMDatabaseQueue for path: %@", self.databasePath);
+        os_log_error(RCDatabaseManagerLog(),
+                     "Failed to create FMDatabaseQueue for path %{private}@",
+                     self.databasePath);
         return NO;
     }
 
@@ -785,6 +1007,23 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     }
 
     return YES;
+}
+
+- (BOOL)tableExists:(NSString *)tableName inDatabase:(FMDatabase *)db {
+    if (tableName.length == 0 || db == nil) {
+        return NO;
+    }
+
+    FMResultSet *resultSet = [db executeQuery:@"SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1"
+                         withArgumentsInArray:@[tableName]];
+    if (!resultSet) {
+        [self logDatabaseError:db context:@"Failed to inspect sqlite_master"];
+        return NO;
+    }
+
+    BOOL exists = [resultSet next];
+    [resultSet close];
+    return exists;
 }
 
 - (BOOL)createBaseSchemaInDatabase:(FMDatabase *)db {
@@ -827,8 +1066,197 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
     return enabled;
 }
 
+- (BOOL)enableSecureDeleteForDatabase:(FMDatabase *)db {
+    BOOL enabled = [db executeStatements:@"PRAGMA secure_delete = ON"];
+    if (!enabled) {
+        [self logDatabaseError:db context:@"Failed to enable secure_delete pragma"];
+    }
+    return enabled;
+}
+
+- (BOOL)configureIncrementalAutoVacuumForNewDatabase:(FMDatabase *)db {
+    BOOL configured = [db executeStatements:@"PRAGMA auto_vacuum = INCREMENTAL"];
+    if (!configured) {
+        [self logDatabaseError:db context:@"Failed to configure auto_vacuum=INCREMENTAL for new database"];
+    }
+    return configured;
+}
+
+- (NSInteger)integerValueForPragma:(NSString *)pragmaName
+                        inDatabase:(FMDatabase *)db
+                      defaultValue:(NSInteger)defaultValue {
+    if (pragmaName.length == 0) {
+        return defaultValue;
+    }
+
+    NSString *query = [NSString stringWithFormat:@"PRAGMA %@;", pragmaName];
+    FMResultSet *resultSet = [db executeQuery:query];
+    if (resultSet == nil) {
+        [self logDatabaseError:db context:[NSString stringWithFormat:@"Failed to query pragma %@", pragmaName]];
+        return defaultValue;
+    }
+
+    NSInteger value = defaultValue;
+    if ([resultSet next]) {
+        value = [resultSet longLongIntForColumnIndex:0];
+    }
+    [resultSet close];
+    return value;
+}
+
+- (void)migrateAutoVacuumToIncrementalIfNeeded {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ([defaults boolForKey:kRCAutoVacuumMigrationCompletedKey]) {
+        return;
+    }
+
+    __block BOOL shouldMarkCompleted = NO;
+    __block BOOL didFailMigration = NO;
+
+    [self.databaseQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        NSInteger autoVacuumMode = [self integerValueForPragma:@"auto_vacuum"
+                                                    inDatabase:db
+                                                  defaultValue:-1];
+        if (autoVacuumMode < 0) {
+            didFailMigration = YES;
+            return;
+        }
+
+        if (autoVacuumMode == 0) {
+            BOOL configured = [db executeStatements:@"PRAGMA auto_vacuum = INCREMENTAL"];
+            if (!configured) {
+                didFailMigration = YES;
+                [self logDatabaseError:db context:@"Failed to configure auto_vacuum before VACUUM migration"];
+                return;
+            }
+
+            BOOL vacuumed = [db executeStatements:@"VACUUM"];
+            if (!vacuumed) {
+                didFailMigration = YES;
+                [self logDatabaseError:db context:@"Failed to run VACUUM for auto_vacuum migration"];
+                return;
+            }
+        }
+
+        shouldMarkCompleted = YES;
+    }];
+
+    if (shouldMarkCompleted) {
+        [defaults setBool:YES forKey:kRCAutoVacuumMigrationCompletedKey];
+    } else if (didFailMigration) {
+        os_log_error(RCDatabaseManagerLog(),
+                     "auto_vacuum migration failed; continuing without migration completion flag");
+    }
+}
+
+- (void)applyDatabaseFilePermissionsIfNeeded {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *databaseBasePath = self.databasePath ?: @"";
+    if (databaseBasePath.length == 0) {
+        return;
+    }
+
+    NSArray<NSString *> *suffixes = @[@"", @"-journal", @"-wal", @"-shm"];
+    for (NSString *suffix in suffixes) {
+        NSString *path = [databaseBasePath stringByAppendingString:suffix];
+        BOOL isDirectory = NO;
+        if (![fileManager fileExistsAtPath:path isDirectory:&isDirectory] || isDirectory) {
+            continue;
+        }
+
+        NSError *permissionError = nil;
+        BOOL applied = [fileManager setAttributes:@{ NSFilePosixPermissions: kRCDatabaseFilePermissions }
+                                     ofItemAtPath:path
+                                            error:&permissionError];
+        if (!applied && permissionError != nil) {
+            os_log_error(RCDatabaseManagerLog(),
+                         "Failed to apply database file permissions for %{private}@ (%{private}@)",
+                         path, permissionError.localizedDescription);
+        }
+    }
+}
+
 - (void)logDatabaseError:(FMDatabase *)db context:(NSString *)context {
-    NSLog(@"[RCDatabaseManager] %@ (code=%d, message=%@)", context, db.lastErrorCode, db.lastErrorMessage);
+    os_log_error(RCDatabaseManagerLog(),
+                 "%{public}@ (code=%d, message=%{private}@)",
+                 context, db.lastErrorCode, db.lastErrorMessage);
+}
+
+- (NSString *)storagePathForClipPath:(NSString *)path {
+    NSString *standardizedPath = [self standardizedPath:path];
+    if (standardizedPath.length == 0) {
+        return @"";
+    }
+
+    NSString *clipDirectoryPath = [self standardizedPath:[RCUtilities clipDataDirectoryPath]];
+    if (clipDirectoryPath.length == 0) {
+        return @"";
+    }
+
+    NSString *canonicalPath = [self canonicalPath:standardizedPath];
+    NSString *canonicalClipDirectoryPath = [self canonicalPath:clipDirectoryPath];
+    if (![self isPath:canonicalPath withinDirectory:canonicalClipDirectoryPath]) {
+        return @"";
+    }
+
+    return standardizedPath.lastPathComponent ?: @"";
+}
+
+- (NSString *)resolvedPathForStoredClipPath:(NSString *)storedPath {
+    NSString *standardizedPath = [self standardizedPath:storedPath];
+    if (standardizedPath.length == 0) {
+        return @"";
+    }
+
+    NSString *clipDirectoryPath = [self standardizedPath:[RCUtilities clipDataDirectoryPath]];
+    if (clipDirectoryPath.length == 0) {
+        return @"";
+    }
+
+    NSString *resolvedPath = standardizedPath;
+    if (![standardizedPath isAbsolutePath]) {
+        resolvedPath = [[clipDirectoryPath stringByAppendingPathComponent:standardizedPath] stringByStandardizingPath];
+    }
+
+    NSString *canonicalPath = [self canonicalPath:resolvedPath];
+    NSString *canonicalClipDirectoryPath = [self canonicalPath:clipDirectoryPath];
+    if ([self isPath:canonicalPath withinDirectory:canonicalClipDirectoryPath]) {
+        return resolvedPath;
+    }
+
+    return @"";
+}
+
+- (NSString *)standardizedPath:(NSString *)path {
+    if (path.length == 0) {
+        return @"";
+    }
+
+    return [[path stringByExpandingTildeInPath] stringByStandardizingPath];
+}
+
+- (NSString *)canonicalPath:(NSString *)path {
+    NSString *standardizedPath = [self standardizedPath:path];
+    if (standardizedPath.length == 0) {
+        return @"";
+    }
+
+    return [standardizedPath stringByResolvingSymlinksInPath];
+}
+
+- (BOOL)isPath:(NSString *)path withinDirectory:(NSString *)directoryPath {
+    if (path.length == 0 || directoryPath.length == 0) {
+        return NO;
+    }
+
+    if ([path isEqualToString:directoryPath]) {
+        return YES;
+    }
+
+    NSString *directoryPrefix = [directoryPath hasSuffix:@"/"]
+        ? directoryPath
+        : [directoryPath stringByAppendingString:@"/"];
+    return [path hasPrefix:directoryPrefix];
 }
 
 #pragma mark - Private: Dictionary helpers
@@ -884,14 +1312,17 @@ static NSInteger const kRCCurrentSchemaVersion = 1;
 #pragma mark - Private: ResultSet mapping
 
 - (NSDictionary *)clipItemDictionaryFromResultSet:(FMResultSet *)resultSet {
+    NSString *storedDataPath = [resultSet stringForColumn:@"data_path"] ?: @"";
+    NSString *storedThumbnailPath = [resultSet stringForColumn:@"thumbnail_path"] ?: @"";
+
     return @{
         @"id": @([resultSet longLongIntForColumn:@"id"]),
-        @"data_path": [resultSet stringForColumn:@"data_path"] ?: @"",
+        @"data_path": [self resolvedPathForStoredClipPath:storedDataPath],
         @"title": [resultSet stringForColumn:@"title"] ?: @"",
         @"data_hash": [resultSet stringForColumn:@"data_hash"] ?: @"",
         @"primary_type": [resultSet stringForColumn:@"primary_type"] ?: @"",
         @"update_time": @([resultSet longLongIntForColumn:@"update_time"]),
-        @"thumbnail_path": [resultSet stringForColumn:@"thumbnail_path"] ?: @"",
+        @"thumbnail_path": [self resolvedPathForStoredClipPath:storedThumbnailPath],
         @"is_color_code": @([resultSet intForColumn:@"is_color_code"]),
     };
 }

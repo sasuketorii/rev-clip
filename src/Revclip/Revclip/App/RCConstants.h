@@ -9,8 +9,18 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+typedef NS_ENUM(NSInteger, RCAutoExpiryUnit) {
+    RCAutoExpiryUnitDay = 0,
+    RCAutoExpiryUnitHour = 1,
+    RCAutoExpiryUnitMinute = 2,
+};
+
 // General
 extern NSString * const kRCPrefMaxHistorySizeKey;              // Default: 30
+extern NSString * const kRCPrefAutoExpiryEnabledKey;           // Default: NO
+extern NSString * const kRCPrefAutoExpiryValueKey;             // Default: 30
+extern NSString * const kRCPrefAutoExpiryUnitKey;              // Default: 0 (day)
+extern NSString * const kRCPrefMaxClipSizeBytesKey;            // Default: 52428800 (50MB)
 extern NSString * const kRCPrefInputPasteCommandKey;           // Default: YES
 extern NSString * const kRCPrefReorderClipsAfterPasting;       // Default: YES
 extern NSString * const kRCPrefShowStatusItemKey;              // Default: 1 (black)
@@ -44,6 +54,7 @@ extern NSString * const kRCHotKeyMainKeyCombo;
 extern NSString * const kRCHotKeyHistoryKeyCombo;
 extern NSString * const kRCHotKeySnippetKeyCombo;
 extern NSString * const kRCClearHistoryKeyCombo;
+extern NSString * const kRCPanicButtonKeyCombo;
 extern NSString * const kRCFolderKeyCombos;
 extern NSString * const kRCMigrateNewKeyCombo;
 extern NSString * const kRCPrefHotKeysKey;

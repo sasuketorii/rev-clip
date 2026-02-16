@@ -23,6 +23,9 @@ NS_ASSUME_NONNULL_BEGIN
 // ディレクトリの自動作成
 + (BOOL)ensureDirectoryExists:(NSString *)path;
 
+// データ保護属性の適用（権限修復 + Backup/Spotlight除外）
++ (void)applyDataProtectionAttributes;
+
 @end
 
 NS_ASSUME_NONNULL_END

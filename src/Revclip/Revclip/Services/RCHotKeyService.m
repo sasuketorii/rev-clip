@@ -17,6 +17,7 @@ NSString * const RCHotKeyMainTriggeredNotification = @"RCHotKeyMainTriggeredNoti
 NSString * const RCHotKeyHistoryTriggeredNotification = @"RCHotKeyHistoryTriggeredNotification";
 NSString * const RCHotKeySnippetTriggeredNotification = @"RCHotKeySnippetTriggeredNotification";
 NSString * const RCHotKeyClearHistoryTriggeredNotification = @"RCHotKeyClearHistoryTriggeredNotification";
+NSString * const RCHotKeyPanicTriggeredNotification = @"RCHotKeyPanicTriggeredNotification";
 NSString * const RCHotKeySnippetFolderTriggeredNotification = @"RCHotKeySnippetFolderTriggeredNotification";
 NSString * const RCHotKeyFolderIdentifierUserInfoKey = @"folderIdentifier";
 NSString * const RCHotKeyRegistrationDidFailNotification = @"RCHotKeyRegistrationDidFailNotification";
@@ -32,6 +33,7 @@ static UInt32 const kRCHotKeyIdentifierMain = 1;
 static UInt32 const kRCHotKeyIdentifierHistory = 2;
 static UInt32 const kRCHotKeyIdentifierSnippet = 3;
 static UInt32 const kRCHotKeyIdentifierClearHistory = 4;
+static UInt32 const kRCHotKeyIdentifierPanic = 5;
 static UInt32 const kRCHotKeyIdentifierSnippetFolderBase = 100;
 
 static UInt32 const kRCKeyCodeV = 9;
@@ -125,6 +127,7 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
     EventHotKeyRef _historyHotKeyRef;
     EventHotKeyRef _snippetHotKeyRef;
     EventHotKeyRef _clearHistoryHotKeyRef;
+    EventHotKeyRef _panicHotKeyRef;
     NSMutableDictionary<NSString *, NSValue *> *_snippetFolderHotKeyRefs;
     NSMutableDictionary<NSString *, NSNumber *> *_snippetFolderHotKeyIdentifiers;
     NSMutableDictionary<NSNumber *, NSString *> *_snippetFolderIdentifiersByHotKeyID;
@@ -177,6 +180,7 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
         _historyHotKeyRef = NULL;
         _snippetHotKeyRef = NULL;
         _clearHistoryHotKeyRef = NULL;
+        _panicHotKeyRef = NULL;
         _snippetFolderHotKeyRefs = [[NSMutableDictionary alloc] init];
         _snippetFolderHotKeyIdentifiers = [[NSMutableDictionary alloc] init];
         _snippetFolderIdentifiersByHotKeyID = [[NSMutableDictionary alloc] init];
@@ -231,6 +235,16 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
         success = [self registerHotKeyWithCombo:combo
                                       identifier:kRCHotKeyIdentifierClearHistory
                                         storeRef:&_clearHistoryHotKeyRef];
+    }];
+    return success;
+}
+
+- (BOOL)registerPanicHotKey:(RCKeyCombo)combo {
+    __block BOOL success = NO;
+    [self performOnMainThreadSync:^{
+        success = [self registerHotKeyWithCombo:combo
+                                      identifier:kRCHotKeyIdentifierPanic
+                                        storeRef:&_panicHotKeyRef];
     }];
     return success;
 }
@@ -311,6 +325,7 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
         [self unregisterHotKeyRef:&_historyHotKeyRef];
         [self unregisterHotKeyRef:&_snippetHotKeyRef];
         [self unregisterHotKeyRef:&_clearHistoryHotKeyRef];
+        [self unregisterHotKeyRef:&_panicHotKeyRef];
         [self unregisterAllSnippetFolderHotKeys];
     }];
 }
@@ -321,6 +336,7 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
         [self unregisterHotKeyRef:&_historyHotKeyRef];
         [self unregisterHotKeyRef:&_snippetHotKeyRef];
         [self unregisterHotKeyRef:&_clearHistoryHotKeyRef];
+        [self unregisterHotKeyRef:&_panicHotKeyRef];
         [self unregisterAllSnippetFolderHotKeys];
 
         NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
@@ -373,6 +389,22 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
             }
         } else {
             [self unregisterHotKeyRef:&_clearHistoryHotKeyRef];
+        }
+
+        id panicRawValue = [userDefaults objectForKey:kRCPanicButtonKeyCombo];
+        BOOL panicComboExplicitlyUnset = RCIsExplicitlyUnsetKeyComboObject(panicRawValue);
+        RCKeyCombo panicCombo = RCKeyComboFromDictionaryObject(panicRawValue);
+        if (!panicComboExplicitlyUnset && !RCIsValidKeyCombo(panicCombo)) {
+            panicCombo = RCMakeKeyCombo(51, cmdKey | shiftKey | optionKey);
+            [RCHotKeyService saveKeyCombo:panicCombo toUserDefaults:kRCPanicButtonKeyCombo];
+        }
+        if (RCIsValidKeyCombo(panicCombo)) {
+            if (![self isDuplicateHotKeyCombo:panicCombo context:@"panic hot key" registry:registeredCombos]
+                && [self registerPanicHotKey:panicCombo]) {
+                [self recordHotKeyCombo:panicCombo context:@"panic hot key" registry:registeredCombos];
+            }
+        } else {
+            [self unregisterHotKeyRef:&_panicHotKeyRef];
         }
 
         [self unregisterAllSnippetFolderHotKeys];
@@ -789,6 +821,9 @@ static OSStatus RCHotKeyEventHandler(EventHandlerCallRef nextHandler, EventRef e
             break;
         case kRCHotKeyIdentifierClearHistory:
             notificationName = RCHotKeyClearHistoryTriggeredNotification;
+            break;
+        case kRCHotKeyIdentifierPanic:
+            notificationName = RCHotKeyPanicTriggeredNotification;
             break;
         default:
         {
