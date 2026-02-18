@@ -96,6 +96,40 @@ jobs:
           set -euo pipefail
           xcodegen generate
 
+      - name: Validate version matches tag
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          TAG_PATCH=$(echo "$TAG_VERSION" | cut -d. -f3)
+          YML_SHORT=$(sed -nE 's/^[[:space:]]*CFBundleShortVersionString:[[:space:]]*"([^"]+)".*/\1/p' project.yml | head -n1)
+          YML_BUILD=$(sed -nE 's/^[[:space:]]*CFBundleVersion:[[:space:]]*"([^"]+)".*/\1/p' project.yml | head -n1)
+
+          if [[ -z "$YML_SHORT" ]]; then
+            echo "::error::Failed to read CFBundleShortVersionString from project.yml"
+            exit 1
+          fi
+          if [[ -z "$YML_BUILD" ]]; then
+            echo "::error::Failed to read CFBundleVersion from project.yml"
+            exit 1
+          fi
+
+          ERRORS=0
+          if [[ "$YML_SHORT" != "$TAG_VERSION" ]]; then
+            echo "::error::project.yml CFBundleShortVersionString ($YML_SHORT) != tag ($TAG_VERSION)"
+            ERRORS=1
+          fi
+          if [[ "$YML_BUILD" != "$TAG_PATCH" ]]; then
+            echo "::error::project.yml CFBundleVersion ($YML_BUILD) != expected ($TAG_PATCH)"
+            ERRORS=1
+          fi
+          if [[ "$ERRORS" -ne 0 ]]; then
+            echo ""
+            echo "Fix: Run ./scripts/bump-version.sh $TAG_VERSION and push again."
+            exit 1
+          fi
+          echo "Version validation passed: $TAG_VERSION (build $TAG_PATCH)"
+
       - name: Download Sparkle tools
         run: |
           set -euo pipefail
