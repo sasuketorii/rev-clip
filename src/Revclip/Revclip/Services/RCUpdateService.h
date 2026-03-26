@@ -10,10 +10,17 @@
 NS_ASSUME_NONNULL_BEGIN
 
 extern NSNotificationName const RCUpdateServiceDidFailNotification;
-extern NSNotificationName const RCUpdateServiceSparkleUnavailableNotification;
 
 extern NSString * const RCUpdateServiceErrorUserInfoKey;
 extern NSString * const RCUpdateServiceFailureReasonUserInfoKey;
+extern NSString * const RCUpdateServiceUpdateCheckUserInfoKey;
+
+typedef NS_ENUM(NSInteger, RCUpdateServiceUpdateCheck) {
+    RCUpdateServiceUpdateCheckUnknown = -1,
+    RCUpdateServiceUpdateCheckUpdates = 0,
+    RCUpdateServiceUpdateCheckUpdatesInBackground = 1,
+    RCUpdateServiceUpdateCheckUpdateInformation = 2,
+};
 
 @interface RCUpdateService : NSObject
 
@@ -23,7 +30,7 @@ extern NSString * const RCUpdateServiceFailureReasonUserInfoKey;
 - (void)setupUpdater;
 
 /// 手動アップデートチェック
-- (void)checkForUpdates;
+- (BOOL)checkForUpdates;
 
 /// アップデートチェック可能かどうか
 @property (nonatomic, readonly) BOOL canCheckForUpdates;

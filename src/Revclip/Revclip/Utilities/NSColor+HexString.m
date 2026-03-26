@@ -6,6 +6,9 @@
 //
 
 #import "NSColor+HexString.h"
+#import <math.h>
+
+static NSUInteger const kRCMaxColorStringLength = 512;
 
 static NSString *RCNormalizedHexColorString(NSString *input) {
     if (input.length == 0) {
@@ -39,6 +42,236 @@ static CGFloat RCColorComponentFromHexPair(NSString *hexPair) {
     NSScanner *scanner = [NSScanner scannerWithString:hexPair];
     [scanner scanHexInt:&value];
     return (CGFloat)value / 255.0;
+}
+
+static NSString *RCNormalizedColorCandidateString(NSString *input) {
+    if (input.length == 0) {
+        return @"";
+    }
+    return [input stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+}
+
+static BOOL RCIsPotentialHexColorCandidate(NSString *normalizedLowercaseInput) {
+    if (normalizedLowercaseInput.length == 0) {
+        return NO;
+    }
+
+    NSString *rawHex = nil;
+    if ([normalizedLowercaseInput hasPrefix:@"#"]) {
+        rawHex = [normalizedLowercaseInput substringFromIndex:1];
+    } else if ([normalizedLowercaseInput hasPrefix:@"0x"]) {
+        rawHex = [normalizedLowercaseInput substringFromIndex:2];
+    } else {
+        return NO;
+    }
+
+    NSUInteger length = rawHex.length;
+    if (!(length == 3 || length == 4 || length == 6 || length == 8)) {
+        return NO;
+    }
+
+    NSCharacterSet *nonHexSet = [[NSCharacterSet characterSetWithCharactersInString:@"0123456789abcdef"] invertedSet];
+    return [rawHex rangeOfCharacterFromSet:nonHexSet].location == NSNotFound;
+}
+
+static BOOL RCScanIntegerComponent(NSString *token, NSInteger *outValue) {
+    if (token.length == 0 || outValue == NULL) {
+        return NO;
+    }
+
+    NSScanner *scanner = [NSScanner scannerWithString:token];
+    NSInteger value = 0;
+    if (![scanner scanInteger:&value] || !scanner.isAtEnd) {
+        return NO;
+    }
+    *outValue = value;
+    return YES;
+}
+
+static BOOL RCScanDoubleComponent(NSString *token, double *outValue) {
+    if (token.length == 0 || outValue == NULL) {
+        return NO;
+    }
+
+    NSScanner *scanner = [NSScanner scannerWithString:token];
+    double value = 0.0;
+    if (![scanner scanDouble:&value] || !scanner.isAtEnd) {
+        return NO;
+    }
+    if (!isfinite(value)) {
+        return NO;
+    }
+    *outValue = value;
+    return YES;
+}
+
+static NSArray<NSString *> *RCColorFunctionArguments(NSString *input, NSString *functionNameLower) {
+    if (input.length == 0 || functionNameLower.length == 0) {
+        return nil;
+    }
+
+    NSString *normalized = RCNormalizedColorCandidateString(input);
+    if (normalized.length < functionNameLower.length + 2) {
+        return nil;
+    }
+
+    NSString *lower = normalized.lowercaseString;
+    NSString *prefix = [functionNameLower stringByAppendingString:@"("];
+    if (![lower hasPrefix:prefix] || ![lower hasSuffix:@")"]) {
+        return nil;
+    }
+
+    NSRange bodyRange = NSMakeRange(prefix.length, normalized.length - prefix.length - 1);
+    NSString *body = [normalized substringWithRange:bodyRange];
+    NSArray<NSString *> *rawComponents = [body componentsSeparatedByString:@","];
+    if (rawComponents.count == 0) {
+        return nil;
+    }
+
+    NSMutableArray<NSString *> *components = [NSMutableArray arrayWithCapacity:rawComponents.count];
+    for (NSString *raw in rawComponents) {
+        NSString *token = [raw stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (token.length == 0) {
+            return nil;
+        }
+        [components addObject:token];
+    }
+    return [components copy];
+}
+
+static BOOL RCParseRGBAColorComponents(NSString *input, CGFloat *outRed, CGFloat *outGreen, CGFloat *outBlue, CGFloat *outAlpha) {
+    NSArray<NSString *> *components = RCColorFunctionArguments(input, @"rgba");
+    if (components.count != 4) {
+        return NO;
+    }
+
+    NSInteger redValue = 0;
+    NSInteger greenValue = 0;
+    NSInteger blueValue = 0;
+    double alphaValue = 0.0;
+
+    if (!RCScanIntegerComponent(components[0], &redValue)
+        || !RCScanIntegerComponent(components[1], &greenValue)
+        || !RCScanIntegerComponent(components[2], &blueValue)
+        || !RCScanDoubleComponent(components[3], &alphaValue)) {
+        return NO;
+    }
+
+    if (redValue < 0 || redValue > 255
+        || greenValue < 0 || greenValue > 255
+        || blueValue < 0 || blueValue > 255
+        || alphaValue < 0.0 || alphaValue > 1.0) {
+        return NO;
+    }
+
+    if (outRed != NULL) {
+        *outRed = (CGFloat)redValue / 255.0;
+    }
+    if (outGreen != NULL) {
+        *outGreen = (CGFloat)greenValue / 255.0;
+    }
+    if (outBlue != NULL) {
+        *outBlue = (CGFloat)blueValue / 255.0;
+    }
+    if (outAlpha != NULL) {
+        *outAlpha = (CGFloat)alphaValue;
+    }
+    return YES;
+}
+
+static BOOL RCParsePercentValue(NSString *token, double *outValue) {
+    if (token.length < 2 || ![token hasSuffix:@"%"] || outValue == NULL) {
+        return NO;
+    }
+
+    NSString *numericToken = [token substringToIndex:token.length - 1];
+    double value = 0.0;
+    if (!RCScanDoubleComponent(numericToken, &value)) {
+        return NO;
+    }
+    *outValue = value;
+    return YES;
+}
+
+static CGFloat RCHueToRGB(CGFloat p, CGFloat q, CGFloat t) {
+    if (t < 0.0) {
+        t += 1.0;
+    }
+    if (t > 1.0) {
+        t -= 1.0;
+    }
+    if (t < (1.0 / 6.0)) {
+        return p + (q - p) * 6.0 * t;
+    }
+    if (t < 0.5) {
+        return q;
+    }
+    if (t < (2.0 / 3.0)) {
+        return p + (q - p) * ((2.0 / 3.0) - t) * 6.0;
+    }
+    return p;
+}
+
+static BOOL RCParseHSLAColorComponents(NSString *input, CGFloat *outRed, CGFloat *outGreen, CGFloat *outBlue, CGFloat *outAlpha) {
+    NSArray<NSString *> *components = RCColorFunctionArguments(input, @"hsla");
+    if (components.count != 4) {
+        return NO;
+    }
+
+    double hueDegrees = 0.0;
+    double saturationPercent = 0.0;
+    double lightnessPercent = 0.0;
+    double alphaValue = 0.0;
+
+    if (!RCScanDoubleComponent(components[0], &hueDegrees)
+        || !RCParsePercentValue(components[1], &saturationPercent)
+        || !RCParsePercentValue(components[2], &lightnessPercent)
+        || !RCScanDoubleComponent(components[3], &alphaValue)) {
+        return NO;
+    }
+
+    if (hueDegrees < 0.0 || hueDegrees > 360.0
+        || saturationPercent < 0.0 || saturationPercent > 100.0
+        || lightnessPercent < 0.0 || lightnessPercent > 100.0
+        || alphaValue < 0.0 || alphaValue > 1.0) {
+        return NO;
+    }
+
+    CGFloat hue = (CGFloat)(hueDegrees / 360.0);
+    CGFloat saturation = (CGFloat)(saturationPercent / 100.0);
+    CGFloat lightness = (CGFloat)(lightnessPercent / 100.0);
+
+    CGFloat red = 0.0;
+    CGFloat green = 0.0;
+    CGFloat blue = 0.0;
+
+    if (saturation == 0.0) {
+        red = lightness;
+        green = lightness;
+        blue = lightness;
+    } else {
+        CGFloat q = (lightness < 0.5)
+            ? (lightness * (1.0 + saturation))
+            : (lightness + saturation - lightness * saturation);
+        CGFloat p = 2.0 * lightness - q;
+        red = RCHueToRGB(p, q, hue + (1.0 / 3.0));
+        green = RCHueToRGB(p, q, hue);
+        blue = RCHueToRGB(p, q, hue - (1.0 / 3.0));
+    }
+
+    if (outRed != NULL) {
+        *outRed = red;
+    }
+    if (outGreen != NULL) {
+        *outGreen = green;
+    }
+    if (outBlue != NULL) {
+        *outBlue = blue;
+    }
+    if (outAlpha != NULL) {
+        *outAlpha = (CGFloat)alphaValue;
+    }
+    return YES;
 }
 
 @implementation NSColor (HexString)
@@ -98,6 +331,28 @@ static CGFloat RCColorComponentFromHexPair(NSString *hexPair) {
     return [NSColor colorWithSRGBRed:red green:green blue:blue alpha:alpha];
 }
 
++ (NSColor *)colorWithColorString:(NSString *)colorString {
+    NSString *normalized = RCNormalizedColorCandidateString(colorString);
+    if (normalized.length == 0 || normalized.length > kRCMaxColorStringLength) {
+        return nil;
+    }
+
+    if ([self isValidHexColorString:normalized]) {
+        return [self colorWithHexString:normalized];
+    }
+
+    CGFloat red = 0.0;
+    CGFloat green = 0.0;
+    CGFloat blue = 0.0;
+    CGFloat alpha = 0.0;
+    if (RCParseRGBAColorComponents(normalized, &red, &green, &blue, &alpha)
+        || RCParseHSLAColorComponents(normalized, &red, &green, &blue, &alpha)) {
+        return [NSColor colorWithSRGBRed:red green:green blue:blue alpha:alpha];
+    }
+
+    return nil;
+}
+
 - (NSString *)hexString {
     NSColor *srgbColor = [self colorUsingColorSpace:[NSColorSpace sRGBColorSpace]];
     if (srgbColor == nil) {
@@ -131,12 +386,31 @@ static CGFloat RCColorComponentFromHexPair(NSString *hexPair) {
 
 + (BOOL)isValidHexColorString:(NSString *)string {
     NSString *normalized = RCNormalizedHexColorString(string);
+    if (normalized.length == 0 || normalized.length > kRCMaxColorStringLength) {
+        return NO;
+    }
     NSUInteger length = normalized.length;
     if (!(length == 3 || length == 4 || length == 6 || length == 8)) {
         return NO;
     }
 
     return RCIsHexCharactersOnly(normalized);
+}
+
++ (BOOL)isValidColorString:(NSString *)string {
+    return [self colorWithColorString:string] != nil;
+}
+
++ (BOOL)isPotentialColorStringCandidate:(NSString *)string {
+    NSString *trimmed = RCNormalizedColorCandidateString(string);
+    if (trimmed.length == 0 || trimmed.length > kRCMaxColorStringLength) {
+        return NO;
+    }
+    NSString *normalized = trimmed.lowercaseString;
+
+    return RCIsPotentialHexColorCandidate(normalized)
+        || [normalized hasPrefix:@"rgba("]
+        || [normalized hasPrefix:@"hsla("];
 }
 
 @end

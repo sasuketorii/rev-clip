@@ -15,9 +15,9 @@ static NSString * const kRCUpdateServiceErrorDomain = @"com.revclip.update";
 static NSString * const kRCSparkleErrorDomain = @"SUSparkleErrorDomain";
 
 NSNotificationName const RCUpdateServiceDidFailNotification = @"RCUpdateServiceDidFailNotification";
-NSNotificationName const RCUpdateServiceSparkleUnavailableNotification = @"RCUpdateServiceSparkleUnavailableNotification";
 NSString * const RCUpdateServiceErrorUserInfoKey = @"error";
 NSString * const RCUpdateServiceFailureReasonUserInfoKey = @"reason";
+NSString * const RCUpdateServiceUpdateCheckUserInfoKey = @"update_check";
 
 typedef NS_ENUM(NSInteger, RCUpdateServiceErrorCode) {
     RCUpdateServiceErrorCodeUnknown = 1,
@@ -38,6 +38,7 @@ typedef NS_ENUM(NSInteger, RCSparkleErrorCode) {
 @property (nonatomic, assign) NSTimeInterval updateCheckInterval;
 @optional
 @property (nonatomic, readonly) BOOL canCheckForUpdates;
+@property (nonatomic, assign) BOOL automaticallyDownloadsUpdates;
 @end
 
 @protocol RCSPUUpdaterDelegate <NSObject>
@@ -65,6 +66,13 @@ typedef NS_ENUM(NSInteger, RCSparkleErrorCode) {
 @property (nonatomic, strong, nullable) id<RCSPUStandardUpdaterController> updaterController;
 @property (nonatomic, strong, nullable, readwrite) NSError *lastError;
 
+- (BOOL)setupUpdaterForUpdateCheck:(NSInteger)updateCheck
+               notifyUserOnFailure:(BOOL)notifyUserOnFailure;
+- (void)reportFailureWithError:(nullable NSError *)error
+                        reason:(NSString *)reason
+                   updateCheck:(NSInteger)updateCheck;
+- (BOOL)shouldNotifyFailureForUpdateCheck:(NSInteger)updateCheck;
+
 @end
 
 @implementation RCUpdateService
@@ -79,24 +87,28 @@ typedef NS_ENUM(NSInteger, RCSparkleErrorCode) {
 }
 
 - (void)setupUpdater {
+    [self setupUpdaterForUpdateCheck:RCUpdateServiceUpdateCheckUpdatesInBackground
+                 notifyUserOnFailure:NO];
+}
+
+- (BOOL)setupUpdaterForUpdateCheck:(NSInteger)updateCheck
+               notifyUserOnFailure:(BOOL)notifyUserOnFailure {
     @synchronized (self) {
         if (self.updaterController != nil) {
-            return;
+            return YES;
         }
 
         NSError *frameworkError = nil;
         if (![self loadSparkleFrameworkIfAvailableWithError:&frameworkError]) {
             NSLog(@"[RCUpdateService] Sparkle.framework unavailable: %@",
                   frameworkError.localizedDescription ?: @"Unknown error");
-            if (frameworkError != nil && frameworkError.code == RCUpdateServiceErrorCodeSparkleUnavailable) {
-                [self postNotificationName:RCUpdateServiceSparkleUnavailableNotification
-                                  userInfo:[self userInfoWithError:frameworkError
-                                                             reason:@"Sparkle.framework not found."]];
-                self.lastError = frameworkError;
-                return;
+            self.lastError = frameworkError;
+            if (notifyUserOnFailure) {
+                [self reportFailureWithError:frameworkError
+                                      reason:@"Sparkle.framework unavailable."
+                                 updateCheck:updateCheck];
             }
-            [self reportFailureWithError:frameworkError reason:@"Sparkle.framework unavailable."];
-            return;
+            return NO;
         }
 
         Class updaterControllerClass = NSClassFromString(@"SPUStandardUpdaterController");
@@ -105,8 +117,13 @@ typedef NS_ENUM(NSInteger, RCSparkleErrorCode) {
             NSError *error = [self serviceErrorWithCode:RCUpdateServiceErrorCodeUpdaterControllerMissing
                                                  reason:@"SPUStandardUpdaterController class not found."
                                         underlyingError:nil];
-            [self reportFailureWithError:error reason:@"SPUStandardUpdaterController class not found."];
-            return;
+            self.lastError = error;
+            if (notifyUserOnFailure) {
+                [self reportFailureWithError:error
+                                      reason:@"SPUStandardUpdaterController class not found."
+                                 updateCheck:updateCheck];
+            }
+            return NO;
         }
 
         self.updaterController = [self createUpdaterControllerWithClass:updaterControllerClass];
@@ -115,32 +132,51 @@ typedef NS_ENUM(NSInteger, RCSparkleErrorCode) {
             NSError *error = [self serviceErrorWithCode:RCUpdateServiceErrorCodeUpdaterControllerCreationFailed
                                                  reason:@"Failed to create updater controller."
                                         underlyingError:nil];
-            [self reportFailureWithError:error reason:@"Failed to create updater controller."];
-            return;
+            self.lastError = error;
+            if (notifyUserOnFailure) {
+                [self reportFailureWithError:error
+                                      reason:@"Failed to create updater controller."
+                                 updateCheck:updateCheck];
+            }
+            return NO;
         }
 
         [self applyStoredPreferencesToUpdater];
         self.lastError = nil;
         NSLog(@"[RCUpdateService] Sparkle updater initialized successfully.");
+        return YES;
     }
 }
 
-- (void)checkForUpdates {
+- (BOOL)checkForUpdates {
     if (![NSThread isMainThread]) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [self checkForUpdates];
-        });
-        return;
+        NSLog(@"[RCUpdateService] checkForUpdates must be called on main thread.");
+        return NO;
     }
 
-    [self setupUpdater];
+    BOOL didSetup = [self setupUpdaterForUpdateCheck:RCUpdateServiceUpdateCheckUpdates
+                                 notifyUserOnFailure:YES];
+    if (!didSetup) {
+        return NO;
+    }
     if (self.updaterController == nil) {
         NSLog(@"[RCUpdateService] Cannot check for updates: updater not initialized.");
-        // setupUpdater already reports initialization failures.
-        return;
+        NSError *error = self.lastError ?: [self serviceErrorWithCode:RCUpdateServiceErrorCodeUpdaterNotInitialized
+                                                                reason:@"Updater not initialized."
+                                                       underlyingError:nil];
+        [self reportFailureWithError:error
+                              reason:@"Cannot check for updates: updater not initialized."
+                         updateCheck:RCUpdateServiceUpdateCheckUpdates];
+        return NO;
+    }
+
+    if (!self.canCheckForUpdates) {
+        NSLog(@"[RCUpdateService] Cannot start manual update check right now.");
+        return NO;
     }
 
     [self.updaterController checkForUpdates:nil];
+    return YES;
 }
 
 - (BOOL)canCheckForUpdates {
@@ -218,7 +254,16 @@ typedef NS_ENUM(NSInteger, RCSparkleErrorCode) {
             self.lastError = nil;
             return;
         }
-        [self reportFailureWithError:error reason:@"Update check failed."];
+        if ([self shouldNotifyFailureForUpdateCheck:updateCheck]) {
+            [self reportFailureWithError:error
+                                  reason:@"Update check failed."
+                             updateCheck:updateCheck];
+        } else {
+            NSLog(@"[RCUpdateService] Suppressing background update failure notification (check: %ld): %@",
+                  (long)updateCheck,
+                  error.localizedDescription ?: @"Unknown error");
+            self.lastError = nil;
+        }
         return;
     }
 
@@ -238,6 +283,9 @@ typedef NS_ENUM(NSInteger, RCSparkleErrorCode) {
     }
     if ([updater respondsToSelector:@selector(setUpdateCheckInterval:)]) {
         updater.updateCheckInterval = self.updateCheckInterval;
+    }
+    if ([updater respondsToSelector:@selector(setAutomaticallyDownloadsUpdates:)]) {
+        updater.automaticallyDownloadsUpdates = NO;
     }
 }
 
@@ -329,16 +377,21 @@ typedef NS_ENUM(NSInteger, RCSparkleErrorCode) {
     return [NSError errorWithDomain:kRCUpdateServiceErrorDomain code:code userInfo:userInfo];
 }
 
-- (NSDictionary<NSString *, id> *)userInfoWithError:(NSError *)error reason:(NSString *)reason {
+- (NSDictionary<NSString *, id> *)userInfoWithError:(NSError *)error
+                                             reason:(NSString *)reason
+                                        updateCheck:(NSInteger)updateCheck {
     NSMutableDictionary<NSString *, id> *userInfo = [NSMutableDictionary dictionaryWithObject:error
                                                                                          forKey:RCUpdateServiceErrorUserInfoKey];
     if (reason.length > 0) {
         userInfo[RCUpdateServiceFailureReasonUserInfoKey] = reason;
     }
+    userInfo[RCUpdateServiceUpdateCheckUserInfoKey] = @(updateCheck);
     return [userInfo copy];
 }
 
-- (void)reportFailureWithError:(nullable NSError *)error reason:(NSString *)reason {
+- (void)reportFailureWithError:(nullable NSError *)error
+                        reason:(NSString *)reason
+                   updateCheck:(NSInteger)updateCheck {
     NSError *reportedError = error;
     if (reportedError == nil) {
         reportedError = [self serviceErrorWithCode:RCUpdateServiceErrorCodeUnknown
@@ -348,7 +401,13 @@ typedef NS_ENUM(NSInteger, RCSparkleErrorCode) {
 
     self.lastError = reportedError;
     [self postNotificationName:RCUpdateServiceDidFailNotification
-                      userInfo:[self userInfoWithError:reportedError reason:reason]];
+                      userInfo:[self userInfoWithError:reportedError
+                                                 reason:reason
+                                            updateCheck:updateCheck]];
+}
+
+- (BOOL)shouldNotifyFailureForUpdateCheck:(NSInteger)updateCheck {
+    return updateCheck == RCUpdateServiceUpdateCheckUpdates;
 }
 
 - (void)postNotificationName:(NSNotificationName)notificationName userInfo:(nullable NSDictionary<NSString *, id> *)userInfo {

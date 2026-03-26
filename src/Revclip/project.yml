@@ -77,6 +77,9 @@ targets:
         Debug:
           ONLY_ACTIVE_ARCH: true
           CODE_SIGN_IDENTITY: ""
+          CODE_SIGNING_ALLOWED: NO
+          CODE_SIGNING_REQUIRED: NO
+          CODE_SIGN_ENTITLEMENTS: ""
 
   RevclipTests:
     type: bundle.unit-test
@@ -87,5 +90,10 @@ targets:
       - target: Revclip
     settings:
       base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.revclip.RevclipTests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Revclip.app/Contents/MacOS/Revclip"
         BUNDLE_LOADER: "$(TEST_HOST)"

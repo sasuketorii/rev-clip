@@ -321,8 +321,10 @@ static os_log_t RCClipboardServiceLog(void) {
                                                            identifier:identifier
                                                         directoryPath:directoryPath];
 
-    BOOL isColorCode = (clipData.stringValue.length > 0
-                        && [NSColor isValidHexColorString:clipData.stringValue]);
+    BOOL isColorCode = NO;
+    if (clipData.stringValue.length > 0 && [NSColor isPotentialColorStringCandidate:clipData.stringValue]) {
+        isColorCode = [NSColor isValidColorString:clipData.stringValue];
+    }
 
     NSDictionary *clipDictionary = @{
         @"data_path": dataPath,

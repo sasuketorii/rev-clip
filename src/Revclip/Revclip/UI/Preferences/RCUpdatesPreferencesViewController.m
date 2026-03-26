@@ -25,8 +25,9 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
 @implementation RCUpdatesPreferencesViewController
 
 - (void)dealloc {
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:RCUpdateServiceDidFailNotification object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:RCUpdateServiceSparkleUnavailableNotification object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:RCUpdateServiceDidFailNotification
+                                                  object:[RCUpdateService shared]];
     [self cancelCheckCompletionTimer];
 }
 
@@ -37,11 +38,7 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
     [notificationCenter addObserver:self
                            selector:@selector(handleUpdateServiceFailureNotification:)
                                name:RCUpdateServiceDidFailNotification
-                             object:nil];
-    [notificationCenter addObserver:self
-                           selector:@selector(handleUpdateServiceFailureNotification:)
-                               name:RCUpdateServiceSparkleUnavailableNotification
-                             object:nil];
+                             object:[RCUpdateService shared]];
 
     [self loadUpdateSettings];
     [self updateVersionInfo];
@@ -109,29 +106,17 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
     (void)sender;
 
     RCUpdateService *updateService = [RCUpdateService shared];
-    if (!updateService.canCheckForUpdates) {
-        NSAlert *alert = [[NSAlert alloc] init];
-        alert.alertStyle = NSAlertStyleWarning;
-        alert.messageText = NSLocalizedString(@"アップデートを確認できません", nil);
-        alert.informativeText = NSLocalizedString(@"アップデート機能の初期化に失敗しました。アプリケーションを再起動してください。", nil);
-        [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
-
-        NSWindow *window = self.view.window;
-        if (window != nil) {
-            [alert beginSheetModalForWindow:window completionHandler:nil];
-        } else {
-            [alert runModal];
-        }
-        return;
-    }
 
     self.checkNowButton.enabled = NO;
     self.checkProgressIndicator.hidden = NO;
     [self.checkProgressIndicator startAnimation:nil];
 
-    [updateService checkForUpdates];
-
-    [self startCheckCompletionPolling];
+    BOOL didStartCheck = [updateService checkForUpdates];
+    if (didStartCheck) {
+        [self startCheckCompletionPolling];
+    } else {
+        [self restoreManualCheckUIState];
+    }
 }
 
 - (void)cancelCheckCompletionTimer {
@@ -176,6 +161,23 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
 }
 
 - (void)handleUpdateServiceFailureNotification:(NSNotification *)notification {
+    if (notification.object != [RCUpdateService shared]) {
+        NSLog(@"[RCUpdatesPreferencesViewController] Ignoring update failure from unexpected sender.");
+        return;
+    }
+
+    RCUpdateServiceUpdateCheck updateCheck = [self normalizedUpdateCheckFromNotification:notification];
+
+    if ([self shouldRestoreManualCheckUIStateForUpdateCheck:updateCheck]) {
+        [self restoreManualCheckUIState];
+    }
+
+    if (![self shouldShowFailureAlertForUpdateCheck:updateCheck]) {
+        NSLog(@"[RCUpdatesPreferencesViewController] Ignoring non-user initiated update failure (check: %ld).",
+              (long)updateCheck);
+        return;
+    }
+
     id errorObject = notification.userInfo[RCUpdateServiceErrorUserInfoKey];
     id reasonObject = notification.userInfo[RCUpdateServiceFailureReasonUserInfoKey];
     NSString *errorDescription = nil;
@@ -190,15 +192,48 @@ static const NSInteger kRCDefaultUpdateCheckInterval = 86400;
     NSAlert *alert = [[NSAlert alloc] init];
     alert.alertStyle = NSAlertStyleWarning;
     alert.messageText = NSLocalizedString(@"アップデートの確認に失敗しました", nil);
-    alert.informativeText = NSLocalizedString(@"アップデート機能の初期化に失敗しました。しばらくしてからもう一度お試しください。", nil);
+    alert.informativeText = NSLocalizedString(@"アップデートの確認中に問題が発生しました。しばらくしてからもう一度お試しください。", nil);
     [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
 
     NSWindow *window = self.view.window;
     if (window != nil) {
         [alert beginSheetModalForWindow:window completionHandler:nil];
     } else {
-        [alert runModal];
+        NSLog(@"[RCUpdatesPreferencesViewController] Skipping failure alert because no window is attached.");
     }
+}
+
+- (BOOL)shouldShowFailureAlertForUpdateCheck:(NSInteger)updateCheck {
+    return updateCheck == RCUpdateServiceUpdateCheckUpdates;
+}
+
+- (RCUpdateServiceUpdateCheck)normalizedUpdateCheckFromNotification:(NSNotification *)notification {
+    id updateCheckObject = notification.userInfo[RCUpdateServiceUpdateCheckUserInfoKey];
+    if (![updateCheckObject isKindOfClass:[NSNumber class]]) {
+        return RCUpdateServiceUpdateCheckUnknown;
+    }
+
+    NSInteger rawValue = [((NSNumber *)updateCheckObject) integerValue];
+    switch (rawValue) {
+        case RCUpdateServiceUpdateCheckUpdates:
+        case RCUpdateServiceUpdateCheckUpdatesInBackground:
+        case RCUpdateServiceUpdateCheckUpdateInformation:
+            return (RCUpdateServiceUpdateCheck)rawValue;
+        default:
+            return RCUpdateServiceUpdateCheckUnknown;
+    }
+}
+
+- (BOOL)shouldRestoreManualCheckUIStateForUpdateCheck:(NSInteger)updateCheck {
+    return updateCheck == RCUpdateServiceUpdateCheckUpdates
+        || updateCheck == RCUpdateServiceUpdateCheckUnknown;
+}
+
+- (void)restoreManualCheckUIState {
+    self.checkNowButton.enabled = YES;
+    [self.checkProgressIndicator stopAnimation:nil];
+    self.checkProgressIndicator.hidden = YES;
+    [self cancelCheckCompletionTimer];
 }
 
 @end

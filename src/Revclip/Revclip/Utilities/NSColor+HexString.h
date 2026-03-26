@@ -12,8 +12,11 @@ NS_ASSUME_NONNULL_BEGIN
 @interface NSColor (HexString)
 
 + (nullable NSColor *)colorWithHexString:(NSString *)hexString;
++ (nullable NSColor *)colorWithColorString:(NSString *)colorString;
 - (nullable NSString *)hexString;
 + (BOOL)isValidHexColorString:(NSString *)string;
++ (BOOL)isValidColorString:(NSString *)string;
++ (BOOL)isPotentialColorStringCandidate:(NSString *)string;
 
 @end
 
